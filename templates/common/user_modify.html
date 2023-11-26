@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-3">
+    <!-- message 표시 -->
+    {% if messages %}
+    <div class="alert alert-danger my-3" role="alert">
+        {% for message in messages %}
+        <strong>{{ message.tags }}</strong>
+        <ul><li>{{ message.message }}</li></ul>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h4 class="my-3 border-bottom pb-2">직원정보 수정</h4>
+    <form method="post">
+        {% csrf_token %}
+        {% include 'form_errors.html' %}
+        <div class="mb-3">
+            <label for="username">ID(휴대폰 번호)</label>
+            <input type="text" class="form-control" name="username" id="username"
+                   disabled value="{{ form.username.value|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="emp_name">직원명</label>
+            <input type="text" class="form-control" name="emp_name" id="emp_name"
+                   value="{{ form.emp_name.value|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="email">이메일</label>
+            <input type="text" class="form-control" name="email" id="email"
+                   value="{{ form.email.value|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="dept">부서명</label>
+            <input type="text" class="form-control" name="dept" id="dept"
+                   value="{{ form.dept.value|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="position">직위명</label>
+            <input type="text" class="form-control" name="position" id="position"
+                   value="{{ form.position.value|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="join_date">입사일자</label>
+            <input type="date" class="form-control" name="join_date" id="join_date"
+                   value="{{ form.join_date.value|date:'Y-m-d'|default_if_none:'' }}">
+        </div>
+        <div class="mb-3">
+            <label for="out_date">퇴사일자</label>
+            <input type="date" class="form-control" name="out_date" id="out_date"
+                   value="{{ form.out_date.value|date:'Y-m-d'|default_if_none:'' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">수정하기</button>
+    </form>
+</div>
+{% endblock %}

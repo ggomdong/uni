@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3">
+    <div class="row my-3">
+        <div class="col-6">
+            <a href="{% url 'common:signup' %}" class="btn btn-primary">직원 등록하기</a>
+        </div>
+        <div class="col-6">
+            <div class="input-group">
+                <input type="text" id="search_kw" class="form-control" value="{{ kw|default_if_none:'' }}">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" id="btn_search">검색</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <table class="table">
+        <thead>
+        <tr class="text-center table-dark">
+            <th>번호</th>
+            <th>ID</th>
+            <th>직원명</th>
+            <th>이메일</th>
+            <th>부서명</th>
+            <th>직위명</th>
+            <th>입사일자</th>
+            <th>퇴사일자</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% if user_list %}
+        {% for user in user_list %}
+        <tr class="text-center">
+            <td>
+                <!-- 번호 = 전체건수 - 시작인덱스 - 현재인덱스 + 1 -->
+                {{ user_list.paginator.count|sub:user_list.start_index|sub:forloop.counter0|add:1 }}
+            </td>
+            <td>{{ user.username }}</td>
+            <td class="text-center">
+                <a href="{% url 'common:user_modify' user.id %}">{{ user.emp_name }}</a>
+            </td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.dept }}</td>
+            <td>{{ user.position }}</td>
+            <!-- 년월일이 아닌 -로 표기하기 위함  (기존)2023년 11월 16일 (변경)2023-11-16  -->
+            <td>{{ user.join_date|date:'Y-m-d' }}</td>
+            <td>{{ user.out_date|date:'Y-m-d' }}</td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+            <td colspan="4">직원이 없습니다.</td>
+        </tr>
+        {% endif %}
+        </tbody>
+    </table>
+    <!-- 페이징 처리 시작 -->
+    <ul class="pagination justify-content-center">
+        <!-- 이전 페이지 -->
+        {% if user_list.has_previous %}
+        <li class="page-item">
+            <a class="page-link" data-page="{{ user_list.previous_page_number }}"
+               href="javascript:void(0)">이전</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a class="page-link" tabindex="-1" aria-disabled="true" href="#">이전</a>
+        </li>
+        {% endif %}
+        <!-- 페이지 리스트 -->
+        {% for page_number in user_list.paginator.page_range %}
+        {% if page_number >= user_list.number|add:-5 and page_number <= user_list.number|add:5 %}
+        {% if page_number == user_list.number %}
+        <li class="page-item active" aria-current="page">
+            <a class="page-link" data-page="{{ page_number }}"
+               href="javascript:void(0)">{{ page_number }}</a>
+        </li>
+        {% else %}
+        <li class="page-item">
+            <a class="page-link" data-page="{{ page_number }}"
+               href="javascript:void(0)">{{ page_number }}</a>
+        </li>
+        {% endif %}
+        {% endif %}
+        {% endfor %}
+        <!-- 다음 페이지 -->
+        {% if user_list.has_next %}
+        <li class="page-item">
+            <a class="page-link" data-page="{{ user_list.next_page_number }}"
+               href="javascript:void(0)">다음</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <a class="page-link" tabindex="-1" aria-disabled="true" href="#">다음</a>
+        </li>
+        {% endif %}
+    </ul>
+    <!-- 페이징처리 끝 -->
+</div>
+<form id="searchForm" method="get" action="{% url 'common:user_list' %}">
+    <input type="hidden" id="kw" name="kw" value="{{ kw|default_if_none:'' }}">
+    <input type="hidden" id="page" name="page" value="{{ page }}">
+</form>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+const page_elements = document.getElementsByClassName("page-link")
+Array.from(page_elements).forEach(function(element) {
+    element.addEventListener('click', function() {
+        document.getElementById('page').value = this.dataset.page;
+        document.getElementById('searchForm').submit();
+    });
+});
+const btn_search = document.getElementById("btn_search");
+btn_search.addEventListener('click', function() {
+    document.getElementById('kw').value = document.getElementById('search_kw').value;
+    document.getElementById('page').value = 1   // 검색버튼 클릭 시 1페이지부터 조회
+    document.getElementById('searchForm').submit();
+});
+</script>
+{% endblock %}

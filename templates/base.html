@@ -1,0 +1,29 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+    <!-- required meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
+    <!-- pybo CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+    <title>YOU&I 왕십리점 관리앱</title>
+</head>
+<body>
+<!-- 네비게이션바 -->
+{% include 'navbar.html' %}
+<!-- 개별 html Start -->
+{% block content %}
+{% endblock %}
+<!-- 개별 html End -->
+<!-- Bootstrap JS -->
+<script src="{% static 'bootstrap.min.js' %}"></script>
+<!-- 자바스크립트 Start -->
+{% block script %}
+{% endblock %}
+<!-- 자바스크립트 End -->
+</body>
+</html>
