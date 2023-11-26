@@ -58,14 +58,12 @@ def login(request):
 
         login_result = authenticate(username=username, password=password)
 
-        # 앱에서 로그인시 사용자 정보를 가져오기 위함
-        # TODO: 출결 여부를 return 하는 부분 추가
-        obj = User.objects.get(username=username)
-
         if login_result:
-            return JsonResponse({'code': '0000', 'username': obj.username, 'emp_name': obj.emp_name}, status=200)
+            # 앱에서 로그인시 사용자 정보를 가져오기 위함
+            obj = User.objects.get(username=username)
+            return JsonResponse({'code': '0000', 'msg': '로그인 성공', 'username': obj.username, 'emp_name': obj.emp_name}, status=200)
         else:
-            return JsonResponse({'code': '0001', 'msg': '로그인 실패'}, status=401)
+            return JsonResponse({'code': '0001', 'msg': '로그인 실패', 'username': '', 'emp_name': ''}, status=401)
 
 
 @csrf_exempt
