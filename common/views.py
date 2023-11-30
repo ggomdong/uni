@@ -22,8 +22,9 @@ def signup(request):
             return redirect('common:user_list')
     else:
         form = UserForm()
-        context = {'form': form}
-        return render(request, 'common/signup.html', context)
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    context = {'form': form}
+    return render(request, 'common/signup.html', context)
 
 
 @login_required(login_url='common:login')
