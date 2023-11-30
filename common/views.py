@@ -8,6 +8,9 @@ from .forms import UserForm, UserModifyForm
 from .models import User
 
 
+def page_not_found(request, exception):
+    return render(request, 'common/404.html', {})
+
 @login_required(login_url='common:login')
 def signup(request):
     if request.method == 'POST':

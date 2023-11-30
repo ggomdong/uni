@@ -30,3 +30,5 @@ urlpatterns = [
     path('common/', include('common.urls')),
     path('wtm/', include('wtm.urls')),
 ]
+
+handler404 = 'common.views.page_not_found'
