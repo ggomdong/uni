@@ -76,7 +76,7 @@ def work_record(request):
         work = Work()
 
         # work와 user 매핑
-        work.username_id = obj.id
+        work.user_id = obj.id
         work.work_code = data['work_code']
         work.record_date = timezone.now()
 
