@@ -80,5 +80,8 @@ def work_record(request):
         work.work_code = data['work_code']
         work.record_date = timezone.now()
 
-        work.save()
-        return HttpResponse(status=204)
+        try:
+            work.save()
+            return JsonResponse({'code': '0000', 'msg': '출/퇴근 성공', 'username': obj.username, 'record_date': work.record_date}, status=200)
+        except:
+            return JsonResponse({'code': '0001', 'msg': '출/퇴근 실패', 'username': obj.username, 'record_date': work.record_date}, status=401)
