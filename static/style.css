@@ -1,0 +1,48 @@
+.flex-container {
+  display: flex;
+  //justify-content: center;
+  flex-wrap: wrap;
+}
+
+.styled-radio {
+  margin-right: 2px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid gray;
+}
+
+.invisible-radio {
+  /* per https://a11yproject.com/posts/how-to-hide-content/ */
+  position: absolute;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px 1px 1px 1px); /* IE6, IE7 */
+  clip: rect(1px, 1px, 1px, 1px);
+}
+
+.invisible-radio:checked + label .styled-radio::after {
+  content: '✓';
+  font-size: 1em;
+  display: inline-block;
+  box-sizing: border-box;
+  padding-left: 10px;
+  width: 10px;
+  text-align: center;
+}
+
+.invisible-radio:not(:checked) + label {
+  cursor: pointer;
+}
+
+.invisible-radio:not(:checked) + label:hover .styled-radio {
+  opacity: 0.7;
+}
+
+.module_box {
+    font-size: 10px;
+    border: 1px solid gray;
+    position: relative;
+    width: 30px;
+    height: 30px;
+}

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3">
+    <!-- message 표시 -->
+    {% if messages %}
+    <div class="alert alert-danger my-3" role="alert">
+        {% for message in messages %}
+        <strong>{{ message.tags }}</strong>
+        <ul><li>{{ message.message }}</li></ul>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h4 class="my-3 border-bottom pb-2">근무모듈 등록</h4>
+    <form method="post">
+        {% csrf_token %}
+        {% include 'form_errors.html' %}
+        <div class="mb-3 col-md-4">
+            <label for="cat">구분</label>
+            <select class="form-select" name="cat" id="cat">
+                {% for cat in categories %}
+                <option value="{{cat}}" {% if form.cat.value == cat %}selected{% endif %}>{{cat}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3 col-md-4">
+            <label for="name">근무명</label>
+            <input type="text" class="form-control" name="name" id="name"
+                   value="{{ form.name.value|default_if_none:'' }}">
+        </div>
+        <div class="mb-3 row g-2">
+            <div class="col-md-2">
+                <label for="start_time">근무시간(시업)</label>
+                <!-- 많은 시행착오 끝에, 시간 컬럼은 CharField로 하기로 했음.
+                 <input type='time'>이면 브라우저 설정을 따르기 때문에 24시간제로 하기 어렵고,
+                 시간 list를 미리 만들고 <select>로 하면 DB의 TimeField를 불러올때 '오전', '오후' 값이 포함되어서 비교가 힘듬-->
+                <select class="form-select" name="start_time" id="start_time">
+                    <option></option>
+                    {% for time in times %}
+                    <option value="{{time}}" {% if form.start_time.value == time %} selected {% endif %}>{{time}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="end_time">근무시간(종업)</label>
+                <select class="form-select" name="end_time" id="end_time">
+                    <option></option>
+                    {% for time in times %}
+                    <option value="{{time}}" {% if form.end_time.value == time %} selected {% endif %}>{{time}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mb-3 row g-2">
+            <div class="col-md-2">
+                <label for="rest1_start_time">휴게시간1(시작)</label>
+                <select class="form-select" name="rest1_start_time" id="rest1_start_time">
+                    <option></option>
+                    {% for time in times %}
+                    <option value="{{time}}" {% if form.rest1_start_time.value == time %} selected {% endif %}>{{time}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="rest1_end_time">휴게시간1(종료)</label>
+                <select class="form-select" name="rest1_end_time" id="rest1_end_time">
+                    <option></option>
+                    {% for time in times %}
+                    <option value="{{time}}" {% if form.rest1_end_time.value == time %} selected {% endif %}>{{time}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mb-3 row g-2">
+            <div class="col-md-2">
+                <label for="rest2_start_time">휴게시간2(시작)</label>
+                <select class="form-select" name="rest2_start_time" id="rest2_start_time">
+                    <option></option>
+                    {% for time in times %}
+                    <option value="{{time}}" {% if form.rest2_start_time.value == time %} selected {% endif %}>{{time}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="rest2_end_time">휴게시간2(종료)</label>
+                <select class="form-select" name="rest2_end_time" id="rest2_end_time">
+                    <option></option>
+                    {% for time in times %}
+                    <option value="{{time}}" {% if form.rest2_end_time.value == time %} selected {% endif %}>{{time}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            색상
+            <div class="flex-container">
+                {% for key, color in module_colors.items %}
+                <!-- 등록 화면에서 form 오류 발생시 기존에 했던 색상 체크가 없어지는 현상이 발생
+                    1. key|slugify 로 했을때도 form오류에는 대처가 되긴 했으나,
+                     수정 화면에서는 db에서 불러온 값은 int인데, key를 string 강제 변환하니 역시나 체크가 안되는 현상이 생겼음
+                    2. form.color.value는 string으로 넘어오고, key는 int이기 때문에 비교가 안되는것 같음
+                    pybo_filter.py 에 to_int tag를 추가하고, form.color.value|to_int와 같이 변환해주니 성공 -->
+                <input type="radio" name="color" id="color{{key}}" class="invisible-radio" value="{{key}}"
+                {% if form.color.value|to_int == key %} checked {% endif %}>
+                <label for="color{{key}}">
+                <div class="styled-radio" style="background: {{color}}"></div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">등록하기</button>
+    </form>
+</div>
+{% endblock %}

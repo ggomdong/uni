@@ -20,12 +20,12 @@
         <tr class="text-center table-dark">
             <th>번호</th>
             <th>ID</th>
-            <th>직원명</th>
+            <th>성명</th>
             <th>이메일</th>
-            <th>부서명</th>
-            <th>직위명</th>
-            <th>입사일자</th>
-            <th>퇴사일자</th>
+            <th>소속</th>
+            <th>직위</th>
+            <th>입사일</th>
+            <th>퇴사일</th>
         </tr>
         </thead>
         <tbody>
@@ -34,7 +34,7 @@
         <tr class="text-center">
             <td>
                 <!-- 번호 = 전체건수 - 시작인덱스 - 현재인덱스 + 1 -->
-                {{ user_list.paginator.count|sub:user_list.start_index|sub:forloop.counter0|add:1 }}
+                {{ forloop.counter }}
             </td>
             <td>{{ user.username }}</td>
             <td class="text-center">

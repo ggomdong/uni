@@ -34,7 +34,7 @@ def signup(request):
 def user_list(request):
     page = request.GET.get('page', '1')     # 페이지 default 값은 1
     kw = request.GET.get('kw', '')      # 검색어
-    query_set = User.objects.order_by('-date_joined')
+    query_set = User.objects.order_by('date_joined').exclude(username='admin')
     if kw:
         query_set = query_set.filter(       # icontains 는 대소문자 구별하지 않음 (contains는 구별)
             Q(username__icontains=kw) |     # ID 검색
@@ -44,7 +44,7 @@ def user_list(request):
             Q(email__icontains=kw)          # 이메일 검색
         ).distinct()
 
-    paginator = Paginator(query_set, 10)    # 페이지당 10개씩 보여주기
+    paginator = Paginator(query_set, 100)    # 페이지당 10개씩 보여주기
     page_obj = paginator.get_page(page)     # 해당 페이지의 데이터만 조회
     context = {'user_list': page_obj, 'page': page, 'kw': kw}
     return render(request, 'common/user_list.html', context)
@@ -63,8 +63,6 @@ def user_modify(request, user_id):
             return redirect('common:user_modify', user_id=user_id)
 
         if form.is_valid():
-            user = form.save(commit=False)
-            user.date_joined = timezone.now()
             user.save()
             return redirect('common:user_list')
     # 수정 버튼 클릭시 GET 방식으로 수정화면 호출

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3">
+    <div class="row my-3">
+        <div class="col-6">
+            <a href="{% url 'wtm:work_module_reg' %}" class="btn btn-primary">근무모듈 등록하기</a>
+        </div>
+    </div>
+    <table class="table">
+        <thead>
+        <tr class="text-center table-dark">
+            <th>번호</th>
+            <th>표시</th>
+            <th>구분</th>
+            <th>근무명</th>
+            <th>시업</th>
+            <th>종업</th>
+            <th>휴게시간1</th>
+            <th>휴게시간2</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% if work_module %}
+        {% for module in work_module %}
+        <tr class="text-center">
+            <td>
+                {{ forloop.counter }}
+            </td>
+            <td align="center">
+                <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
+                    {{ module.start_time }}
+                    {{ module.end_time }}
+                </div>
+            </td>
+            <td>{{ module.cat }}</td>
+            <td>
+                <a href="{% url 'wtm:work_module_modify' module.id %}">{{ module.name }}</a>
+            </td>
+            <td>{{ module.start_time }}</td>
+            <td>{{ module.end_time }}</td>
+            <td>
+                {% if module.rest1_start_time %}
+                {{module.rest1_start_time}}~{{module.rest1_end_time}}
+                {% endif %}
+            </td>
+            <td>
+                {% if module.rest2_start_time %}
+                {{module.rest2_start_time}}~{{module.rest2_end_time}}
+                {% endif %}
+            </td>
+            <td>
+                <a href="javascript:void(0)" class="delete btn btn-sm btn-danger"
+                   data-uri="{% url 'wtm:work_module_delete' module.id %}">삭제</a>
+            </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+            <td colspan="7" class="text-center">근태모듈이 없습니다.</td>
+        </tr>
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+const delete_elements = document.getElementsByClassName("delete");
+Array.from(delete_elements).forEach(function(element) {
+    element.addEventListener('click', function() {
+        if(confirm("정말 삭제하시겠습니까?")) {
+            location.href = this.dataset.uri;
+        };
+    });
+});
+</script>
+{% endblock %}
