@@ -45,4 +45,10 @@
     position: relative;
     width: 30px;
     height: 30px;
+    cursor: pointer;
+}
+
+select[readonly] {
+    background-color: #ddd;
+    pointer-events: none;
 }

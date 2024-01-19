@@ -4,7 +4,12 @@
 <div class="container my-3">
     <div class="row my-3">
         <div class="col-6">
-            <a href="{% url 'common:signup' %}" class="btn btn-primary">직원 등록하기</a>
+            <a href="{% url 'common:signup' %}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-add" viewBox="0 0 16 16">
+                  <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0Zm-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                  <path d="M2 13c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Z"/>
+                </svg>
+                직원 등록</a>
         </div>
         <div class="col-6">
             <div class="input-group">
@@ -18,14 +23,26 @@
     <table class="table">
         <thead>
         <tr class="text-center table-dark">
-            <th>번호</th>
-            <th>ID</th>
-            <th>성명</th>
-            <th>이메일</th>
-            <th>소속</th>
-            <th>직위</th>
-            <th>입사일</th>
-            <th>퇴사일</th>
+            <th class="table-primary" colspan="6">기본정보</th>
+            <th class="table-secondary" colspan="12">근로계약</th>
+        </tr>
+        <tr class="text-center">
+            <th class="table-primary">번호</th>
+            <th class="table-primary">성명</th>
+            <th class="table-primary">소속</th>
+            <th class="table-primary">직위</th>
+            <th class="table-primary">입사일</th>
+            <th class="table-primary">퇴사일</th>
+            <th class="table-secondary">기준일</th>
+            <th class="table-secondary">근무형태</th>
+            <th class="table-secondary">근태확인</th>
+            <th class="table-secondary">월</th>
+            <th class="table-secondary">화</th>
+            <th class="table-secondary">수</th>
+            <th class="table-secondary">목</th>
+            <th class="table-secondary">금</th>
+            <th class="table-secondary">토</th>
+            <th class="table-secondary">일</th>
         </tr>
         </thead>
         <tbody>
@@ -33,24 +50,43 @@
         {% for user in user_list %}
         <tr class="text-center">
             <td>
-                <!-- 번호 = 전체건수 - 시작인덱스 - 현재인덱스 + 1 -->
                 {{ forloop.counter }}
             </td>
-            <td>{{ user.username }}</td>
             <td class="text-center">
                 <a href="{% url 'common:user_modify' user.id %}">{{ user.emp_name }}</a>
             </td>
-            <td>{{ user.email }}</td>
             <td>{{ user.dept }}</td>
             <td>{{ user.position }}</td>
-            <!-- 년월일이 아닌 -로 표기하기 위함  (기존)2023년 11월 16일 (변경)2023-11-16  -->
             <td>{{ user.join_date|date:'Y-m-d' }}</td>
             <td>{{ user.out_date|date:'Y-m-d' }}</td>
+            <td>{{ user.stand_date|date:'Y-m-d' }}
+            <td>{{ user.type|default_if_none:'' }}</td>
+            <td>{{ user.check_yn|default_if_none:'' }}</td>
+
+            {% for key, value in day_of_the_week.items %}
+            <td align="center">
+                <!-- user.key로 사용할 수 없기 때문에, index 값을 가져오는 filter를 활용해서 key에 맞는 값을 세팅 -->
+                {% with user|get_index:key as module_id %}
+                    {% for module in module_list %}
+                    {% if module.id == module_id %}
+                    <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
+                        {% if module.cat == 'OFF' %}
+                            -
+                        {% else %}
+                            {{ module.start_time }}
+                            {{ module.end_time }}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                {% endwith %}
+            </td>
+            {% endfor %}
         </tr>
         {% endfor %}
         {% else %}
-        <tr>
-            <td colspan="4">직원이 없습니다.</td>
+        <tr class="text-center">
+            <td colspan="18">직원이 없습니다.</td>
         </tr>
         {% endif %}
         </tbody>

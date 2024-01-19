@@ -6,6 +6,8 @@ from django.db.models import Q
 from django.utils import timezone
 from .forms import UserForm, UserModifyForm
 from .models import User
+from wtm.models import Module, Contract
+from django.db import connection
 
 
 def page_not_found(request, exception):
@@ -34,7 +36,47 @@ def signup(request):
 def user_list(request):
     page = request.GET.get('page', '1')     # 페이지 default 값은 1
     kw = request.GET.get('kw', '')      # 검색어
-    query_set = User.objects.order_by('date_joined').exclude(username='admin')
+    #query_set = User.objects.order_by('date_joined').exclude(username='admin')
+
+    # query_set = User.objects.filter(
+    #     Q(user_id__isnull=True) | Q(user_id__isnull=False)
+    # ).filter(is_superuser=0).order_by('id')
+
+    # query_set = User.objects.raw(
+    #     "select a.emp_name, b.stand_date from common_user a LEFT OUTER JOIN wtm_contract b on (a.id = b.user_id)"
+    # )
+
+    raw_query = '''
+        select u.id, u.emp_name, u.dept, u.position, u.join_date, u.out_date,
+                c.stand_date, c.type, c.check_yn, c.mon_id as mon, c.tue_id as tue, c.wed_id as wed,
+                c.thu_id as thu, c.fri_id as fri, c.sat_id as sat, c.sun_id as sun
+        from common_user u LEFT OUTER JOIN (select * from wtm_contract where (user_id, stand_date) in
+                (select user_id, max(stand_date) from wtm_contract where stand_date <= NOW() group by user_id) ) c
+                on (u.id = c.user_id)
+        where u.is_superuser = false 
+        order by u.date_joined
+        '''
+
+    with connection.cursor() as cursor:
+        cursor.execute(raw_query)
+        results = cursor.fetchall()
+
+        x = cursor.description
+        query_set = []
+        for r in results:
+            i = 0
+            d = {}
+            while i < len(x):
+                d[x[i][0]] = r[i]
+                i = i + 1
+            query_set.append(d)
+
+
+
+    # print(query_set.query)
+
+    print(query_set)
+
     if kw:
         query_set = query_set.filter(       # icontains 는 대소문자 구별하지 않음 (contains는 구별)
             Q(username__icontains=kw) |     # ID 검색
@@ -46,7 +88,9 @@ def user_list(request):
 
     paginator = Paginator(query_set, 100)    # 페이지당 10개씩 보여주기
     page_obj = paginator.get_page(page)     # 해당 페이지의 데이터만 조회
-    context = {'user_list': page_obj, 'page': page, 'kw': kw}
+
+    module_list = Module.objects.all()
+    context = {'user_list': page_obj, 'module_list': module_list, 'page': page, 'kw': kw}
     return render(request, 'common/user_list.html', context)
 
 
@@ -69,5 +113,9 @@ def user_modify(request, user_id):
     else:
         # 내용이 유지되어야 하므로, instance=user 와 같이 생성
         form = UserModifyForm(instance=user)
-        context = {'form': form}
-        return render(request, 'common/user_modify.html', context)
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    module_list = Module.objects.all()
+    contract_list = Contract.objects.filter(user_id=user_id)
+    context = {'form': form, 'module_list': module_list, 'contract_list': contract_list, 'user_id': user_id}
+    return render(request, 'common/user_modify.html', context)

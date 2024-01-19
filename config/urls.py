@@ -16,7 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from pybo.views import base_views
+import wtm.views as views
+from django.views.generic.base import RedirectView
 
 admin.site.site_header = 'YOU&I Admin'      # 사이트명
 admin.site.site_title = 'You&I Admin'       # 브라우저 title 명
@@ -24,7 +25,8 @@ admin.site.index_title = '웹사이트 관리'        # 관리화면 메뉴명
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', base_views.index, name='index'),
+    path('', RedirectView.as_view(url='https://wsnuni114.co.kr')),
+    path('index/', views.index, name='index'),
     path('api/', include('api.urls')),
     path('pybo/', include('pybo.urls')),
     path('common/', include('common.urls')),

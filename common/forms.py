@@ -9,7 +9,19 @@ class UserForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ("username", "password1", "password2", "email", "emp_name", "dept", "position", "join_date", "out_date")
+        fields = ("username", "password1", "password2", "emp_name", "email", "dept", "position", "join_date", "out_date")
+
+        labels = {
+            'username': 'ID',
+            'password1': '비밀번호',
+            'password2': '비밀번호 확인',
+            'emp_name': '직원명',
+            'email': '이메일',
+            'dept': '부서명',
+            'position': '직위명',
+            'join_date': '입사일자',
+            'out_date': '퇴사일자',
+        }
 
 
 class UserModifyForm(UserChangeForm):
@@ -17,4 +29,14 @@ class UserModifyForm(UserChangeForm):
 
     class Meta:
         model = User
-        fields = ("username", "email", "emp_name", "dept", "position", "join_date", "out_date")
+        fields = ("username", "emp_name", "email", "dept", "position", "join_date", "out_date")
+
+        labels = {
+            'username': 'ID',
+            'emp_name': '직원명',
+            'email': '이메일',
+            'dept': '부서명',
+            'position': '직위명',
+            'join_date': '입사일자',
+            'out_date': '퇴사일자',
+        }

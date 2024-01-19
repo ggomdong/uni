@@ -4,56 +4,27 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
 from common.models import User
-from .models import Work, Module
-from .forms import ModuleForm
+from .models import Work, Module, Contract
+from .forms import ModuleForm, ContractForm
 from django.utils import timezone
+import common.context_processors
 import datetime
 import calendar
 
-weekday = ['월', '화', '수', '목', '금', '토', '일']
-categories = ['정규근무', '탄력근무', '휴일근무']
-times = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
-         '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-         '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00',
-         '21:30', '22:00', '22:30', '23:00', '23:30']
-module_colors = {
-    1: 'crimson',
-    2: 'orange',
-    3: 'yellow',
-    4: 'limegreen',
-    5: 'skyblue',
-    6: 'cornflowerblue',
-    7: 'slateblue',
-    8: 'darkkhaki',
-    9: 'violet',
-    10: 'teal',
-    11: 'white',
-}
-
 
 @login_required(login_url='common:login')
-def work_list(request):
-    obj = Work.objects.select_related('user').filter().values('user__username', 'user__emp_name', 'work_code', 'record_date')
-    year = 2023
-    month = 2
-    maxday = calendar.monthrange(year, month)[1]
-    day = weekday[calendar.monthrange(year, month)[0]]
-    print(maxday)
-    print(day)
-    # for day in datetime.datetime.date(2023, 11):
-    #     print(day)
-    # for i in obj:
-    #     print(i['record_date'].strftime('%H%M'))
+def index(request):
+    obj = Module.objects.all()
 
-    context = {'work_list': obj}
-    return render(request, 'wtm/work_list.html', context)
+    context = {'work_module': obj}
+    return render(request, 'wtm/index.html', context)
 
 
 @login_required(login_url='common:login')
 def work_module(request):
     obj = Module.objects.all()
 
-    context = {'work_module': obj, 'module_colors': module_colors}
+    context = {'work_module': obj}
     return render(request, 'wtm/work_module.html', context)
 
 
@@ -72,8 +43,7 @@ def work_module_reg(request):
     else:
         form = ModuleForm()
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    context = {'form': form, 'module_colors': module_colors, 'categories': categories,
-               'times': times}
+    context = {'form': form}
     return render(request, 'wtm/work_module_reg.html', context)
 
 
@@ -84,7 +54,7 @@ def work_module_modify(request, module_id):
     # if request.user != question.author:
     #     messages.error(request, '수정권한이 없습니다.')
     #     return redirect('pybo:detail', question_id=question_id)
-    # 수정화면에서 등록하기 버튼 클릭시 POST 방식으로 데이터 수정
+    # 수정화면에서 저장하기 버튼 클릭시 POST 방식으로 데이터 수정
     if request.method == 'POST':
         # 수정된 내용을 반영하기 위해, request에서 넘어온 값으로 덮어쓰라는 의미
         form = ModuleForm(request.POST, instance=module)
@@ -104,8 +74,7 @@ def work_module_modify(request, module_id):
         form = ModuleForm(instance=module)
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    context = {'form': form, 'module_colors': module_colors, 'categories': categories,
-               'times': times}
+    context = {'form': form}
     return render(request, 'wtm/work_module_reg.html', context)
 
 
@@ -120,13 +89,107 @@ def work_module_delete(request, module_id):
 
 
 @login_required(login_url='common:login')
+def work_contract_reg(request, user_id):
+    if request.method == 'POST':
+        form = ContractForm(request.POST)
+        if form.is_valid():
+            contract = form.save(commit=False)
+            contract.user_id = user_id
+            contract.reg_id = request.user
+            contract.reg_date = timezone.now()
+            contract.mod_id = request.user
+            contract.mod_date = timezone.now()
+            contract.save()
+            return redirect('common:user_modify', user_id=user_id)
+    else:
+        form = ContractForm()
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    target_user = get_object_or_404(User, pk=user_id)      # 근로계약 대상 표시를 위함
+    module_list = Module.objects.all()              # 근로모듈을 요일별로 입력하기 위함
+    context = {'form': form, 'target_user': target_user, 'module_list': module_list}
+    return render(request, 'wtm/work_contract_reg.html', context)
+
+
+@login_required(login_url='common:login')
+def work_contract_modify(request, contract_id):
+    contract = get_object_or_404(Contract, pk=contract_id)
+    # 수정시 포맷이 달라서 기준일자가 유지되지 않는 문제 해결을 위해 포맷을 미리 지정
+    contract.stand_date = contract.stand_date.strftime("%Y-%m-%d")
+    user_id = contract.user_id
+
+    # if request.user != question.author:
+    #     messages.error(request, '수정권한이 없습니다.')
+    #     return redirect('pybo:detail', question_id=question_id)
+    # 수정화면에서 저장하기 버튼 클릭시 POST 방식으로 데이터 수정
+    if request.method == 'POST':
+        # 수정된 내용을 반영하기 위해, request에서 넘어온 값으로 덮어쓰라는 의미
+        form = ContractForm(request.POST, instance=contract)
+
+        if not form.has_changed():
+            messages.error(request, '수정된 사항이 없습니다.')
+            return redirect('wtm:work_contract_modify', module_id=contract_id)
+        if form.is_valid():
+            contract = form.save(commit=False)
+            contract.mod_id = request.user
+            contract.mod_date = timezone.now()
+            contract.save()
+            return redirect('common:user_modify', user_id=user_id)
+    # GET 방식으로 수정화면 호출
+    else:
+        # 대상이 유지되어야 하므로, instance=contract 와 같이 생성
+        form = ContractForm(instance=contract)
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    target_user = get_object_or_404(User, pk=user_id)  # 근로계약 대상 표시를 위함
+    module_list = Module.objects.all()  # 근로모듈을 요일별로 입력하기 위함
+
+    context = {'form': form, 'target_user': target_user, 'module_list': module_list}
+    return render(request, 'wtm/work_contract_reg.html', context)
+
+
+@login_required(login_url='common:login')
+def work_contract_delete(request, contract_id):
+    contract = get_object_or_404(Contract, pk=contract_id)
+    user_id = contract.user_id
+    # if request.user != question.author:
+    #     messages.error(request, '삭제 권한이 없습니다.')
+    #     return redirect('pybo:detail', question_id=question.id)
+    contract.delete()
+    return redirect('common:user_modify', user_id=user_id)
+
+
+@login_required(login_url='common:login')
+def work_list(request):
+    obj = Work.objects.select_related('user').filter().values('user__username', 'user__emp_name', 'work_code', 'record_date')
+    year = 2023
+    month = 2
+
+    maxday = calendar.monthrange(year, month)[1]
+    day = weekday[calendar.monthrange(year, month)[0]]
+    print(maxday)
+    print(day)
+    # for day in datetime.datetime.date(2023, 11):
+    #     print(day)
+    # for i in obj:
+    #     print(i['record_date'].strftime('%H%M'))
+
+    context = {'work_list': obj}
+    return render(request, 'wtm/work_list.html', context)
+
+
+@login_required(login_url='common:login')
 def work_status(request):
-    pass
-    return
+    obj = Module.objects.all()
+
+    context = {'work_module': obj}
+    return render(request, 'wtm/work_status.html', context)
 
 
 @login_required(login_url='common:login')
 def work_log(request):
-    pass
-    return
+    obj = Module.objects.all()
+
+    context = {'work_module': obj}
+    return render(request, 'wtm/work_log.html', context)
 

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Module
+from .models import Module, Contract
 
 
 class ModuleForm(forms.ModelForm):
@@ -18,4 +18,23 @@ class ModuleForm(forms.ModelForm):
             'rest2_start_time': '휴게시간2(시작)',
             'rest2_end_time': '휴게시간2(종료)',
             'color': '색상',
+        }
+
+
+class ContractForm(forms.ModelForm):
+    class Meta:
+        model = Contract
+        fields = ['stand_date', 'type', 'check_yn', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+
+        labels = {
+            'stand_date': '기준일자',
+            'type': '근무형태',
+            'check_yn': '근태확인',
+            'mon': '월요일',
+            'tue': '화요일',
+            'wed': '수요일',
+            'thu': '목요일',
+            'fri': '금요일',
+            'sat': '토요일',
+            'sun': '일요일',
         }

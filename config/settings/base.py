@@ -83,6 +83,10 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'common.context_processors.get_day_of_the_week',
+                'common.context_processors.get_categories',
+                'common.context_processors.get_times',
+                'common.context_processors.get_module_colors',
             ],
         },
     },
@@ -156,8 +160,8 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # 로그인 관련 이동하는 URL
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/index/'
+LOGOUT_REDIRECT_URL = '/index/'
 
 AUTH_USER_MODEL = 'common.User'
 
