@@ -43,12 +43,12 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="join_date">입사일자</label>
-            <input type="date" class="form-control" name="join_date" id="join_date"
+            <input type="date" class="form-control" name="join_date" id="join_date" max="9999-12-31"
                    value="{{ form.join_date.value|date:'Y-m-d'|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="out_date">퇴사일자</label>
-            <input type="date" class="form-control" name="out_date" id="out_date"
+            <input type="date" class="form-control" name="out_date" id="out_date" max="9999-12-31"
                    value="{{ form.out_date.value|date:'Y-m-d'|default_if_none:'' }}">
         </div>
         <button type="submit" class="btn btn-primary">

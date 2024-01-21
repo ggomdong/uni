@@ -42,7 +42,16 @@
 .module_box {
     font-size: 10px;
     border: 1px solid gray;
-    position: relative;
+    //position: relative;
+    width: 30px;
+    height: 30px;
+    //cursor: pointer;
+}
+
+.module_box_select {
+    font-size: 10px;
+    border: 1px solid gray;
+    //position: relative;
     width: 30px;
     height: 30px;
     cursor: pointer;
@@ -51,4 +60,14 @@
 select[readonly] {
     background-color: #ddd;
     pointer-events: none;
+}
+
+.sticky-head-1 {
+    position: sticky;
+    top: 0px;
+}
+
+.sticky-head-2 {
+    position: sticky;
+    top: 40px;
 }

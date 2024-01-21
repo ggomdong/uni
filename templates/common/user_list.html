@@ -1,48 +1,67 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
 {% block content %}
+<form id="searchForm" method="get" action="{% url 'common:user_list' %}">
+{% csrf_token %}
 <div class="container my-3">
     <div class="row my-3">
-        <div class="col-6">
+        <input type="hidden" id="page" name="page" value="{{ page }}">
+        <div class="col-2">
+            <select class="form-select" name="work" id="work">
+                <option value="전체" {% if work == '전체' %} selected {% endif %}>전체</option>
+                <option value="재직자" {% if work == '재직자' %} selected {% endif %}>재직자</option>
+                <option value="퇴사자" {% if work == '퇴사자' %} selected {% endif %}>퇴사자</option>
+            </select>
+        </div>
+        <div class="col-2">
+            <select class="form-select" name="dept" id="dept">
+                <option value="전체">전체</option>
+                <option value="재직자" selected>재직자</option>
+                <option value="퇴사자">퇴사자</option>
+            </select>
+        </div>
+        <div class="col-2">
+            <select class="form-select" name="position" id="position">
+                <option value="전체">전체</option>
+                <option value="재직자" selected>재직자</option>
+                <option value="퇴사자">퇴사자</option>
+            </select>
+        </div>
+        <div class="col-6 text-end">
             <a href="{% url 'common:signup' %}" class="btn btn-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-add" viewBox="0 0 16 16">
                   <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0Zm-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
                   <path d="M2 13c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Z"/>
                 </svg>
-                직원 등록</a>
-        </div>
-        <div class="col-6">
-            <div class="input-group">
-                <input type="text" id="search_kw" class="form-control" value="{{ kw|default_if_none:'' }}">
-                <div class="input-group-append">
-                    <button class="btn btn-outline-secondary" type="button" id="btn_search">검색</button>
-                </div>
-            </div>
+                직원 등록
+            </a>
         </div>
     </div>
-    <table class="table">
+    </form>
+    <div style="height: 1000px; width: 100%; overflow: auto;">
+    <table class="table" style="position: relative;">
         <thead>
         <tr class="text-center table-dark">
-            <th class="table-primary" colspan="6">기본정보</th>
-            <th class="table-secondary" colspan="12">근로계약</th>
+            <th class="table-primary sticky-head-1" colspan="6">기본정보</th>
+            <th class="table-secondary sticky-head-1 " colspan="12">근로계약</th>
         </tr>
         <tr class="text-center">
-            <th class="table-primary">번호</th>
-            <th class="table-primary">성명</th>
-            <th class="table-primary">소속</th>
-            <th class="table-primary">직위</th>
-            <th class="table-primary">입사일</th>
-            <th class="table-primary">퇴사일</th>
-            <th class="table-secondary">기준일</th>
-            <th class="table-secondary">근무형태</th>
-            <th class="table-secondary">근태확인</th>
-            <th class="table-secondary">월</th>
-            <th class="table-secondary">화</th>
-            <th class="table-secondary">수</th>
-            <th class="table-secondary">목</th>
-            <th class="table-secondary">금</th>
-            <th class="table-secondary">토</th>
-            <th class="table-secondary">일</th>
+            <th class="table-primary sticky-head-2">번호</th>
+            <th class="table-primary sticky-head-2">성명</th>
+            <th class="table-primary sticky-head-2">소속</th>
+            <th class="table-primary sticky-head-2">직위</th>
+            <th class="table-primary sticky-head-2">입사일</th>
+            <th class="table-primary sticky-head-2">퇴사일</th>
+            <th class="table-secondary sticky-head-2">기준일</th>
+            <th class="table-secondary sticky-head-2">근무형태</th>
+            <th class="table-secondary sticky-head-2">근태확인</th>
+            <th class="table-secondary sticky-head-2">월</th>
+            <th class="table-secondary sticky-head-2">화</th>
+            <th class="table-secondary sticky-head-2">수</th>
+            <th class="table-secondary sticky-head-2">목</th>
+            <th class="table-secondary sticky-head-2">금</th>
+            <th class="table-secondary sticky-head-2">토</th>
+            <th class="table-secondary sticky-head-2">일</th>
         </tr>
         </thead>
         <tbody>
@@ -91,6 +110,7 @@
         {% endif %}
         </tbody>
     </table>
+    </div>
     <!-- 페이징 처리 시작 -->
     <ul class="pagination justify-content-center">
         <!-- 이전 페이지 -->
@@ -134,9 +154,6 @@
     </ul>
     <!-- 페이징처리 끝 -->
 </div>
-<form id="searchForm" method="get" action="{% url 'common:user_list' %}">
-    <input type="hidden" id="kw" name="kw" value="{{ kw|default_if_none:'' }}">
-    <input type="hidden" id="page" name="page" value="{{ page }}">
 </form>
 {% endblock %}
 {% block script %}
@@ -148,10 +165,10 @@ Array.from(page_elements).forEach(function(element) {
         document.getElementById('searchForm').submit();
     });
 });
-const btn_search = document.getElementById("btn_search");
-btn_search.addEventListener('click', function() {
-    document.getElementById('kw').value = document.getElementById('search_kw').value;
-    document.getElementById('page').value = 1   // 검색버튼 클릭 시 1페이지부터 조회
+
+const selectedWork = document.getElementById("work");
+selectedWork.addEventListener('change', function() {
+    document.getElementById('work').value = selectedWork.options[selectedWork.selectedIndex].value;
     document.getElementById('searchForm').submit();
 });
 </script>

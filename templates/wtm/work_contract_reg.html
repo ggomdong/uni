@@ -24,7 +24,7 @@
         {% include 'form_errors.html' %}
         <div class="mb-3 col-md-4">
             <label class="form-label" for="stand_date">기준일자</label>
-            <input type="date" class="form-control" name="stand_date" id="stand_date"
+            <input type="date" class="form-control" name="stand_date" id="stand_date" max="9999-12-31"
                    value="{{ form.stand_date.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
@@ -47,7 +47,7 @@
         </div>
         <div class="mb-3">
             <label class="form-label">근무요일 입력</label>
-            <table class="text-center">
+            <table class="text-center" style="border: 1px solid blue">
                 <tr>
                     <td rowspan="2" style="width: 80px; text-align: left;">①선택</td>
                     {% for module in module_list %}
@@ -57,7 +57,7 @@
                     </td>
                     <td>
                         <label class="form-label" for="{{module.id}}">
-                            <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
+                            <div class="module_box_select" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
                             {% if module.cat == 'OFF' %}
                                 -
                             {% else %}
@@ -82,7 +82,7 @@
                 </tr>
             </table>
             <div class="mb-4"></div>
-            <table class="text-center">
+            <table class="text-center" style="border: 1px solid red">
                 <tr>
                     <td rowspan="2" style="width: 80px; text-align: left;">②입력</td>
                     <!-- 요일 dictionary에서 영문 요일을 가져와서 반복한다 -->
@@ -93,7 +93,7 @@
                         <input type="hidden" class="form-control" name="{{key}}" id="{{key}}"
                                value="{{ day.value|default_if_none:'' }}">
                         <!-- form error 발생시 int가 string으로 변경되므로, add 필터로 숫자 변환해서 비교 -->
-                        <div class="module_box" id="insert_{{key}}" onclick="insert('{{key}}')"
+                        <div class="module_box_select" id="insert_{{key}}" onclick="insert('{{key}}')"
                             {% for module in module_list %}
                             {% if module.id == day.value|add:"0" %}
                             style="background-color: {{ module_colors|get_index:module.color }};"
@@ -101,8 +101,12 @@
                             {% endfor %}>
                             {% for module in module_list %}
                             {% if module.id == day.value|add:"0" %}
-                            {{ module.start_time }}
-                            {{ module.end_time }}
+                                {% if module.cat == 'OFF' %}
+                                    -
+                                {% else %}
+                                    {{ module.start_time }}
+                                    {{ module.end_time }}
+                                {% endif %}
                             {% endif %}
                             {% endfor %}
                         </div>

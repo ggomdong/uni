@@ -3,7 +3,6 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.utils import timezone
 from .forms import UserForm, UserModifyForm
 from .models import User
 from wtm.models import Module, Contract
@@ -34,28 +33,46 @@ def signup(request):
 
 @login_required(login_url='common:login')
 def user_list(request):
+    order_by = request.GET.get('order_by', 'join_date')
+    work = request.GET.get('work', '재직자')
     page = request.GET.get('page', '1')     # 페이지 default 값은 1
-    kw = request.GET.get('kw', '')      # 검색어
     #query_set = User.objects.order_by('date_joined').exclude(username='admin')
 
-    # query_set = User.objects.filter(
-    #     Q(user_id__isnull=True) | Q(user_id__isnull=False)
-    # ).filter(is_superuser=0).order_by('id')
+    print(work)
+    match work:
+        case '전체':
+            work_condition = '1=1'
+        case '퇴사자':
+            work_condition = 'out_date is not null'
+        case _:
+            work_condition = 'out_date is null'
 
-    # query_set = User.objects.raw(
-    #     "select a.emp_name, b.stand_date from common_user a LEFT OUTER JOIN wtm_contract b on (a.id = b.user_id)"
-    # )
-
+    # User를 메인으로 Contract를 LEFT OUTER JOIN 하여, 계약이 있는 경우에만 리스트에 보여줌
+    # 1. 현재(NOW())보다 과거인 기준일이 존재하면 max(과거 기준일)
+    # 2. 현재(NOW())보다 과거인 기준일이 없으면 min(미래 기준일)
+    # SQL에 조건을 넣기가 애매해서, 1,2를 union한 후 min 값을 얻는 걸로 구현함
     raw_query = '''
-        select u.id, u.emp_name, u.dept, u.position, u.join_date, u.out_date,
+        SELECT u.id, u.emp_name, u.dept, u.position, u.join_date, u.out_date,
                 c.stand_date, c.type, c.check_yn, c.mon_id as mon, c.tue_id as tue, c.wed_id as wed,
                 c.thu_id as thu, c.fri_id as fri, c.sat_id as sat, c.sun_id as sun
-        from common_user u LEFT OUTER JOIN (select * from wtm_contract where (user_id, stand_date) in
-                (select user_id, max(stand_date) from wtm_contract where stand_date <= NOW() group by user_id) ) c
-                on (u.id = c.user_id)
-        where u.is_superuser = false 
-        order by u.date_joined
-        '''
+        FROM common_user u LEFT OUTER JOIN (SELECT * FROM wtm_contract WHERE (user_id, stand_date) in
+            (
+                SELECT a.user_id, min(a.stand_date)
+                FROM 
+                (
+                    SELECT user_id, max(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() GROUP BY user_id
+                    UNION
+                    SELECT user_id, min(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() GROUP BY user_id
+                    ) a
+                    group by a.user_id
+                ) 
+            ) c
+            ON (u.id = c.user_id)
+        WHERE is_superuser = false and {work_condition}
+        ORDER BY {order_by}
+        '''.format(work_condition=work_condition, order_by=order_by)
+
+    print(raw_query)
 
     with connection.cursor() as cursor:
         cursor.execute(raw_query)
@@ -71,26 +88,13 @@ def user_list(request):
                 i = i + 1
             query_set.append(d)
 
-
-
-    # print(query_set.query)
-
     print(query_set)
-
-    if kw:
-        query_set = query_set.filter(       # icontains 는 대소문자 구별하지 않음 (contains는 구별)
-            Q(username__icontains=kw) |     # ID 검색
-            Q(emp_name__icontains=kw) |     # 직원명 검색
-            Q(dept__icontains=kw) |         # 부서명 검색
-            Q(position__icontains=kw) |     # 직위명 검색
-            Q(email__icontains=kw)          # 이메일 검색
-        ).distinct()
 
     paginator = Paginator(query_set, 100)    # 페이지당 10개씩 보여주기
     page_obj = paginator.get_page(page)     # 해당 페이지의 데이터만 조회
 
     module_list = Module.objects.all()
-    context = {'user_list': page_obj, 'module_list': module_list, 'page': page, 'kw': kw}
+    context = {'user_list': page_obj, 'module_list': module_list, 'page': page, 'work': work}
     return render(request, 'common/user_list.html', context)
 
 
@@ -116,6 +120,6 @@ def user_modify(request, user_id):
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     module_list = Module.objects.all()
-    contract_list = Contract.objects.filter(user_id=user_id)
+    contract_list = Contract.objects.filter(user_id=user_id).order_by('-stand_date')
     context = {'form': form, 'module_list': module_list, 'contract_list': contract_list, 'user_id': user_id}
     return render(request, 'common/user_modify.html', context)
