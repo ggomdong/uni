@@ -1,9 +1,9 @@
 .flex-container {
   display: flex;
-  //justify-content: center;
   flex-wrap: wrap;
 }
 
+/* 선택상자 div의 스타일을 정의 */
 .styled-radio {
   margin-right: 2px;
   width: 30px;
@@ -11,6 +11,7 @@
   border: 1px solid gray;
 }
 
+/* 보이지 않는 radio의 스타일을 정의 */
 .invisible-radio {
   /* per https://a11yproject.com/posts/how-to-hide-content/ */
   position: absolute;
@@ -21,6 +22,7 @@
   clip: rect(1px, 1px, 1px, 1px);
 }
 
+/* 체크된 invisible-radio 인접 label에 속한 styled-radio 에는 새로운 content를 추가 */
 .invisible-radio:checked + label .styled-radio::after {
   content: '✓';
   font-size: 1em;
@@ -31,30 +33,34 @@
   text-align: center;
 }
 
+/* 체크 안된 invisible-radio 인접 label은 손모양 커서로 변경 */
 .invisible-radio:not(:checked) + label {
   cursor: pointer;
 }
 
+/* 체크 안된 invisible-radio 인접 label에 mouse over 하면 styled-radio의 투명도를 0.7로 세팅 */
 .invisible-radio:not(:checked) + label:hover .styled-radio {
   opacity: 0.7;
 }
 
+/* 근무모듈 div의 스타일 정의 */
 .module_box {
     font-size: 10px;
     border: 1px solid gray;
-    //position: relative;
     width: 30px;
     height: 30px;
-    //cursor: pointer;
+    margin: 0 auto;     /* div 가운데 정렬 */
 }
 
-.module_box_select {
-    font-size: 10px;
-    border: 1px solid gray;
-    //position: relative;
-    width: 30px;
-    height: 30px;
-    cursor: pointer;
+/* 체크 안된 invisible-radio 인접 label에 mouse over 하면 label에 속한 module_box의 투명도를 0.7로 변경 */
+.invisible-radio:not(:checked) + label:hover .module_box {
+  opacity: 0.7;
+}
+
+/* 체크된 invisible-radio 인접 label에 속한 module_box의 바깥 테두리를 빨간색으로 변경 */
+.invisible-radio:checked + label .module_box {
+  outline: 3px solid red;
+  /* color: blue; */
 }
 
 select[readonly] {

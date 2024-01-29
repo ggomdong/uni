@@ -47,17 +47,17 @@
         </div>
         <div class="mb-3">
             <label class="form-label">근무요일 입력</label>
-            <table class="text-center" style="border: 1px solid blue">
+            <table class="text-center">
                 <tr>
                     <td rowspan="2" style="width: 80px; text-align: left;">①선택</td>
                     {% for module in module_list %}
                     {% if module.cat == '정규근무' or module.cat == 'OFF' %}
-                    <td>
-                        <input type="radio" class="radio" name="module" id="{{module.id}}" value="{{module.id}}">
-                    </td>
-                    <td>
+                    <td style="width: 50px;">
+                        <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
+<!--                    </td>-->
+<!--                    <td>-->
                         <label class="form-label" for="{{module.id}}">
-                            <div class="module_box_select" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
+                            <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
                             {% if module.cat == 'OFF' %}
                                 -
                             {% else %}
@@ -73,7 +73,7 @@
                 <tr style="font-size: 10px">
                     {% for module in module_list %}
                     {% if module.cat == '정규근무' or module.cat == 'OFF' %}
-                    <td></td>
+<!--                    <td></td>-->
                     <td>
                         {{ module.name }}
                     </td>
@@ -82,18 +82,18 @@
                 </tr>
             </table>
             <div class="mb-4"></div>
-            <table class="text-center" style="border: 1px solid red">
+            <table class="text-center">
                 <tr>
                     <td rowspan="2" style="width: 80px; text-align: left;">②입력</td>
                     <!-- 요일 dictionary에서 영문 요일을 가져와서 반복한다 -->
                     {% for key, value in day_of_the_week.items %}
-                    <td>
+                    <td style="width: 50px;">
                         <!-- 수정시, form의 필드를 가져오는 filter를 활용해서 key에 맞는 값을 세팅한다. -->
                         {% with form|get_index:key as day %}
                         <input type="hidden" class="form-control" name="{{key}}" id="{{key}}"
                                value="{{ day.value|default_if_none:'' }}">
                         <!-- form error 발생시 int가 string으로 변경되므로, add 필터로 숫자 변환해서 비교 -->
-                        <div class="module_box_select" id="insert_{{key}}" onclick="insert('{{key}}')"
+                        <div class="module_box" style="cursor: pointer;" id="insert_{{key}}" onclick="insert('{{key}}')"
                             {% for module in module_list %}
                             {% if module.id == day.value|add:"0" %}
                             style="background-color: {{ module_colors|get_index:module.color }};"

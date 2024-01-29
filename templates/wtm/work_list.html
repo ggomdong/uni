@@ -3,87 +3,48 @@
 {% block content %}
 <div class="container my-3">
     <div class="row my-3">
-        <div class="col-6">
-            <div class="input-group">
-                <input type="text" id="search_kw" class="form-control" value="{{ kw|default_if_none:'' }}">
-                <div class="input-group-append">
-                    <button class="btn btn-outline-secondary" type="button" id="btn_search">검색</button>
-                </div>
-            </div>
-        </div>
+        {% now "o n" %}월
     </div>
-    <table class="table">
+    <table class="table text-center">
         <thead>
-        <tr class="text-center table-dark">
-            <th>번호</th>
-            <th>ID</th>
-            <th>직원명</th>
-            <th>근태구분</th>
-            <th>시간</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% if work_list %}
-        {% for work in work_list %}
-        <tr class="text-center">
+        {% if day_list %}
+        <tr>
+            <td></td>
+            {% for key, value in day_list.items %}
             <td>
-                {{ forloop.counter }}
+                {% if value == '일' %}
+                <font color="red">
+                {{ key }}
+                </font>
+                {% else %}
+                {{ key }}
+                {% endif %}
             </td>
-            <td>{{ work.user__username }}</td>
-            <td>{{ work.user__emp_name }}</td>
-            <td>{{ work.work_code }}</td>
-            <td>{{ work.record_date|date:'Y-m-d H:i:s' }}</td>
+            {% endfor %}
         </tr>
-        {% endfor %}
+        <tr>
+            <td></td>
+            {% for key, value in day_list.items %}
+            <td>
+                {% if value == '일' %}
+                <font color="red">
+                {{ value }}
+                </font>
+                {% else %}
+                {{ value }}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
         {% else %}
         <tr>
             <td colspan="5" class="text-center">근태기록이 없습니다.</td>
         </tr>
         {% endif %}
+        </thead>
+        <tbody>
         </tbody>
     </table>
-    <!-- 페이징 처리 시작 -->
-    <ul class="pagination justify-content-center">
-        <!-- 이전 페이지 -->
-        {% if work_list.has_previous %}
-        <li class="page-item">
-            <a class="page-link" data-page="{{ work_list.previous_page_number }}"
-               href="javascript:void(0)">이전</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled">
-            <a class="page-link" tabindex="-1" aria-disabled="true" href="#">이전</a>
-        </li>
-        {% endif %}
-        <!-- 페이지 리스트 -->
-        {% for page_number in work_list.paginator.page_range %}
-        {% if page_number >= work_list.number|add:-5 and page_number <= work_list.number|add:5 %}
-        {% if page_number == work_list.number %}
-        <li class="page-item active" aria-current="page">
-            <a class="page-link" data-page="{{ page_number }}"
-               href="javascript:void(0)">{{ page_number }}</a>
-        </li>
-        {% else %}
-        <li class="page-item">
-            <a class="page-link" data-page="{{ page_number }}"
-               href="javascript:void(0)">{{ page_number }}</a>
-        </li>
-        {% endif %}
-        {% endif %}
-        {% endfor %}
-        <!-- 다음 페이지 -->
-        {% if work_list.has_next %}
-        <li class="page-item">
-            <a class="page-link" data-page="{{ work_list.next_page_number }}"
-               href="javascript:void(0)">다음</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled">
-            <a class="page-link" tabindex="-1" aria-disabled="true" href="#">다음</a>
-        </li>
-        {% endif %}
-    </ul>
-    <!-- 페이징처리 끝 -->
 </div>
 <form id="searchForm" method="get" action="{% url 'wtm:work_list' %}">
     <input type="hidden" id="kw" name="kw" value="{{ kw|default_if_none:'' }}">
@@ -92,18 +53,5 @@
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
-const page_elements = document.getElementsByClassName("page-link")
-Array.from(page_elements).forEach(function(element) {
-    element.addEventListener('click', function() {
-        document.getElementById('page').value = this.dataset.page;
-        document.getElementById('searchForm').submit();
-    });
-});
-const btn_search = document.getElementById("btn_search");
-btn_search.addEventListener('click', function() {
-    document.getElementById('kw').value = document.getElementById('search_kw').value;
-    document.getElementById('page').value = 1   // 검색버튼 클릭 시 1페이지부터 조회
-    document.getElementById('searchForm').submit();
-});
 </script>
 {% endblock %}

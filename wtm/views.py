@@ -7,8 +7,8 @@ from common.models import User
 from .models import Work, Module, Contract
 from .forms import ModuleForm, ContractForm
 from django.utils import timezone
-import common.context_processors
-import datetime
+from common import context_processors
+from datetime import datetime
 import calendar
 
 
@@ -161,20 +161,25 @@ def work_contract_delete(request, contract_id):
 
 @login_required(login_url='common:login')
 def work_list(request):
-    obj = Work.objects.select_related('user').filter().values('user__username', 'user__emp_name', 'work_code', 'record_date')
-    year = 2023
-    month = 2
+    day_of_the_week = list(context_processors.day_of_the_week.values())   # ['월', '화', '수', '목', '금', '토', '일']
+    now = datetime.today()  # 오늘 : 2024-01-24 23:08:13.697803
+    year = now.year         # 연도 : 2024
+    month = now.month       # 월 : 1
+    last_day = calendar.monthrange(year, month)[1]    # 이번달 말일 : 31
+    first_weekday = datetime(year, month, 1).weekday()  # 이번달 첫날 요일값 : 0
+    day_list = {}
+    for i in range(last_day):
+        # 날짜, 요일 쌍을 dictionary에 저장
+        day_list[str(i+1)] = day_of_the_week[first_weekday]
+        # 6(일)이면 0(월) 으로 변경, 아니면 1을 더함
+        if first_weekday == 6:
+            first_weekday = 0
+        else:
+            first_weekday += 1
 
-    maxday = calendar.monthrange(year, month)[1]
-    day = weekday[calendar.monthrange(year, month)[0]]
-    print(maxday)
-    print(day)
-    # for day in datetime.datetime.date(2023, 11):
-    #     print(day)
-    # for i in obj:
-    #     print(i['record_date'].strftime('%H%M'))
+    print(day_list)
 
-    context = {'work_list': obj}
+    context = {'day_list': day_list}
     return render(request, 'wtm/work_list.html', context)
 
 
