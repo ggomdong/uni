@@ -8,23 +8,25 @@
         <input type="hidden" id="page" name="page" value="{{ page }}">
         <div class="col-2">
             <select class="form-select" name="work" id="work">
-                <option value="전체" {% if work == '전체' %} selected {% endif %}>전체</option>
-                <option value="재직자" {% if work == '재직자' %} selected {% endif %}>재직자</option>
-                <option value="퇴사자" {% if work == '퇴사자' %} selected {% endif %}>퇴사자</option>
+                <option value="전체" {% if search_work == '전체' %} selected {% endif %}>전체(재직여부)</option>
+                <option value="재직자" {% if search_work == '재직자' %} selected {% endif %}>재직자</option>
+                <option value="퇴사자" {% if search_work == '퇴사자' %} selected {% endif %}>퇴사자</option>
             </select>
         </div>
         <div class="col-2">
             <select class="form-select" name="dept" id="dept">
-                <option value="전체">전체</option>
-                <option value="재직자" selected>재직자</option>
-                <option value="퇴사자">퇴사자</option>
+                <option value="전체" {% if search_dept == '전체' %} selected {% endif %}>전체(부서)</option>
+                {% for dept in dept_list %}
+                <option value="{{dept}}" {% if search_dept == dept %} selected {% endif %}>{{dept}}</option>
+                {% endfor %}
             </select>
         </div>
         <div class="col-2">
             <select class="form-select" name="position" id="position">
-                <option value="전체">전체</option>
-                <option value="재직자" selected>재직자</option>
-                <option value="퇴사자">퇴사자</option>
+                <option value="전체" {% if search_position == '전체' %} selected {% endif %}>전체(직위)</option>
+                {% for position in position_list %}
+                <option value="{{position}}" {% if search_position == position %} selected {% endif %}>{{position}}</option>
+                {% endfor %}
             </select>
         </div>
         <div class="col-6 text-end">
@@ -168,7 +170,16 @@ Array.from(page_elements).forEach(function(element) {
 
 const selectedWork = document.getElementById("work");
 selectedWork.addEventListener('change', function() {
-    document.getElementById('work').value = selectedWork.options[selectedWork.selectedIndex].value;
+    document.getElementById('searchForm').submit();
+});
+
+const selectedDept = document.getElementById("dept");
+selectedDept.addEventListener('change', function() {
+    document.getElementById('searchForm').submit();
+});
+
+const selectedPosition = document.getElementById("position");
+selectedPosition.addEventListener('change', function() {
     document.getElementById('searchForm').submit();
 });
 </script>

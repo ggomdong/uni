@@ -14,6 +14,11 @@ def get_index(object_list, index):
 
 
 @register.filter
+def concat_string(value1, value2):
+    return str(value1) + str(value2)
+
+
+@register.filter
 def to_int(value):
     return int(value)
 

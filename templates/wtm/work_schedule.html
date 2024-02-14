@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3">
+    <div class="row my-3">
+        <div class="col-10 text-bg-dark text-center">
+            <h5>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-left-fill" viewBox="0 0 16 16">
+                  <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
+                </svg> &nbsp;&nbsp;
+                {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"5:6" }}월
+                &nbsp;&nbsp;
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-right-fill" viewBox="0 0 16 16">
+                  <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+                </svg>
+            </h5>
+        </div>
+        <div class="col-2 text-bg-dark text-end">
+            <a href="{% url 'wtm:work_schedule_reg' stand_ym %}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                </svg>
+                신규
+            </a>
+        </div>
+    </div>
+    <table class="table text-center table-borderless table-sm">
+        <thead>
+        {% if day_list %}
+        <tr>
+            <td></td>
+            {% for key, value in day_list.items %}
+            <td>
+                {% if value == '일' %}
+                <font color="red">
+                {{ key }}
+                </font>
+                {% else %}
+                {{ key }}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td></td>
+            {% for key, value in day_list.items %}
+            <td>
+                {% if value == '일' %}
+                <font color="red">
+                {{ value }}
+                </font>
+                {% else %}
+                {{ value }}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="text-center">근무표가 없습니다.</td>
+        </tr>
+        {% endif %}
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+</script>
+{% endblock %}

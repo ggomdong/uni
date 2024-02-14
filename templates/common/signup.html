@@ -32,13 +32,19 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="dept">부서명</label>
-            <input type="text" class="form-control" name="dept" id="dept"
-                   value="{{ form.dept.value|default_if_none:'' }}">
+            <select class="form-select" name="dept" id="dept">
+                {% for dept in dept_list %}
+                <option value="{{dept}}">{{dept}}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="position">직위명</label>
-            <input type="text" class="form-control" name="position" id="position"
-                   value="{{ form.position.value|default_if_none:'' }}">
+            <select class="form-select" name="position" id="position">
+                {% for position in position_list %}
+                <option value="{{position}}">{{position}}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="join_date">입사일자</label>

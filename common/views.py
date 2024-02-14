@@ -3,10 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
-from .forms import UserForm, UserModifyForm
-from .models import User
-from wtm.models import Module, Contract
 from django.db import connection
+from django.forms import modelformset_factory
+from .forms import UserForm, UserModifyForm, CodeForm
+from .models import User, Code
+from wtm.models import Module, Contract
+from django.utils import timezone
 
 
 def page_not_found(request, exception):
@@ -23,29 +25,50 @@ def signup(request):
             # raw_password = form.cleaned_data.get('password1')
             # user = authenticate(username=username, password=raw_password)   # 사용자 인증
             # login(request, user)    # 로그인 처리
-            return redirect('common:user_list')
+
+            # 직원 등록 후 바로 근로계약을 입력할 수 있도록 수정화면으로 이동.
+            # 이를 위해 지금 등록한 user의 id를 얻어야 하므로, 가장 최근 유저의 id를 가져옴.
+            user = User.objects.last()
+            return redirect('wtm:work_contract_reg', user_id=user.id)
     else:
         form = UserForm()
+
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    context = {'form': form}
+    dept_list = list(Code.objects.filter(code_name='부서').values_list('value', flat=True).order_by('order'))
+    position_list = list(Code.objects.filter(code_name='직위').values_list('value', flat=True).order_by('order'))
+    context = {'form': form, 'dept_list': dept_list, 'position_list': position_list}
     return render(request, 'common/signup.html', context)
 
 
 @login_required(login_url='common:login')
 def user_list(request):
     order_by = request.GET.get('order_by', 'join_date')
-    work = request.GET.get('work', '재직자')
+    search_work = request.GET.get('work', '재직자')
+    search_dept = request.GET.get('dept', '전체')
+    search_position = request.GET.get('position', '전체')
     page = request.GET.get('page', '1')     # 페이지 default 값은 1
     #query_set = User.objects.order_by('date_joined').exclude(username='admin')
 
-    print(work)
-    match work:
+    #print(work)
+    match search_work:
         case '전체':
             work_condition = '1=1'
         case '퇴사자':
             work_condition = 'out_date is not null'
         case _:
             work_condition = 'out_date is null'
+
+    match search_dept:
+        case '전체':
+            dept_condition = '1=1'
+        case _:
+            dept_condition = 'dept = "{}"'.format(search_dept)
+
+    match search_position:
+        case '전체':
+            position_condition = '1=1'""
+        case _:
+            position_condition = 'position = "{}"'.format(search_position)
 
     # User를 메인으로 Contract를 LEFT OUTER JOIN 하여, 계약이 있는 경우에만 리스트에 보여줌
     # 1. 현재(NOW())보다 과거인 기준일이 존재하면 max(과거 기준일)
@@ -68,11 +91,14 @@ def user_list(request):
                 ) 
             ) c
             ON (u.id = c.user_id)
-        WHERE is_superuser = false and {work_condition}
+        WHERE is_superuser = false 
+            and {work_condition}
+            and {dept_condition}
+            and {position_condition}
         ORDER BY {order_by}
-        '''.format(work_condition=work_condition, order_by=order_by)
+        '''.format(work_condition=work_condition, dept_condition=dept_condition, position_condition=position_condition, order_by=order_by)
 
-    print(raw_query)
+    #print(raw_query)
 
     with connection.cursor() as cursor:
         cursor.execute(raw_query)
@@ -88,13 +114,18 @@ def user_list(request):
                 i = i + 1
             query_set.append(d)
 
-    print(query_set)
+    #print(query_set)
 
     paginator = Paginator(query_set, 100)    # 페이지당 10개씩 보여주기
     page_obj = paginator.get_page(page)     # 해당 페이지의 데이터만 조회
 
+    dept_list = list(Code.objects.filter(code_name='부서').values_list('value', flat=True).order_by('order'))
+    position_list = list(Code.objects.filter(code_name='직위').values_list('value', flat=True).order_by('order'))
+
     module_list = Module.objects.all()
-    context = {'user_list': page_obj, 'module_list': module_list, 'page': page, 'work': work}
+    context = {'user_list': page_obj, 'dept_list': dept_list, 'position_list': position_list,
+               'module_list': module_list, 'page': page,
+               'search_work': search_work, 'search_dept': search_dept, 'search_position': search_position}
     return render(request, 'common/user_list.html', context)
 
 
@@ -119,7 +150,50 @@ def user_modify(request, user_id):
         form = UserModifyForm(instance=user)
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    dept_list = list(Code.objects.filter(code_name='부서').values_list('value', flat=True).order_by('order'))
+    position_list = list(Code.objects.filter(code_name='직위').values_list('value', flat=True).order_by('order'))
     module_list = Module.objects.all()
     contract_list = Contract.objects.filter(user_id=user_id).order_by('-stand_date')
-    context = {'form': form, 'module_list': module_list, 'contract_list': contract_list, 'user_id': user_id}
+    context = {'form': form, 'dept_list': dept_list, 'position_list': position_list,
+               'module_list': module_list, 'contract_list': contract_list, 'user_id': user_id}
     return render(request, 'common/user_modify.html', context)
+
+
+@login_required(login_url='common:login')
+def code_list(request):
+    search = request.GET.get('search', '전체')
+
+    CodeFormSet = modelformset_factory(model=Code, form=CodeForm, extra=1, can_delete=True)
+
+    if request.method == 'POST':
+        formset = CodeFormSet(request.POST)
+        if not formset.has_changed():
+            messages.error(request, '수정된 사항이 없습니다.')
+            return redirect('common:code_list')
+
+        if formset.is_valid():
+            codes = formset.save(commit=False)
+
+            for obj in formset.deleted_objects:
+                obj.delete()
+
+            for code in codes:
+                code.reg_id = request.user
+                code.reg_date = timezone.now()
+                code.mod_id = request.user
+                code.mod_date = timezone.now()
+                code.save()
+
+            return redirect('common:code_list')
+    else:
+        if search == '전체':
+            qs = CodeFormSet(queryset=Code.objects.order_by('code_name', 'order'))
+        else:
+            qs = CodeFormSet(queryset=Code.objects.order_by('code_name', 'order').filter(code_name=search))
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    # 코드명 검색을 위해 QuerySet을 해당값만으로 리스트 구성(flat)하고, 중복제거(distinct)
+    formset = qs
+    code_name_list = list(Code.objects.values_list('code_name', flat=True).distinct())  # [부서, 직위]
+    context = {'formset': formset, 'code_name_list': code_name_list, 'search': search}
+    return render(request, 'common/code_list.html', context)

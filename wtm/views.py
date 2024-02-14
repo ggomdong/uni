@@ -4,12 +4,12 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
 from common.models import User
-from .models import Work, Module, Contract
-from .forms import ModuleForm, ContractForm
+from .models import Work, Module, Contract, Schedule
+from .forms import ModuleForm, ContractForm, ScheduleForm
+from django.forms import modelformset_factory
 from django.utils import timezone
 from common import context_processors
 from datetime import datetime
-import calendar
 
 
 @login_required(login_url='common:login')
@@ -160,27 +160,42 @@ def work_contract_delete(request, contract_id):
 
 
 @login_required(login_url='common:login')
-def work_list(request):
-    day_of_the_week = list(context_processors.day_of_the_week.values())   # ['월', '화', '수', '목', '금', '토', '일']
-    now = datetime.today()  # 오늘 : 2024-01-24 23:08:13.697803
-    year = now.year         # 연도 : 2024
-    month = now.month       # 월 : 1
-    last_day = calendar.monthrange(year, month)[1]    # 이번달 말일 : 31
-    first_weekday = datetime(year, month, 1).weekday()  # 이번달 첫날 요일값 : 0
-    day_list = {}
-    for i in range(last_day):
-        # 날짜, 요일 쌍을 dictionary에 저장
-        day_list[str(i+1)] = day_of_the_week[first_weekday]
-        # 6(일)이면 0(월) 으로 변경, 아니면 1을 더함
-        if first_weekday == 6:
-            first_weekday = 0
-        else:
-            first_weekday += 1
+def work_schedule(request):
+    now = str(datetime.today().year) + str(datetime.today().month).zfill(2)
+    # 기준년월 값이 없으면 현재로 세팅
+    stand_ym = request.GET.get('stand_ym', now)
+    day_list = context_processors.get_day_list(stand_ym)
+    # print(day_list)
 
-    print(day_list)
+    context = {'day_list': day_list, 'stand_ym': stand_ym}
+    return render(request, 'wtm/work_schedule.html', context)
 
-    context = {'day_list': day_list}
-    return render(request, 'wtm/work_list.html', context)
+
+@login_required(login_url='common:login')
+def work_schedule_reg(request, yearmonth):
+    ScheduleFormSet = modelformset_factory(Schedule, form=ScheduleForm, can_delete=False, edit_only='_all_')
+    if request.method == 'POST':
+        formset = ScheduleFormSet(request.POST)
+
+        for form in formset:
+            if form.is_valid():
+                schedule = form.save(commit=False)
+                schedule.reg_id = request.user
+                schedule.reg_date = timezone.now()
+                schedule.mod_id = request.user
+                schedule.mod_date = timezone.now()
+                schedule.save()
+                return redirect('wtm:work_schedule', yearmonth=yearmonth)
+    else:
+        formset = ScheduleFormSet()
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    day_list = context_processors.get_day_list('202402')
+    user_list = User.objects.filter(out_date__isnull=True, is_superuser=False)
+    contract = Contract.objects.all()      # 근로계약 대상 표시를 위함
+    module_list = Module.objects.all()     # 근로모듈을 입력하기 위함
+    context = {'formset': formset, 'day_list': day_list, 'user_list': user_list, 'contract': contract, 'module_list': module_list}
+    return render(request, 'wtm/work_schedule_reg.html', context)
 
 
 @login_required(login_url='common:login')

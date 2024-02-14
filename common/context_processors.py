@@ -1,3 +1,6 @@
+from datetime import datetime
+import calendar
+
 day_of_the_week = {'mon': '월', 'tue': '화', 'wed': '수', 'thu': '목', 'fri': '금', 'sat': '토', 'sun': '일', }
 categories = ['정규근무', '휴일근무', '유급휴무', 'OFF']
 times = ['-', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
@@ -33,3 +36,23 @@ def get_times(self):
 
 def get_module_colors(self):
     return {'module_colors': module_colors}
+
+
+def get_day_list(yearmonth):
+    #day_of_the_week = list(day_of_the_week.values())  # ['월', '화', '수', '목', '금', '토', '일']
+    #now = datetime.today()  # 오늘 : 2024-01-24 23:08:13.697803
+    year = int(yearmonth[0:4])  # 연도 : 2024
+    month = int(yearmonth[4:6])  # 월 : 1
+    last_day = calendar.monthrange(year, month)[1]  # 이번달 말일 : 31
+    first_weekday = datetime(year, month, 1).weekday()  # 이번달 첫날 요일값 : 0
+    day_list = {}
+    for i in range(last_day):
+        # 날짜, 요일 쌍을 dictionary에 저장
+        day_list[str(i + 1)] = list(day_of_the_week.values())[first_weekday]
+        # 6(일)이면 0(월) 으로 변경, 아니면 1을 더함
+        if first_weekday == 6:
+            first_weekday = 0
+        else:
+            first_weekday += 1
+
+    return day_list

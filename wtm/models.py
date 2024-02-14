@@ -38,6 +38,48 @@ class Contract(models.Model):
     mod_date = models.DateTimeField()
 
 
+# 근무표
+class Schedule(models.Model):
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name='sch_user_id', null=True)
+    year = models.CharField(max_length=4)
+    month = models.CharField(max_length=2)
+    d1 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d1')
+    d2 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d2')
+    d3 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d3')
+    d4 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d4')
+    d5 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d5')
+    d6 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d6')
+    d7 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d7')
+    d8 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d8')
+    d9 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d9')
+    d10 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d10')
+    d11 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d11')
+    d12 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d12')
+    d13 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d13')
+    d14 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d14')
+    d15 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d15')
+    d16 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d16')
+    d17 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d17')
+    d18 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d18')
+    d19 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d19')
+    d20 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d20')
+    d21 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d21')
+    d22 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d22')
+    d23 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d23')
+    d24 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d24')
+    d25 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d25')
+    d26 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d26')
+    d27 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d27')
+    d28 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d28')
+    d29 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d29')
+    d30 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d30')
+    d31 = models.ForeignKey(Module, on_delete=models.PROTECT, null=True, blank=True, related_name='d31')
+    reg_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='sch_reg_id')
+    reg_date = models.DateTimeField()
+    mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='sch_mod_id')
+    mod_date = models.DateTimeField()
+
+
 # 근태로그
 class Work(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)

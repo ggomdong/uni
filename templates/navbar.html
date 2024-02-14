@@ -20,7 +20,7 @@
                     <a class="nav-link" href="{% url 'wtm:work_module' %}">근무모듈</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'wtm:work_list' %}">근무표</a>
+                    <a class="nav-link" href="{% url 'wtm:work_schedule' %}">근무표</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'wtm:work_status' %}">근태현황</a>
@@ -33,8 +33,8 @@
                     설정
                   </a>
                   <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="#">코드입력</a>
-                    <a class="dropdown-item" href="#">설정1</a>
+                    <a class="dropdown-item" href="{% url 'common:code_list' %}">코드관리</a>
+                    <a class="dropdown-item" href="#">공휴일관리</a>
                     <hr class="dropdown-divider">
                     <a class="dropdown-item" href="#">설정2</a>
                   </div>

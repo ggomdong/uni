@@ -12,7 +12,8 @@ urlpatterns = [
     path('contract_reg/<int:user_id>', views.work_contract_reg, name='work_contract_reg'),
     path('contract_modify/<int:contract_id>/', views.work_contract_modify, name='work_contract_modify'),
     path('contract_delete/<int:contract_id>/', views.work_contract_delete, name='work_contract_delete'),
-    path('list/', views.work_list, name='work_list'),
+    path('schedule/', views.work_schedule, name='work_schedule'),
+    path('schedule_reg/<str:yearmonth>/', views.work_schedule_reg, name='work_schedule_reg'),
     path('status/', views.work_status, name='work_status'),
     path('log/', views.work_log, name='work_log'),
 ]

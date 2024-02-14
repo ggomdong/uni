@@ -14,3 +14,13 @@ class User(AbstractUser):
     position.verbose_name = "직위명"
     join_date.verbose_name = "입사일자"
     out_date.verbose_name = "퇴사일자"
+
+
+class Code(models.Model):
+    code_name = models.CharField(max_length=20)  # 코드명
+    value = models.CharField(max_length=50) # 코드값
+    order = models.IntegerField(null=True, blank=True)  # 출력순서
+    reg_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='code_reg_id')
+    reg_date = models.DateTimeField()
+    mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='code_mod_id')
+    mod_date = models.DateTimeField()

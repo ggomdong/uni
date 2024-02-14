@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<form method="post">
+<div class="container my-3">
+    <div class="my-3">
+    <table class="text-center">
+        <tr>
+            {% for module in module_list %}
+            <td style="width: 50px;">
+                <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
+                <label class="form-label" for="{{module.id}}">
+                    <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
+                        {% if module.cat == '휴일근무' %}
+                        <font color="blue">
+                            {{ module.start_time }}
+                            {{ module.end_time }}
+                        </font>
+                        {% elif module.cat == '유급휴무' %}
+                        {{ module.name|slice:"0:2" }}
+                        {{ module.name|slice:"2:4" }}
+                        {% elif module.cat == 'OFF' %}
+                        -<br>
+                        &nbsp;
+                        {% else %}
+                        {{ module.start_time }}
+                        {{ module.end_time }}
+                        {% endif %}
+                    </div>
+                </label>
+            </td>
+            {% endfor %}
+        </tr>
+        <tr style="font-size: 10px">
+            {% for module in module_list %}
+            <td>
+                {{ module.name }}
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
+    </div>
+    <hr>
+    <div class="my-3">
+    <table class="table text-center table-borderless table-sm">
+        {% if day_list %}
+        <tr>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            {% for key, value in day_list.items %}
+            <td>
+                {% if value == '일' %}
+                <font color="red">
+                {{ key }}
+                </font>
+                {% else %}
+                {{ key }}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td></td>
+            {% for key, value in day_list.items %}
+            <td>
+                {% if value == '일' %}
+                <font color="red">
+                {{ value }}
+                </font>
+                {% else %}
+                {{ value }}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endif %}
+        {% if user_list %}
+        {% for user in user_list %}
+        {% for form in formset %}
+        <tr>
+            <td>
+                {{ user.emp_name }}
+            </td>
+            <td>
+                <div class="module_box" style="cursor: pointer;" id="insert_{{key}}" onclick="insert('{{key}}')"
+                    {% for module in module_list %}
+                    {% if module.id == form.d1.value|add:"0" %}
+                    style="background-color: {{ module_colors|get_index:module.color }};"
+                    {% endif %}
+                    {% endfor %}>
+                    {% for module in module_list %}
+                    {% if module.id == form.d1.value|add:"0" %}
+                        {% if module.cat == 'OFF' %}
+                            -
+                        {% else %}
+                            {{ module.start_time }}
+                            {{ module.end_time }}
+                        {% endif %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </td>
+            <td>
+                {{ form.d2 }}
+            </td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+        {% endif %}
+    </table>
+    </div>
+</div>
+</form>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+function insert(target) {
+    // target은 요일 값임 ex) mon, tue, wed, thu, fri, sat, sun 중 하나
+
+    try {
+        // ①선택 근무요일의 module.id를 가져온다.
+        const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked").value;
+
+        // ①선택 모듈박스를 가져온다.
+        const moduleBoxSelected = document.getElementById("select"+moduleIdSelected);
+
+        // ②입력 모듈박스를 가져와서, 내용 및 색상을 모듈박스의 것으로 세팅한다.
+        const moduleBoxInsert = document.getElementById("insert_"+target);
+        moduleBoxInsert.innerHTML = moduleBoxSelected.innerHTML;
+        moduleBoxInsert.style.backgroundColor = moduleBoxSelected.style.backgroundColor;
+
+        // DB에 모듈을 저장하기 위해 해당 요일의 form element의 값을 세팅한다.
+        const day_of_the_week = document.getElementById(target);
+        day_of_the_week.value = moduleIdSelected;
+    } catch (e) {
+        alert("①선택 에서 근무모듈을 먼저 선택하세요.");
+        return;
+    }
+};
+</script>
+{% endblock %}

@@ -19,7 +19,7 @@
         <div class="mb-3 col-md-4">
             <label class="form-label" for="username">ID(휴대폰 번호)</label>
             <input type="text" class="form-control" name="username" id="username"
-                   disabled value="{{ form.username.value|default_if_none:'' }}">
+                   value="{{ form.username.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="emp_name">직원명</label>
@@ -33,13 +33,19 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="dept">부서명</label>
-            <input type="text" class="form-control" name="dept" id="dept"
-                   value="{{ form.dept.value|default_if_none:'' }}">
+            <select class="form-select" name="dept" id="dept">
+                {% for dept in dept_list %}
+                <option value="{{dept}}" {% if form.dept.value == dept %} selected {% endif %}>{{dept}}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="position">직위명</label>
-            <input type="text" class="form-control" name="position" id="position"
-                   value="{{ form.position.value|default_if_none:'' }}">
+            <select class="form-select" name="position" id="position">
+                {% for position in position_list %}
+                <option value="{{position}}" {% if form.position.value == position %} selected {% endif %}>{{position}}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="join_date">입사일자</label>
