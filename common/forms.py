@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 # from django.contrib.auth.models import User
-from .models import User, Code
+from .models import User, Dept, Position, Code
 
 # 속성 추가를 위해 UserCreationForm 사용
 class UserForm(UserCreationForm):
@@ -39,6 +39,38 @@ class UserModifyForm(UserChangeForm):
             'position': '직위명',
             'join_date': '입사일자',
             'out_date': '퇴사일자',
+        }
+
+
+class DeptForm(forms.ModelForm):
+    class Meta:
+        model = Dept
+        fields = ['dept_name', 'order']
+
+        labels = {
+            'dept_name': '부서명',
+            'order': '출력순서',
+        }
+
+        widgets = {
+            'dept_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'order': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class PositionForm(forms.ModelForm):
+    class Meta:
+        model = Position
+        fields = ['position_name', 'order']
+
+        labels = {
+            'position_name': '직위명',
+            'order': '출력순서',
+        }
+
+        widgets = {
+            'position_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'order': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 

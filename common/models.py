@@ -16,6 +16,24 @@ class User(AbstractUser):
     out_date.verbose_name = "퇴사일자"
 
 
+class Dept(models.Model):
+    dept_name = models.CharField(max_length=20)  # 부서명
+    order = models.IntegerField(null=True, blank=True)  # 출력순서
+    reg_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='dept_reg_id')
+    reg_date = models.DateTimeField()
+    mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='dept_mod_id')
+    mod_date = models.DateTimeField()
+
+
+class Position(models.Model):
+    position_name = models.CharField(max_length=20)  # 직위명
+    order = models.IntegerField(null=True, blank=True)  # 출력순서
+    reg_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='position_reg_id')
+    reg_date = models.DateTimeField()
+    mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='position_mod_id')
+    mod_date = models.DateTimeField()
+
+
 class Code(models.Model):
     code_name = models.CharField(max_length=20)  # 코드명
     value = models.CharField(max_length=50) # 코드값

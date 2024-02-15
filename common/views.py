@@ -5,8 +5,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db import connection
 from django.forms import modelformset_factory
-from .forms import UserForm, UserModifyForm, CodeForm
-from .models import User, Code
+from .forms import UserForm, UserModifyForm, DeptForm, PositionForm, CodeForm
+from .models import User, Dept, Position, Code
 from wtm.models import Module, Contract
 from django.utils import timezone
 
@@ -34,8 +34,8 @@ def signup(request):
         form = UserForm()
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    dept_list = list(Code.objects.filter(code_name='부서').values_list('value', flat=True).order_by('order'))
-    position_list = list(Code.objects.filter(code_name='직위').values_list('value', flat=True).order_by('order'))
+    dept_list = list(Dept.objects.values_list('dept_name', flat=True).order_by('order'))
+    position_list = list(Position.objects.values_list('position_name', flat=True).order_by('order'))
     context = {'form': form, 'dept_list': dept_list, 'position_list': position_list}
     return render(request, 'common/signup.html', context)
 
@@ -119,8 +119,8 @@ def user_list(request):
     paginator = Paginator(query_set, 100)    # 페이지당 10개씩 보여주기
     page_obj = paginator.get_page(page)     # 해당 페이지의 데이터만 조회
 
-    dept_list = list(Code.objects.filter(code_name='부서').values_list('value', flat=True).order_by('order'))
-    position_list = list(Code.objects.filter(code_name='직위').values_list('value', flat=True).order_by('order'))
+    dept_list = list(Dept.objects.values_list('dept_name', flat=True).order_by('order'))
+    position_list = list(Position.objects.values_list('position_name', flat=True).order_by('order'))
 
     module_list = Module.objects.all()
     context = {'user_list': page_obj, 'dept_list': dept_list, 'position_list': position_list,
@@ -150,13 +150,77 @@ def user_modify(request, user_id):
         form = UserModifyForm(instance=user)
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    dept_list = list(Code.objects.filter(code_name='부서').values_list('value', flat=True).order_by('order'))
-    position_list = list(Code.objects.filter(code_name='직위').values_list('value', flat=True).order_by('order'))
+    dept_list = list(Dept.objects.values_list('dept_name', flat=True).order_by('order'))
+    position_list = list(Position.objects.values_list('position_name', flat=True).order_by('order'))
     module_list = Module.objects.all()
     contract_list = Contract.objects.filter(user_id=user_id).order_by('-stand_date')
     context = {'form': form, 'dept_list': dept_list, 'position_list': position_list,
                'module_list': module_list, 'contract_list': contract_list, 'user_id': user_id}
     return render(request, 'common/user_modify.html', context)
+
+
+@login_required(login_url='common:login')
+def dept_list(request):
+    DeptFormSet = modelformset_factory(model=Dept, form=DeptForm, extra=1, can_delete=True)
+
+    if request.method == 'POST':
+        formset = DeptFormSet(request.POST)
+        if not formset.has_changed():
+            messages.error(request, '수정된 사항이 없습니다.')
+            return redirect('common:dept_list')
+
+        if formset.is_valid():
+            depts = formset.save(commit=False)
+
+            for obj in formset.deleted_objects:
+                obj.delete()
+
+            for dept in depts:
+                dept.reg_id = request.user
+                dept.reg_date = timezone.now()
+                dept.mod_id = request.user
+                dept.mod_date = timezone.now()
+                dept.save()
+
+            return redirect('common:dept_list')
+    else:
+        formset = DeptFormSet()
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    context = {'formset': formset}
+    return render(request, 'common/dept_list.html', context)
+
+
+@login_required(login_url='common:login')
+def position_list(request):
+    PositionFormSet = modelformset_factory(model=Position, form=PositionForm, extra=1, can_delete=True)
+
+    if request.method == 'POST':
+        formset = PositionFormSet(request.POST)
+        if not formset.has_changed():
+            messages.error(request, '수정된 사항이 없습니다.')
+            return redirect('common:position_list')
+
+        if formset.is_valid():
+            positions = formset.save(commit=False)
+
+            for obj in formset.deleted_objects:
+                obj.delete()
+
+            for position in positions:
+                position.reg_id = request.user
+                position.reg_date = timezone.now()
+                position.mod_id = request.user
+                position.mod_date = timezone.now()
+                position.save()
+
+            return redirect('common:position_list')
+    else:
+        formset = PositionFormSet()
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    context = {'formset': formset}
+    return render(request, 'common/position_list.html', context)
 
 
 @login_required(login_url='common:login')
