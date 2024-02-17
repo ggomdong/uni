@@ -76,7 +76,7 @@ def user_list(request):
     # SQL에 조건을 넣기가 애매해서, 1,2를 union한 후 min 값을 얻는 걸로 구현함
     raw_query = '''
         SELECT u.id, u.emp_name, u.dept, u.position, u.join_date, u.out_date,
-                c.stand_date, c.type, c.check_yn, c.mon_id as mon, c.tue_id as tue, c.wed_id as wed,
+                c.id as cid, c.stand_date, c.type, c.check_yn, c.mon_id as mon, c.tue_id as tue, c.wed_id as wed,
                 c.thu_id as thu, c.fri_id as fri, c.sat_id as sat, c.sun_id as sun
         FROM common_user u LEFT OUTER JOIN (SELECT * FROM wtm_contract WHERE (user_id, stand_date) in
             (

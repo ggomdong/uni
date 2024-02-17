@@ -80,7 +80,13 @@
             <td>{{ user.position }}</td>
             <td>{{ user.join_date|date:'Y-m-d' }}</td>
             <td>{{ user.out_date|date:'Y-m-d' }}</td>
-            <td>{{ user.stand_date|date:'Y-m-d' }}
+            <td>
+                {% if user.cid == '' %}
+                {{ user.stand_date|date:'Y-m-d' }}
+                {% else %}
+                <a href="{% url 'wtm:work_contract_modify' user.cid %}">{{ user.stand_date|date:'Y-m-d' }}</a>
+                {% endif %}
+            </td>
             <td>{{ user.type|default_if_none:'' }}</td>
             <td>{{ user.check_yn|default_if_none:'' }}</td>
 
