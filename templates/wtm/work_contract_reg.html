@@ -93,12 +93,12 @@
                         <input type="hidden" class="form-control" name="{{key}}" id="{{key}}"
                                value="{{ day.value|default_if_none:'' }}">
                         <!-- form error 발생시 int가 string으로 변경되므로, add 필터로 숫자 변환해서 비교 -->
-                        <div class="module_box" id="insert_{{key}}" onclick="insert('{{key}}')"
+                        <div class="module_box" id="insert_{{key}}" onclick="insert('{{key}}')" style="cursor: pointer;
                             {% for module in module_list %}
                             {% if module.id == day.value|add:"0" %}
-                            style="cursor: pointer; background-color: {{ module_colors|get_index:module.color }};"
+                            background-color: {{ module_colors|get_index:module.color }};"
                             {% endif %}
-                            {% endfor %}>
+                            {% endfor %}">
                             {% for module in module_list %}
                             {% if module.id == day.value|add:"0" %}
                                 {% if module.cat == 'OFF' %}

@@ -14,7 +14,7 @@ urlpatterns = [
     path(r'^contract_modify/(?P<contract_id>[0-9]*)/$', views.work_contract_modify, name='work_contract_modify'),
     path('contract_delete/<int:contract_id>/', views.work_contract_delete, name='work_contract_delete'),
     path('schedule/', views.work_schedule, name='work_schedule'),
-    path('schedule_reg/<str:yearmonth>/', views.work_schedule_reg, name='work_schedule_reg'),
+    path('schedule_reg/<str:stand_ym>/', views.work_schedule_reg, name='work_schedule_reg'),
     path('status/', views.work_status, name='work_status'),
     path('log/', views.work_log, name='work_log'),
 ]

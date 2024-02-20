@@ -3,6 +3,21 @@
 {% block content %}
 <form method="post">
 <div class="container my-3">
+    <div class="row my-3">
+        <div class="col-10 text-bg-dark text-center">
+            <h5>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-left-fill" viewBox="0 0 16 16">
+                  <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
+                </svg> &nbsp;&nbsp;
+                {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"5:6" }}월
+                &nbsp;&nbsp;
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-right-fill" viewBox="0 0 16 16">
+                  <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+                </svg>
+            </h5>
+        </div>
+    </div>
+
     <div class="my-3">
     <table class="text-center">
         <tr>
@@ -75,13 +90,15 @@
         {% endif %}
         {% if user_list %}
         {% for user in user_list %}
-        {% for form in formset %}
         <tr>
             <td>
                 {{ user.emp_name }}
             </td>
+            {% for key, value in day_list.items %}
             <td>
-                <div class="module_box" style="cursor: pointer;" id="insert_{{key}}" onclick="insert('{{key}}')"
+                <input type="hidden" name="sch_{{user.id}}_{{key}}" id="sch_{{user.id}}_{{key}}"
+                               value="">
+                <div class="module_box" style="cursor: pointer;" id="insert_{{user.id}}_{{key}}" onclick="insert('{{user.id}}_{{key}}')"
                     {% for module in module_list %}
                     {% if module.id == form.d1.value|add:"0" %}
                     style="background-color: {{ module_colors|get_index:module.color }};"
@@ -99,11 +116,8 @@
                     {% endfor %}
                 </div>
             </td>
-            <td>
-                {{ form.d2 }}
-            </td>
+            {% endfor %}
         </tr>
-        {% endfor %}
         {% endfor %}
         {% endif %}
     </table>
@@ -114,25 +128,25 @@
 {% block script %}
 <script type="text/javascript">
 function insert(target) {
-    // target은 요일 값임 ex) mon, tue, wed, thu, fri, sat, sun 중 하나
+    // target은 "user.id"_"일" 값임 ex) 1_1, 1_31,
 
     try {
-        // ①선택 근무요일의 module.id를 가져온다.
+        // 선택모듈의 module.id를 가져온다.
         const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked").value;
 
-        // ①선택 모듈박스를 가져온다.
+        // 선택모듈을 가져온다.
         const moduleBoxSelected = document.getElementById("select"+moduleIdSelected);
 
-        // ②입력 모듈박스를 가져와서, 내용 및 색상을 모듈박스의 것으로 세팅한다.
+        // 입력모듈을 가져와서, 내용 및 색상을 선택한 선택모듈의 것으로 세팅한다.
         const moduleBoxInsert = document.getElementById("insert_"+target);
         moduleBoxInsert.innerHTML = moduleBoxSelected.innerHTML;
         moduleBoxInsert.style.backgroundColor = moduleBoxSelected.style.backgroundColor;
 
-        // DB에 모듈을 저장하기 위해 해당 요일의 form element의 값을 세팅한다.
-        const day_of_the_week = document.getElementById(target);
-        day_of_the_week.value = moduleIdSelected;
+        // DB에 저장하기 위해 선택모듈의 module.id를 해당 form element(hidden)에 세팅한다.
+        const moduleInput = document.getElementById("sch_"+target);
+        moduleInput.value = moduleIdSelected;
     } catch (e) {
-        alert("①선택 에서 근무모듈을 먼저 선택하세요.");
+        alert("상단 근무모듈을 먼저 선택하세요.");
         return;
     }
 };

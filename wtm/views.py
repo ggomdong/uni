@@ -172,29 +172,32 @@ def work_schedule(request):
 
 
 @login_required(login_url='common:login')
-def work_schedule_reg(request, yearmonth):
-    ScheduleFormSet = modelformset_factory(Schedule, form=ScheduleForm, can_delete=False, edit_only='_all_')
-    if request.method == 'POST':
-        formset = ScheduleFormSet(request.POST)
+def work_schedule_reg(request, stand_ym):
+    day_list = context_processors.get_day_list(stand_ym)  # ex) {'1':'목', '2':'금', ..., '31':'토'}
 
-        for form in formset:
-            if form.is_valid():
-                schedule = form.save(commit=False)
-                schedule.reg_id = request.user
-                schedule.reg_date = timezone.now()
-                schedule.mod_id = request.user
-                schedule.mod_date = timezone.now()
-                schedule.save()
-                return redirect('wtm:work_schedule', yearmonth=yearmonth)
-    else:
-        formset = ScheduleFormSet()
+    # schedule_date : 근무표 기준일, 입사일자가 근무표 기준일 이전인 직원만을 대상으로 하기 위함
+    schedule_date = datetime.strptime(stand_ym+'01', '%Y%m%d')
+    user_list = User.objects.filter(out_date__isnull=True, is_superuser=False, join_date__lte=schedule_date).order_by('join_date').values()
+
+    # if request.method == 'POST':
+    #     formset = ScheduleFormSet(request.POST)
+    #
+    #     for form in formset:
+    #         if form.is_valid():
+    #             schedule = form.save(commit=False)
+    #             schedule.reg_id = request.user
+    #             schedule.reg_date = timezone.now()
+    #             schedule.mod_id = request.user
+    #             schedule.mod_date = timezone.now()
+    #             schedule.save()
+    #             return redirect('wtm:work_schedule', yearmonth=yearmonth)
+    # else:
+    #     formset = ScheduleFormSet(initial=user_list)
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    day_list = context_processors.get_day_list('202402')
-    user_list = User.objects.filter(out_date__isnull=True, is_superuser=False)
     contract = Contract.objects.all()      # 근로계약 대상 표시를 위함
     module_list = Module.objects.all()     # 근로모듈을 입력하기 위함
-    context = {'formset': formset, 'day_list': day_list, 'user_list': user_list, 'contract': contract, 'module_list': module_list}
+    context = {'day_list': day_list, 'user_list': user_list, 'contract': contract, 'module_list': module_list}
     return render(request, 'wtm/work_schedule_reg.html', context)
 
 
