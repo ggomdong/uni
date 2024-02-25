@@ -3,10 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db import connection
 from common.models import User
 from .models import Work, Module, Contract, Schedule
 from .forms import ModuleForm, ContractForm, ScheduleForm
-from django.forms import modelformset_factory
 from django.utils import timezone
 from common import context_processors
 from datetime import datetime
@@ -165,39 +165,155 @@ def work_schedule(request):
     # 기준년월 값이 없으면 현재로 세팅
     stand_ym = request.GET.get('stand_ym', now)
     day_list = context_processors.get_day_list(stand_ym)
-    # print(day_list)
+    schedule_list = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+    module_list = Module.objects.all()  # 근로모듈
 
-    context = {'day_list': day_list, 'stand_ym': stand_ym}
+    context = {'schedule_list': schedule_list, 'day_list': day_list, 'module_list': module_list, 'stand_ym': stand_ym}
     return render(request, 'wtm/work_schedule.html', context)
 
 
 @login_required(login_url='common:login')
 def work_schedule_reg(request, stand_ym):
+
+    if request.method == 'POST':
+        # html form에서 넘어오는 값은 'sch_"user_id"_"day"': 'value' 형태임
+        # 이를 Schedule 테이블에 user단위로 넣기 위해 schedule_row라는 dict로 정리하고,
+        # 해당 row를 담을 schedule_list를 만든다.
+        schedule_list = []
+        schedule_row = {
+            'user_id': None, 'd1': None, 'd2': None, 'd3': None, 'd4': None, 'd5': None, 'd6': None, 'd7': None,
+            'd8': None, 'd9': None, 'd10': None, 'd11': None, 'd12': None, 'd13': None, 'd14': None, 'd15': None,
+            'd16': None, 'd17': None, 'd18': None, 'd19': None, 'd20': None, 'd21': None, 'd22': None, 'd23': None,
+            'd24': None, 'd25': None, 'd26': None, 'd27': None, 'd28': None, 'd29': None, 'd30': None, 'd31': None,
+        }
+
+        for key, value in request.POST.items():
+            # sch로 시작하는 key만 대상으로 함
+            if key.startswith('sch'):
+                # 최초 schedule_row['user_id'] 값을 세팅
+                if schedule_row['user_id'] == None:
+                    schedule_row['user_id'] = key.split("_")[1]
+                # user_id가 바뀌면 schedule_row를 list에 넣어준다. 이때 참조가 아닌 값으로 넣기위해 copy를 선행함
+                elif schedule_row['user_id'] != key.split("_")[1]:
+                    dummy = schedule_row.copy()
+                    schedule_list.append(dummy)
+                    # schedule_row['user_id']를 바뀐 값으로 세팅
+                    schedule_row['user_id'] = key.split("_")[1]
+
+                schedule_row["d" + key.split("_")[2]] = (None if value == '' else Module.objects.get(id=value))
+
+        # 마지막 요소를 list에 추가
+        dummy = schedule_row.copy()
+        schedule_list.append(dummy)
+        # print(schedule_list)
+
+        for schedule in schedule_list:
+            obj = Schedule(
+                user_id=schedule['user_id'],
+                year=stand_ym[0:4],
+                month=stand_ym[4:6],
+                d1=schedule['d1'],
+                d2=schedule['d2'],
+                d3=schedule['d3'],
+                d4=schedule['d4'],
+                d5=schedule['d5'],
+                d6=schedule['d6'],
+                d7=schedule['d7'],
+                d8=schedule['d8'],
+                d9=schedule['d9'],
+                d10=schedule['d10'],
+                d11=schedule['d11'],
+                d12=schedule['d12'],
+                d13=schedule['d13'],
+                d14=schedule['d14'],
+                d15=schedule['d15'],
+                d16=schedule['d16'],
+                d17=schedule['d17'],
+                d18=schedule['d18'],
+                d19=schedule['d19'],
+                d20=schedule['d20'],
+                d21=schedule['d21'],
+                d22=schedule['d22'],
+                d23=schedule['d23'],
+                d24=schedule['d24'],
+                d25=schedule['d25'],
+                d26=schedule['d26'],
+                d27=schedule['d27'],
+                d28=schedule['d28'],
+                d29=schedule['d29'],
+                d30=schedule['d30'],
+                d31=schedule['d31'],
+                reg_id=request.user,
+                reg_date=timezone.now(),
+                mod_id=request.user,
+                mod_date=timezone.now(),
+            )
+            obj.save()
+
+        return redirect('wtm:work_schedule')
+
+    # GET방식일때 아래로 진행
     day_list = context_processors.get_day_list(stand_ym)  # ex) {'1':'목', '2':'금', ..., '31':'토'}
 
-    # schedule_date : 근무표 기준일, 입사일자가 근무표 기준일 이전인 직원만을 대상으로 하기 위함
-    schedule_date = datetime.strptime(stand_ym+'01', '%Y%m%d')
-    user_list = User.objects.filter(out_date__isnull=True, is_superuser=False, join_date__lte=schedule_date).order_by('join_date').values()
+    # 직원별 근로계약 컬럼을 참조하기 위해 day_list를 요일의 영문값으로도 세팅
+    my_dict = context_processors.day_of_the_week  # {'mon': '월', 'tue': '화', 'wed': '수', 'thu': '목', 'fri': '금', 'sat': '토', 'sun': '일', }
+    day_list_eng = {}
+    for key, value in day_list.items():
+        day_list_eng[key] = list(my_dict.keys())[list(my_dict.values()).index(value)]
 
-    # if request.method == 'POST':
-    #     formset = ScheduleFormSet(request.POST)
-    #
-    #     for form in formset:
-    #         if form.is_valid():
-    #             schedule = form.save(commit=False)
-    #             schedule.reg_id = request.user
-    #             schedule.reg_date = timezone.now()
-    #             schedule.mod_id = request.user
-    #             schedule.mod_date = timezone.now()
-    #             schedule.save()
-    #             return redirect('wtm:work_schedule', yearmonth=yearmonth)
-    # else:
-    #     formset = ScheduleFormSet(initial=user_list)
+    # 입사일자가 근무표 말일 이전인 직원만 대상으로 하기 위해 변수 할당, list(day_list)[-1]은 말일
+    schedule_date = stand_ym + list(day_list)[-1]
+    # schedule_date = datetime.strptime(stand_ym + list(day_list)[-1], '%Y%m%d')
 
-    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    contract = Contract.objects.all()      # 근로계약 대상 표시를 위함
-    module_list = Module.objects.all()     # 근로모듈을 입력하기 위함
-    context = {'day_list': day_list, 'user_list': user_list, 'contract': contract, 'module_list': module_list}
+    # User의 stand_ym 기준 근로 계약
+    # 1. 현재(NOW())보다 과거인 기준일이 존재하면 max(과거 기준일)
+    # 2. 현재(NOW())보다 과거인 기준일이 없으면 min(미래 기준일)
+    # SQL에 조건을 넣기가 애매해서, 1,2를 union한 후 min 값을 얻는 걸로 구현함
+    raw_query = f'''
+        SELECT u.id, u.emp_name, u.dept, u.position, u.join_date, u.out_date,
+                c.id as cid, c.stand_date, c.type, c.check_yn, c.mon_id as mon, c.tue_id as tue, c.wed_id as wed,
+                c.thu_id as thu, c.fri_id as fri, c.sat_id as sat, c.sun_id as sun
+        FROM common_user u LEFT OUTER JOIN (SELECT * FROM wtm_contract WHERE (user_id, stand_date) in
+            (
+                SELECT a.user_id, min(a.stand_date)
+                FROM 
+                (
+                    SELECT user_id, max(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() GROUP BY user_id
+                    UNION
+                    SELECT user_id, min(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() GROUP BY user_id
+                    ) a
+                    group by a.user_id
+                ) 
+            ) c
+            ON (u.id = c.user_id)
+        WHERE is_superuser = false 
+            and out_date is null
+            and DATE_FORMAT(join_date, '%Y%m%d') <= '{schedule_date}'
+        ORDER BY join_date
+        '''
+
+    # print(raw_query)
+
+    with connection.cursor() as cursor:
+        cursor.execute(raw_query)
+        results = cursor.fetchall()
+
+        x = cursor.description
+        user_list = []
+        for r in results:
+            i = 0
+            d = {}
+            while i < len(x):
+                d[x[i][0]] = r[i]
+                i = i + 1
+            user_list.append(d)
+
+    # print(user_list)
+
+    # user_list = User.objects.filter(out_date__isnull=True, is_superuser=False, join_date__lte=schedule_date).order_by('join_date')
+    module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
+    context = {'stand_ym': stand_ym, 'day_list': day_list, 'day_list_eng': day_list_eng, 'user_list': user_list,
+               'module_list': module_list}
     return render(request, 'wtm/work_schedule_reg.html', context)
 
 

@@ -38,11 +38,11 @@ def get_module_colors(self):
     return {'module_colors': module_colors}
 
 
-def get_day_list(yearmonth):
+def get_day_list(stand_ym):
     #day_of_the_week = list(day_of_the_week.values())  # ['월', '화', '수', '목', '금', '토', '일']
     #now = datetime.today()  # 오늘 : 2024-01-24 23:08:13.697803
-    year = int(yearmonth[0:4])  # 연도 : 2024
-    month = int(yearmonth[4:6])  # 월 : 1
+    year = int(stand_ym[0:4])  # 연도 : 2024
+    month = int(stand_ym[4:6])  # 월 : 1
     last_day = calendar.monthrange(year, month)[1]  # 이번달 말일 : 31
     first_weekday = datetime(year, month, 1).weekday()  # 이번달 첫날 요일값 : 0
     day_list = {}

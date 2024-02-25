@@ -1,4 +1,6 @@
 from django import template
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
 
 register = template.Library()
 
@@ -26,3 +28,13 @@ def to_int(value):
 @register.filter
 def get_attr(obj, attr):
     return getattr(obj, attr)
+
+
+@register.filter
+def get_day_attr(obj, attr):
+    return getattr(obj, "d"+attr)
+
+
+@register.filter
+def get_month(obj, delta):
+    return (datetime.strptime(obj, '%Y%m') + relativedelta(months=delta)).strftime('%Y%m')

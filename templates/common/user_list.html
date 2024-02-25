@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
 {% block content %}
-<form id="searchForm" method="get" action="{% url 'common:user_list' %}">
-{% csrf_token %}
+
 <div class="container my-3">
+    <form id="searchForm" method="get" action="{% url 'common:user_list' %}">
+    {% csrf_token %}
     <div class="row my-3">
         <input type="hidden" id="page" name="page" value="{{ page }}">
         <div class="col-2">
@@ -156,7 +157,6 @@
     </ul>
     <!-- 페이징처리 끝 -->
 </div>
-</form>
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
