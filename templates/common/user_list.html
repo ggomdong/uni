@@ -6,7 +6,6 @@
     <form id="searchForm" method="get" action="{% url 'common:user_list' %}">
     {% csrf_token %}
     <div class="row my-3">
-        <input type="hidden" id="page" name="page" value="{{ page }}">
         <div class="col-2">
             <select class="form-select" name="work" id="work">
                 <option value="전체" {% if search_work == '전체' %} selected {% endif %}>전체(재직여부)</option>
@@ -41,12 +40,12 @@
         </div>
     </div>
     </form>
-    <div style="height: 1000px; width: 100%; overflow: auto;">
-    <table class="table" style="position: relative;">
+    <div class="div-sticky-h">
+    <table class="table sticky-top">
         <thead>
         <tr class="text-center table-dark">
-            <th class="table-primary sticky-head-1" colspan="6">기본정보</th>
-            <th class="table-secondary sticky-head-1 " colspan="12">근로계약</th>
+            <th class="table-primary" colspan="6">기본정보</th>
+            <th class="table-secondary" colspan="12">근로계약</th>
         </tr>
         <tr class="text-center">
             <th class="table-primary sticky-head-2">번호</th>
@@ -114,60 +113,10 @@
         </tbody>
     </table>
     </div>
-    <!-- 페이징 처리 시작 -->
-    <ul class="pagination justify-content-center">
-        <!-- 이전 페이지 -->
-        {% if user_list.has_previous %}
-        <li class="page-item">
-            <a class="page-link" data-page="{{ user_list.previous_page_number }}"
-               href="javascript:void(0)">이전</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled">
-            <a class="page-link" tabindex="-1" aria-disabled="true" href="#">이전</a>
-        </li>
-        {% endif %}
-        <!-- 페이지 리스트 -->
-        {% for page_number in user_list.paginator.page_range %}
-        {% if page_number >= user_list.number|add:-5 and page_number <= user_list.number|add:5 %}
-        {% if page_number == user_list.number %}
-        <li class="page-item active" aria-current="page">
-            <a class="page-link" data-page="{{ page_number }}"
-               href="javascript:void(0)">{{ page_number }}</a>
-        </li>
-        {% else %}
-        <li class="page-item">
-            <a class="page-link" data-page="{{ page_number }}"
-               href="javascript:void(0)">{{ page_number }}</a>
-        </li>
-        {% endif %}
-        {% endif %}
-        {% endfor %}
-        <!-- 다음 페이지 -->
-        {% if user_list.has_next %}
-        <li class="page-item">
-            <a class="page-link" data-page="{{ user_list.next_page_number }}"
-               href="javascript:void(0)">다음</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled">
-            <a class="page-link" tabindex="-1" aria-disabled="true" href="#">다음</a>
-        </li>
-        {% endif %}
-    </ul>
-    <!-- 페이징처리 끝 -->
 </div>
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
-const page_elements = document.getElementsByClassName("page-link")
-Array.from(page_elements).forEach(function(element) {
-    element.addEventListener('click', function() {
-        document.getElementById('page').value = this.dataset.page;
-        document.getElementById('searchForm').submit();
-    });
-});
-
 const selectedWork = document.getElementById("work");
 selectedWork.addEventListener('change', function() {
     document.getElementById('searchForm').submit();

@@ -68,12 +68,7 @@ select[readonly] {
     pointer-events: none;
 }
 
-.sticky-head-1 {
-    position: sticky;
-    top: 0px;
-}
-
-.sticky-head-2 {
-    position: sticky;
-    top: 40px;
-}
+.div-sticky-h { height: 85vh; width: 95vh; overflow: auto; }
+.div-sticky-m { height: 75vh; width: 95vh; overflow: auto; }
+.sticky-top thead { position: sticky; top: 0; }
+.sticky-left td:first-child { position: sticky; left: 0; }

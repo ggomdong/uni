@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<form id="form" method="post">
+{% csrf_token %}
+<div class="container my-3">
+    <div class="row my-3 align-items-center text-bg-dark">
+        <div class="col-10 text-bg-dark text-center">
+                {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"4:6" }}월
+        </div>
+        <div class="col-2 text-bg-dark text-end">
+            <a href="{% url 'wtm:work_schedule' %}" class="btn btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-backspace-fill" viewBox="0 0 16 16">
+                  <path d="M15.683 3a2 2 0 0 0-2-2h-7.08a2 2 0 0 0-1.519.698L.241 7.35a1 1 0 0 0 0 1.302l4.843 5.65A2 2 0 0 0 6.603 15h7.08a2 2 0 0 0 2-2zM5.829 5.854a.5.5 0 1 1 .707-.708l2.147 2.147 2.146-2.147a.5.5 0 1 1 .707.708L9.39 8l2.146 2.146a.5.5 0 0 1-.707.708L8.683 8.707l-2.147 2.147a.5.5 0 0 1-.707-.708L7.976 8z"/>
+                </svg>
+                취소
+            </a>
+            <button type="button" class="save btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-save2-fill" viewBox="0 0 16 16">
+                  <path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v6h-2a.5.5 0 0 0-.354.854l2.5 2.5a.5.5 0 0 0 .708 0l2.5-2.5A.5.5 0 0 0 10.5 7.5h-2v-6z"/>
+                </svg>
+                저장
+            </button>
+        </div>
+    </div>
+    <div class="my-3">
+    <table class="text-center">
+        <tr>
+            {% for module in module_list %}
+            <td style="width: 50px;">
+                <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
+                <label class="form-label" for="{{module.id}}">
+                    <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
+                        {% if module.cat == '휴일근무' %}
+                        <font color="blue">
+                            {{ module.start_time }}
+                            {{ module.end_time }}
+                        </font>
+                        {% elif module.cat == '유급휴무' %}
+                        {{ module.name|slice:"0:2" }}
+                        {{ module.name|slice:"2:4" }}
+                        {% elif module.cat == 'OFF' %}
+                        -<br>
+                        &nbsp;
+                        {% else %}
+                        {{ module.start_time }}
+                        {{ module.end_time }}
+                        {% endif %}
+                    </div>
+                </label>
+            </td>
+            {% endfor %}
+        </tr>
+        <tr style="font-size: 10px">
+            {% for module in module_list %}
+            <td>
+                {{ module.name }}
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
+    </div>
+    <hr>
+    <div class="my-3">
+    <table class="table text-center table-borderless table-sm">
+        {% if schedule_list %}
+        <thead>
+        <tr>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            {% for key, value in day_list.items %}
+            <td>
+                {% if value == '일' %}
+                <font color="red">
+                {{ key }}
+                </font>
+                {% else %}
+                {{ key }}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td></td>
+            {% for key, value in day_list.items %}
+            <td>
+                {% if value == '일' %}
+                <font color="red">
+                {{ value }}
+                </font>
+                {% else %}
+                {{ value }}
+                {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        </thead>
+    dafsdafs
+        {% for schedule in schedule_list %}
+        <tbody>
+        <tr>
+            <td>{{ schedule.user.emp_name }}</td>
+            {% for key, value in day_list.items %}
+            <td>
+                {% with schedule|get_day_attr:key as day %}
+                <input type="hidden" name="sch_{{user.id}}_{{key}}" id="sch_{{user.id}}_{{key}}"
+                       value="{{schedule|default_if_none:''}}">
+                <div class="module_box" id="insert_{{user.id}}_{{key}}" onclick="javascript:insert('{{user.id}}_{{key}}');" style="cursor: pointer;
+                    {% for module in module_list %}
+                    {% if module.id == schedule %}
+                    background-color: {{ module_colors|get_index:module.color }};
+                    {% endif %}
+                    {% endfor %}">
+                    {% for module in module_list %}
+                    {% if module.id == schedule %}
+                        {% if module.cat == 'OFF' %}
+                            -
+                        {% else %}
+                            {{ module.start_time }}
+                            {{ module.end_time }}
+                        {% endif %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endwith %}
+            </td>
+            {% endfor %}
+        </tr>
+        </tbody>
+        {% endfor %}
+        {% endif %}
+    </table>
+    </div>
+</div>
+</form>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+function insert(target) {
+    // target은 "user.id"_"일" 값임 ex) 1_1, 1_31,
+
+    try {
+        // 선택모듈의 module.id를 가져온다.
+        const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked").value;
+
+        // 선택모듈을 가져온다.
+        const moduleBoxSelected = document.getElementById("select"+moduleIdSelected);
+
+        // 입력모듈을 가져와서, 내용 및 색상을 선택한 선택모듈의 것으로 세팅한다.
+        const moduleBoxInsert = document.getElementById("insert_"+target);
+        moduleBoxInsert.innerHTML = moduleBoxSelected.innerHTML;
+        moduleBoxInsert.style.backgroundColor = moduleBoxSelected.style.backgroundColor;
+
+        // DB에 저장하기 위해 선택모듈의 module.id를 해당 form element(hidden)에 세팅한다.
+        const moduleInput = document.getElementById("sch_"+target);
+        moduleInput.value = moduleIdSelected;
+    } catch (e) {
+        alert("근무표 변경을 원하시면, 상단 근무모듈을 먼저 선택하세요.");
+        return;
+    }
+};
+
+const save_elements = document.getElementsByClassName("save");
+Array.from(save_elements).forEach(function(element) {
+    element.addEventListener('click', function() {
+        if(confirm("저장하시겠습니까?")) {
+            document.getElementById('form').submit();
+        };
+    });
+});
+</script>
+{% endblock %}

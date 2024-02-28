@@ -318,6 +318,26 @@ def work_schedule_reg(request, stand_ym):
 
 
 @login_required(login_url='common:login')
+def work_schedule_modify(request, stand_ym):
+    day_list = context_processors.get_day_list(stand_ym)
+    schedule_list = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+    module_list = Module.objects.all()  # 근로모듈
+
+    context = {'schedule_list': schedule_list, 'day_list': day_list, 'module_list': module_list, 'stand_ym': stand_ym}
+    return render(request, 'wtm/work_schedule_reg.html', context)
+
+
+@login_required(login_url='common:login')
+def work_schedule_delete(request, stand_ym):
+    schedule = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+    # if request.user != question.author:
+    #     messages.error(request, '삭제 권한이 없습니다.')
+    #     return redirect('pybo:detail', question_id=question.id)
+    schedule.delete()
+    return redirect('wtm:work_schedule')
+
+
+@login_required(login_url='common:login')
 def work_status(request):
     obj = Module.objects.all()
 

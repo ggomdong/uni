@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
 {% block content %}
-<form method="post">
+<form id="form" method="post">
 {% csrf_token %}
 <div class="container my-3">
     <div class="row my-3 align-items-center text-bg-dark">
@@ -9,13 +9,13 @@
                 {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"4:6" }}월
         </div>
         <div class="col-2 text-bg-dark text-end">
-            <a href="{% url 'wtm:work_schedule' %}" class="btn btn-danger">
+            <a href="{% url 'wtm:work_schedule' %}" class="btn btn-secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-backspace-fill" viewBox="0 0 16 16">
                   <path d="M15.683 3a2 2 0 0 0-2-2h-7.08a2 2 0 0 0-1.519.698L.241 7.35a1 1 0 0 0 0 1.302l4.843 5.65A2 2 0 0 0 6.603 15h7.08a2 2 0 0 0 2-2zM5.829 5.854a.5.5 0 1 1 .707-.708l2.147 2.147 2.146-2.147a.5.5 0 1 1 .707.708L9.39 8l2.146 2.146a.5.5 0 0 1-.707.708L8.683 8.707l-2.147 2.147a.5.5 0 0 1-.707-.708L7.976 8z"/>
                 </svg>
                 취소
             </a>
-            <button type="submit" class="btn btn-primary">
+            <button type="button" class="save btn btn-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-save2-fill" viewBox="0 0 16 16">
                   <path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v6h-2a.5.5 0 0 0-.354.854l2.5 2.5a.5.5 0 0 0 .708 0l2.5-2.5A.5.5 0 0 0 10.5 7.5h-2v-6z"/>
                 </svg>
@@ -61,8 +61,8 @@
     </table>
     </div>
     <hr>
-    <div class="my-3">
-    <table class="table text-center table-borderless table-sm">
+    <div class="my-3 div-sticky-m">
+    <table class="table text-center table-borderless table-sm sticky-top sticky-left">
         {% if day_list %}
         <thead>
         <tr>
@@ -160,5 +160,14 @@ function insert(target) {
         return;
     }
 };
+
+const save_elements = document.getElementsByClassName("save");
+Array.from(save_elements).forEach(function(element) {
+    element.addEventListener('click', function() {
+        if(confirm("저장하시겠습니까?")) {
+            document.getElementById('form').submit();
+        };
+    });
+});
 </script>
 {% endblock %}

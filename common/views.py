@@ -46,10 +46,7 @@ def user_list(request):
     search_work = request.GET.get('work', '재직자')
     search_dept = request.GET.get('dept', '전체')
     search_position = request.GET.get('position', '전체')
-    page = request.GET.get('page', '1')     # 페이지 default 값은 1
-    #query_set = User.objects.order_by('date_joined').exclude(username='admin')
 
-    #print(work)
     match search_work:
         case '전체':
             work_condition = '1=1'
@@ -116,15 +113,12 @@ def user_list(request):
 
     #print(query_set)
 
-    paginator = Paginator(query_set, 100)    # 페이지당 10개씩 보여주기
-    page_obj = paginator.get_page(page)     # 해당 페이지의 데이터만 조회
-
     dept_list = list(Dept.objects.values_list('dept_name', flat=True).order_by('order'))
     position_list = list(Position.objects.values_list('position_name', flat=True).order_by('order'))
 
     module_list = Module.objects.all()
-    context = {'user_list': page_obj, 'dept_list': dept_list, 'position_list': position_list,
-               'module_list': module_list, 'page': page,
+    context = {'user_list': query_set, 'dept_list': dept_list, 'position_list': position_list,
+               'module_list': module_list,
                'search_work': search_work, 'search_dept': search_dept, 'search_position': search_position}
     return render(request, 'common/user_list.html', context)
 
