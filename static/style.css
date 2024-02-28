@@ -68,7 +68,7 @@ select[readonly] {
     pointer-events: none;
 }
 
-.div-sticky-h { height: 85vh; width: 95vh; overflow: auto; }
-.div-sticky-m { height: 75vh; width: 95vh; overflow: auto; }
+.div-sticky-h { height: 85vh; width: 100%; overflow: auto; }
+.div-sticky-m { height: 75vh; width: 100%; overflow: auto; }
 .sticky-top thead { position: sticky; top: 0; }
 .sticky-left td:first-child { position: sticky; left: 0; }
