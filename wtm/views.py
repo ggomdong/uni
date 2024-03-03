@@ -105,8 +105,8 @@ def work_contract_reg(request, user_id):
         form = ContractForm()
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    target_user = get_object_or_404(User, pk=user_id)      # 근로계약 대상 표시를 위함
-    module_list = Module.objects.all()              # 근로모듈을 요일별로 입력하기 위함
+    target_user = get_object_or_404(User, pk=user_id)  # 근로계약 대상 표시를 위함
+    module_list = Module.objects.all()  # 근로모듈을 요일별로 입력하기 위함
     context = {'form': form, 'target_user': target_user, 'module_list': module_list}
     return render(request, 'wtm/work_contract_reg.html', context)
 
@@ -160,12 +160,53 @@ def work_contract_delete(request, contract_id):
 
 
 @login_required(login_url='common:login')
-def work_schedule(request):
-    now = str(datetime.today().year) + str(datetime.today().month).zfill(2)
+def work_schedule(request, stand_ym=None):
     # 기준년월 값이 없으면 현재로 세팅
-    stand_ym = request.GET.get('stand_ym', now)
+    if stand_ym is None:
+        stand_ym = str(datetime.today().year) + str(datetime.today().month).zfill(2)
+
+    raw_query = f'''
+        SELECT s.id as sid, u.id as uid, u.emp_name, u.dept, u.position,
+            DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
+            s.d1_id d1, s.d2_id d2, s.d3_id d3, s.d4_id d4, s.d5_id d5, s.d6_id d6, s.d7_id d7, s.d8_id d8,
+            s.d9_id d9, s.d10_id d10, s.d11_id d11, s.d12_id d12, s.d13_id d13, s.d14_id d14, s.d15_id d15,
+            s.d16_id d16, s.d17_id d17, s.d18_id d18, s.d19_id d19, s.d20_id d20, s.d21_id d21, s.d22_id d22,
+            s.d23_id d23, s.d24_id d24, s.d25_id d25, s.d26_id d26, s.d27_id d27, s.d28_id d28, s.d29_id d29,
+            s.d30_id d30, s.d31_id d31,
+            d.order as do, p.order as po
+        FROM wtm_schedule s
+            INNER JOIN common_user u on (s.user_id = u.id)
+            INNER JOIN common_dept d on (u.dept = d.dept_name)
+            INNER JOIN common_position p on (u.position = p.position_name)
+        WHERE year = '{stand_ym[0:4]}'
+          and month = '{stand_ym[4:6]}'
+        ORDER BY do, po, join_date
+        '''
+
+    with connection.cursor() as cursor:
+        cursor.execute(raw_query)
+        results = cursor.fetchall()
+
+        x = cursor.description
+        schedule_list = []
+        for r in results:
+            i = 0
+            d = {}
+            while i < len(x):
+                d[x[i][0]] = r[i]
+                i = i + 1
+            schedule_list.append(d)
+
+    # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
+    pre_dept = None
+
+    # user_list에 일자별 근무모듈을 매핑
+    for schedule in schedule_list:
+        # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅
+        schedule['dept_diff'] = ('N' if pre_dept == schedule['dept'] else 'Y')
+        pre_dept = schedule['dept']
+
     day_list = context_processors.get_day_list(stand_ym)
-    schedule_list = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
     module_list = Module.objects.all()  # 근로모듈
 
     context = {'schedule_list': schedule_list, 'day_list': day_list, 'module_list': module_list, 'stand_ym': stand_ym}
@@ -174,7 +215,6 @@ def work_schedule(request):
 
 @login_required(login_url='common:login')
 def work_schedule_reg(request, stand_ym):
-
     if request.method == 'POST':
         # html form에서 넘어오는 값은 'sch_"user_id"_"day"': 'value' 형태임
         # 이를 Schedule 테이블에 user단위로 넣기 위해 schedule_row라는 dict로 정리하고,
@@ -250,52 +290,36 @@ def work_schedule_reg(request, stand_ym):
             )
             obj.save()
 
-        return redirect('wtm:work_schedule')
+        return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
-    # GET방식일때 아래로 진행
+    ############ GET방식일때 아래로 진행 ############
     day_list = context_processors.get_day_list(stand_ym)  # ex) {'1':'목', '2':'금', ..., '31':'토'}
 
-    # 직원별 근로계약 컬럼을 참조하기 위해 day_list를 요일의 영문값으로도 세팅
-    my_dict = context_processors.day_of_the_week  # {'mon': '월', 'tue': '화', 'wed': '수', 'thu': '목', 'fri': '금', 'sat': '토', 'sun': '일', }
+    # 직원별 근로계약 컬럼을 참조하기 위해 day_list를 요일의 영문값으로 세팅
+    week_dict = context_processors.day_of_the_week  # {'mon': '월', 'tue': '화', 'wed': '수', 'thu': '목', 'fri': '금', 'sat': '토', 'sun': '일', }
     day_list_eng = {}
     for key, value in day_list.items():
-        day_list_eng[key] = list(my_dict.keys())[list(my_dict.values()).index(value)]
+        day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
 
     # 입사일자가 근무표 말일 이전인 직원만 대상으로 하기 위해 변수 할당, list(day_list)[-1]은 말일
     schedule_date = stand_ym + list(day_list)[-1]
     # schedule_date = datetime.strptime(stand_ym + list(day_list)[-1], '%Y%m%d')
 
-    # User의 stand_ym 기준 근로 계약
-    # 1. 현재(NOW())보다 과거인 기준일이 존재하면 max(과거 기준일)
-    # 2. 현재(NOW())보다 과거인 기준일이 없으면 min(미래 기준일)
-    # SQL에 조건을 넣기가 애매해서, 1,2를 union한 후 min 값을 얻는 걸로 구현함
-    raw_query = f'''
-        SELECT u.id, u.emp_name, u.dept, u.position, u.join_date, u.out_date,
-                c.id as cid, c.stand_date, c.type, c.check_yn, c.mon_id as mon, c.tue_id as tue, c.wed_id as wed,
-                c.thu_id as thu, c.fri_id as fri, c.sat_id as sat, c.sun_id as sun
-        FROM common_user u LEFT OUTER JOIN (SELECT * FROM wtm_contract WHERE (user_id, stand_date) in
-            (
-                SELECT a.user_id, min(a.stand_date)
-                FROM 
-                (
-                    SELECT user_id, max(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() GROUP BY user_id
-                    UNION
-                    SELECT user_id, min(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() GROUP BY user_id
-                    ) a
-                    group by a.user_id
-                ) 
-            ) c
-            ON (u.id = c.user_id)
+    # stand_ym 대상 직원을 추출하여 user_list에 저장
+    query_user = f'''
+        SELECT u.id, u.emp_name, u.dept, u.position,
+                DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
+                d.order as do, p.order as po
+        FROM common_user u
+            INNER JOIN common_dept d on (u.dept = d.dept_name)
+            INNER JOIN common_position p on (u.position = p.position_name)
         WHERE is_superuser = false 
-            and out_date is null
-            and DATE_FORMAT(join_date, '%Y%m%d') <= '{schedule_date}'
-        ORDER BY join_date
+            and join_date <= '{schedule_date}'
+            and out_date is null or out_date >= '{stand_ym + '01'}'
+        ORDER BY do, po, join_date
         '''
-
-    # print(raw_query)
-
     with connection.cursor() as cursor:
-        cursor.execute(raw_query)
+        cursor.execute(query_user)
         results = cursor.fetchall()
 
         x = cursor.description
@@ -308,23 +332,60 @@ def work_schedule_reg(request, stand_ym):
                 i = i + 1
             user_list.append(d)
 
+    # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
+    pre_dept = None
+
+    # user_list에 일자별 근무모듈을 매핑
+    for user in user_list:
+        for key, value in day_list_eng.items():
+            query = f'''
+                SELECT c.val
+                FROM
+                (
+                SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
+                FROM wtm_contract
+                WHERE user_id = {user['id']}
+                  and stand_date <= '{stand_ym + key.zfill(2)}'
+                ) c
+                WHERE rownum = 1;
+                '''
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                r = cursor.fetchone()
+
+            user[key] = (None if r == None else r[0])
+
+        # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅
+        user['dept_diff'] = ('N' if pre_dept == user['dept'] else 'Y')
+        pre_dept = user['dept']
+
     # print(user_list)
 
-    # user_list = User.objects.filter(out_date__isnull=True, is_superuser=False, join_date__lte=schedule_date).order_by('join_date')
     module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
-    context = {'stand_ym': stand_ym, 'day_list': day_list, 'day_list_eng': day_list_eng, 'user_list': user_list,
-               'module_list': module_list}
+    context = {'stand_ym': stand_ym, 'day_list': day_list, 'user_list': user_list, 'module_list': module_list}
     return render(request, 'wtm/work_schedule_reg.html', context)
 
 
 @login_required(login_url='common:login')
 def work_schedule_modify(request, stand_ym):
     day_list = context_processors.get_day_list(stand_ym)
-    schedule_list = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+    # 직원별 근로계약 컬럼을 참조하기 위해 day_list를 요일의 영문값으로도 세팅
+    week_dict = context_processors.day_of_the_week  # {'mon': '월', 'tue': '화', 'wed': '수', 'thu': '목', 'fri': '금', 'sat': '토', 'sun': '일', }
+
+    day_list_eng = {}
+    for key, value in day_list.items():
+        day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
+
+
+
+
+    schedule_list = list(Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).values())
     module_list = Module.objects.all()  # 근로모듈
 
+    print(schedule_list)
+
     context = {'schedule_list': schedule_list, 'day_list': day_list, 'module_list': module_list, 'stand_ym': stand_ym}
-    return render(request, 'wtm/work_schedule_reg.html', context)
+    return render(request, 'wtm/work_schedule_modify.html', context)
 
 
 @login_required(login_url='common:login')
@@ -334,7 +395,7 @@ def work_schedule_delete(request, stand_ym):
     #     messages.error(request, '삭제 권한이 없습니다.')
     #     return redirect('pybo:detail', question_id=question.id)
     schedule.delete()
-    return redirect('wtm:work_schedule')
+    return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
 
 @login_required(login_url='common:login')
@@ -351,4 +412,3 @@ def work_log(request):
 
     context = {'work_module': obj}
     return render(request, 'wtm/work_log.html', context)
-

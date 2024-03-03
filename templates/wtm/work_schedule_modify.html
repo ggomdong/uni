@@ -61,12 +61,13 @@
     </table>
     </div>
     <hr>
-    <div class="my-3">
-    <table class="table text-center table-borderless table-sm">
-        {% if schedule_list %}
+    <div class="my-3 div-sticky-m">
+    <table class="table text-center table-borderless table-sm sticky-top">
+        {% if day_list %}
         <thead>
         <tr>
-            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
             {% for key, value in day_list.items %}
             <td>
                 {% if value == '일' %}
@@ -80,7 +81,8 @@
             {% endfor %}
         </tr>
         <tr>
-            <td></td>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
             {% for key, value in day_list.items %}
             <td>
                 {% if value == '일' %}
@@ -94,33 +96,46 @@
             {% endfor %}
         </tr>
         </thead>
-    dafsdafs
+        {% endif %}
+
+        {% if schedule_list %}
         {% for schedule in schedule_list %}
         <tbody>
         <tr>
-            <td>{{ schedule.user.emp_name }}</td>
+            <td class="align-middle" style="font-size: 10px;">{{ schedule.dept }}</td>
+            <td class="align-middle" style="font-size: 10px;">{{ schedule.emp_name }}</td>
             {% for key, value in day_list.items %}
             <td>
-                {% with schedule|get_day_attr:key as day %}
-                <input type="hidden" name="sch_{{user.id}}_{{key}}" id="sch_{{user.id}}_{{key}}"
-                       value="{{schedule|default_if_none:''}}">
-                <div class="module_box" id="insert_{{user.id}}_{{key}}" onclick="javascript:insert('{{user.id}}_{{key}}');" style="cursor: pointer;
+                {% with schedule|get_day_index:key as day %}
+                {% if stand_ym|concat_date:key < schedule.join_date or schedule.out_date < stand_ym|concat_date:key %}
+                {% else %}
+                <div class="module_box"
                     {% for module in module_list %}
-                    {% if module.id == schedule %}
-                    background-color: {{ module_colors|get_index:module.color }};
+                    {% if module.id == day %}
+                    style="background-color: {{ module_colors|get_index:module.color }};"
                     {% endif %}
-                    {% endfor %}">
+                    {% endfor %}>
                     {% for module in module_list %}
-                    {% if module.id == schedule %}
-                        {% if module.cat == 'OFF' %}
-                            -
-                        {% else %}
+                    {% if module.id == day %}
+                        {% if module.cat == '휴일근무' %}
+                        <font color="blue">
                             {{ module.start_time }}
                             {{ module.end_time }}
+                        </font>
+                        {% elif module.cat == '유급휴무' %}
+                        {{ module.name|slice:"0:2" }}
+                        {{ module.name|slice:"2:4" }}
+                        {% elif module.cat == 'OFF' %}
+                        -<br>
+                        &nbsp;
+                        {% else %}
+                        {{ module.start_time }}
+                        {{ module.end_time }}
                         {% endif %}
                     {% endif %}
                     {% endfor %}
                 </div>
+                {% endif %}
                 {% endwith %}
             </td>
             {% endfor %}

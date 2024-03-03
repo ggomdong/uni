@@ -165,6 +165,9 @@ LOGOUT_REDIRECT_URL = '/index/'
 
 AUTH_USER_MODEL = 'common.User'
 
+# GET/POST parameter 개수 제한 설정 (default=1000, 근무표 입력시 over되어 명시해줌)
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 50000
+
 # 로깅설정
 LOGGING = {
     'version': 1,

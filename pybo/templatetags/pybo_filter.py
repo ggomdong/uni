@@ -16,8 +16,13 @@ def get_index(object_list, index):
 
 
 @register.filter
-def concat_string(value1, value2):
-    return str(value1) + str(value2)
+def get_day_index(object_list, index):
+    return object_list["d"+index]
+
+
+@register.filter
+def concat_date(value1, value2):
+    return str(value1) + str(value2).zfill(2)
 
 
 @register.filter
@@ -28,11 +33,6 @@ def to_int(value):
 @register.filter
 def get_attr(obj, attr):
     return getattr(obj, attr)
-
-
-@register.filter
-def get_day_attr(obj, attr):
-    return getattr(obj, "d"+attr)
 
 
 @register.filter

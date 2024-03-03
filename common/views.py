@@ -42,7 +42,7 @@ def signup(request):
 
 @login_required(login_url='common:login')
 def user_list(request):
-    order_by = request.GET.get('order_by', 'join_date')
+    order_by = request.GET.get('order_by', 'do, po, join_date')
     search_work = request.GET.get('work', '재직자')
     search_dept = request.GET.get('dept', '전체')
     search_position = request.GET.get('position', '전체')
@@ -71,10 +71,11 @@ def user_list(request):
     # 1. 현재(NOW())보다 과거인 기준일이 존재하면 max(과거 기준일)
     # 2. 현재(NOW())보다 과거인 기준일이 없으면 min(미래 기준일)
     # SQL에 조건을 넣기가 애매해서, 1,2를 union한 후 min 값을 얻는 걸로 구현함
-    raw_query = '''
+    raw_query = f'''
         SELECT u.id, u.emp_name, u.dept, u.position, u.join_date, u.out_date,
                 c.id as cid, c.stand_date, c.type, c.check_yn, c.mon_id as mon, c.tue_id as tue, c.wed_id as wed,
-                c.thu_id as thu, c.fri_id as fri, c.sat_id as sat, c.sun_id as sun
+                c.thu_id as thu, c.fri_id as fri, c.sat_id as sat, c.sun_id as sun,
+                d.order as do, p.order as po
         FROM common_user u LEFT OUTER JOIN (SELECT * FROM wtm_contract WHERE (user_id, stand_date) in
             (
                 SELECT a.user_id, min(a.stand_date)
@@ -88,12 +89,14 @@ def user_list(request):
                 ) 
             ) c
             ON (u.id = c.user_id)
+            INNER JOIN common_dept d on (u.dept = d.dept_name)
+			INNER JOIN common_position p on (u.position = p.position_name)
         WHERE is_superuser = false 
             and {work_condition}
             and {dept_condition}
             and {position_condition}
         ORDER BY {order_by}
-        '''.format(work_condition=work_condition, dept_condition=dept_condition, position_condition=position_condition, order_by=order_by)
+        '''
 
     #print(raw_query)
 

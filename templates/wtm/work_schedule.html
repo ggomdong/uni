@@ -2,18 +2,17 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <form id="form" method="get" action="{% url 'wtm:work_schedule' %}">
+    <form id="form" method="get">
     {% csrf_token %}
-    <input type="hidden" name="stand_ym" id="stand_ym" value="{{stand_ym|default_if_none:''}}">
     <div class="row my-3 align-items-center text-bg-dark">
         <div class="col-10 text-bg-dark text-center" style="font-color: red;">
-            <a href="javascript:move({{stand_ym|get_month:-1}});" style="color: white;">
+            <a href="{% url 'wtm:work_schedule' stand_ym|get_month:-1 %}" style="color: white;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-left-fill" viewBox="0 0 16 16">
                   <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
                 </svg></a> &nbsp;&nbsp;
                 {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"4:6" }}월
                 &nbsp;&nbsp;
-            <a href="javascript:move({{stand_ym|get_month:1}});" style="color: white;">
+            <a href="{% url 'wtm:work_schedule' stand_ym|get_month:1 %}" style="color: white;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-right-fill" viewBox="0 0 16 16">
                   <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
                 </svg></a>
@@ -44,12 +43,14 @@
         </div>
     </div>
     </form>
+
     <div class="div-sticky-h">
-    <table class="table text-center table-borderless table-sm sticky-top sticky-left">
-        <thead>
+    <table class="table text-center table-borderless table-sm sticky-top table-responsive">
         {% if schedule_list %}
+        <thead>
         <tr>
-            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
             {% for key, value in day_list.items %}
             <td>
                 {% if value == '일' %}
@@ -63,7 +64,8 @@
             {% endfor %}
         </tr>
         <tr>
-            <td></td>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
             {% for key, value in day_list.items %}
             <td>
                 {% if value == '일' %}
@@ -78,21 +80,24 @@
         </tr>
         </thead>
 
-        {% for schedule in schedule_list %}
         <tbody>
-        <tr>
-            <td>{{ schedule.user.emp_name }}</td>
+        {% for schedule in schedule_list %}
+        <tr {% if schedule.dept_diff == 'Y' %}style="border-top: 1px solid;"{% endif %}>
+            <td class="align-middle">{{ schedule.dept }}</td>
+            <td class="align-middle">{{ schedule.emp_name }}</td>
             {% for key, value in day_list.items %}
             <td>
-                {% with schedule|get_day_attr:key as day %}
+                {% with schedule|get_day_index:key as day %}
+                {% if stand_ym|concat_date:key < schedule.join_date or schedule.out_date < stand_ym|concat_date:key %}
+                {% else %}
                 <div class="module_box"
                     {% for module in module_list %}
-                    {% if module == day %}
+                    {% if module.id == day %}
                     style="background-color: {{ module_colors|get_index:module.color }};"
                     {% endif %}
                     {% endfor %}>
                     {% for module in module_list %}
-                    {% if module == day %}
+                    {% if module.id == day %}
                         {% if module.cat == '휴일근무' %}
                         <font color="blue">
                             {{ module.start_time }}
@@ -111,28 +116,24 @@
                     {% endif %}
                     {% endfor %}
                 </div>
+                {% endif %}
                 {% endwith %}
             </td>
             {% endfor %}
         </tr>
         {% endfor %}
+        </tbody>
         {% else %}
         <tr>
             <td colspan="5" class="text-center">근무표가 없습니다.</td>
         </tr>
         {% endif %}
-        </tbody>
     </table>
     </div>
 </div>
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
-function move(new_ym) {
-    document.getElementById('stand_ym').value = new_ym;
-    document.getElementById('form').submit();
-};
-
 const delete_elements = document.getElementsByClassName("delete");
 Array.from(delete_elements).forEach(function(element) {
     element.addEventListener('click', function() {
