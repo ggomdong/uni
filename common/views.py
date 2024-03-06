@@ -59,13 +59,13 @@ def user_list(request):
         case '전체':
             dept_condition = '1=1'
         case _:
-            dept_condition = 'dept = "{}"'.format(search_dept)
+            dept_condition = f'dept = "{search_dept}"'
 
     match search_position:
         case '전체':
-            position_condition = '1=1'""
+            position_condition = '1=1'
         case _:
-            position_condition = 'position = "{}"'.format(search_position)
+            position_condition = f'position = "{search_position}"'
 
     # User를 메인으로 Contract를 LEFT OUTER JOIN 하여, 계약이 있는 경우에만 리스트에 보여줌
     # 1. 현재(NOW())보다 과거인 기준일이 존재하면 max(과거 기준일)

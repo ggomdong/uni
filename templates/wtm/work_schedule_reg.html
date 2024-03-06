@@ -62,14 +62,14 @@
     </div>
     <hr>
     <div class="my-3 div-sticky-m">
-    <table class="table text-center table-borderless table-sm sticky-top">
+    <table class="table text-center table-borderless table-sm sticky-top table-hover">
         {% if day_list %}
         <thead>
         <tr>
-            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
             {% for key, value in day_list.items %}
-            <td>
+            <th>
                 {% if value == '일' %}
                 <font color="red">
                 {{ key }}
@@ -77,14 +77,14 @@
                 {% else %}
                 {{ key }}
                 {% endif %}
-            </td>
+            </th>
             {% endfor %}
         </tr>
         <tr>
-            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-            <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <th></th>
+            <th></th>
             {% for key, value in day_list.items %}
-            <td>
+            <th>
                 {% if value == '일' %}
                 <font color="red">
                 {{ value }}
@@ -92,7 +92,7 @@
                 {% else %}
                 {{ value }}
                 {% endif %}
-            </td>
+            </th>
             {% endfor %}
         </tr>
         </thead>
@@ -110,6 +110,7 @@
                 <input type="hidden" name="sch_{{user.id}}_{{key}}" id="sch_{{user.id}}_{{key}}"
                        value="{{schedule|default_if_none:''}}">
                 {% if stand_ym|concat_date:key < user.join_date or stand_ym|concat_date:key > user.out_date %}
+                <div class="module_box-disabled"></div>
                 {% else %}
                 <div class="module_box" id="insert_{{user.id}}_{{key}}" onclick="javascript:insert('{{user.id}}_{{key}}');" style="cursor: pointer;
                     {% for module in module_list %}
@@ -207,5 +208,20 @@ document.addEventListener('keydown', function(event) {
         }
     }
 });
+
+const tds = document.querySelectorAll(".table-hover td");
+tds.forEach((td) => {
+    const table = td.closest("table");
+    const colIndex = td.cellIndex;
+    const cols = table.querySelectorAll(`td:nth-child(${colIndex + 1})`);
+
+    td.addEventListener("mouseover", () => {
+        cols.forEach((hover) => hover.classList.add("is-hover"));
+    });
+    td.addEventListener("mouseleave", () => {
+        cols.forEach((hover) => hover.classList.remove("is-hover"));
+    });
+});
+
 </script>
 {% endblock %}

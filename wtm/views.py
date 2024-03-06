@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.db import connection
 from common.models import User
 from .models import Work, Module, Contract, Schedule
-from .forms import ModuleForm, ContractForm, ScheduleForm
+from .forms import ModuleForm, ContractForm
 from django.utils import timezone
 from common import context_processors
 from datetime import datetime
@@ -314,8 +314,8 @@ def work_schedule_reg(request, stand_ym):
             INNER JOIN common_dept d on (u.dept = d.dept_name)
             INNER JOIN common_position p on (u.position = p.position_name)
         WHERE is_superuser = false 
-            and join_date <= '{schedule_date}'
-            and out_date is null or out_date >= '{stand_ym + '01'}'
+            and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
+            and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
         ORDER BY do, po, join_date
         '''
     with connection.cursor() as cursor:
@@ -345,9 +345,9 @@ def work_schedule_reg(request, stand_ym):
                 SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
                 FROM wtm_contract
                 WHERE user_id = {user['id']}
-                  and stand_date <= '{stand_ym + key.zfill(2)}'
+                  and DATE_FORMAT(stand_date, '%Y%m%d') <= '{stand_ym + key.zfill(2)}'
                 ) c
-                WHERE rownum = 1;
+                WHERE rownum = 1
                 '''
             with connection.cursor() as cursor:
                 cursor.execute(query)

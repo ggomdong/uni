@@ -50,11 +50,26 @@ html {
 
 /* 근무모듈 div의 스타일 정의 */
 .module_box {
+/*
+    font-size: 0.5vw;
+    border: 0.05vw solid gray;
+    width: 1.5vw;
+    height: 1.5vw;
+    margin: 0 auto;     /* div 가운데 정렬 */
+
     font-size: 10px;
     border: 1px solid gray;
     width: 30px;
     height: 30px;
     margin: 0 auto;     /* div 가운데 정렬 */
+}
+
+.module_box-disabled {
+    border: 1px solid gray;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto;     /* div 가운데 정렬 */
+    background-color: #ddd;
 }
 
 /* 체크 안된 invisible-radio 인접 label에 mouse over 하면 label에 속한 module_box의 투명도를 0.7로 변경 */
@@ -68,12 +83,34 @@ html {
   /* color: blue; */
 }
 
+/* 근무모듈에서 근무종류에 따라 셀렉트박스를 비활성화하기 위한 CSS */
 select[readonly] {
     background-color: #ddd;
     pointer-events: none;
 }
 
+/* 테이블 헤더 고정을 위한 CSS */
 .div-sticky-h { height: 80vh; width: 100%; overflow: auto; }
 .div-sticky-m { height: 70vh; width: 100%; overflow: auto; }
 .sticky-top thead { position: sticky; top: 0; }
 .sticky-left td:first-child { position: sticky; left: 0; }
+
+/* 근무표 입력시 column hover효과를 위한 CSS */
+.table-hover tbody tr:hover td {
+  --bs-bg-opacity: 0.1;
+  background-color: rgba(var(--bs-black-rgb), var(--bs-bg-opacity)) !important;
+}
+
+.is-hover {
+  --bs-bg-opacity: 0.1;
+  background-color: rgba(var(--bs-black-rgb), var(--bs-bg-opacity)) !important;
+}
+
+/* 근무표에서 오늘 날짜를 눈에 띄게 하기 위한 CSS */
+.roundtext {
+    background-color: cyan; /* Changing background color */
+    font-weight: bold; /* Making font bold */
+    border-radius: 20px; /* Making border radius */
+    width: auto; /* Making auto-sizable width */
+    height: auto; /* Making auto-sizable height */
+}

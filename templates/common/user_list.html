@@ -43,7 +43,7 @@
     <div class="div-sticky-h">
     <table class="table sticky-top">
         <thead>
-        <tr class="text-center table-dark">
+        <tr class="text-center">
             <th class="table-primary" colspan="6">기본정보</th>
             <th class="table-secondary" colspan="12">근로계약</th>
         </tr>
@@ -69,11 +69,11 @@
         <tbody>
         {% if user_list %}
         {% for user in user_list %}
-        <tr class="text-center">
+        <tr class="text-center align-middle">
             <td>
                 {{ forloop.counter }}
             </td>
-            <td class="text-center">
+            <td>
                 <a href="{% url 'common:user_modify' user.id %}">{{ user.emp_name }}</a>
             </td>
             <td>{{ user.dept }}</td>
@@ -107,7 +107,7 @@
         {% endfor %}
         {% else %}
         <tr class="text-center">
-            <td colspan="18">직원이 없습니다.</td>
+            <td colspan="16">직원이 없습니다.</td>
         </tr>
         {% endif %}
         </tbody>
