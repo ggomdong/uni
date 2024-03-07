@@ -65,11 +65,10 @@ html {
 }
 
 .module_box-disabled {
-    border: 1px solid gray;
     width: 30px;
     height: 30px;
     margin: 0 auto;     /* div 가운데 정렬 */
-    background-color: #ddd;
+    background-color: #ebebeb;
 }
 
 /* 체크 안된 invisible-radio 인접 label에 mouse over 하면 label에 속한 module_box의 투명도를 0.7로 변경 */

@@ -47,6 +47,7 @@
     <div class="div-sticky-h">
     <table class="table text-center table-borderless table-sm sticky-top">
         {% if schedule_list %}
+        {% now "Ym" as yearmonth %}
         {% now "j" as today %}
         <thead>
         <tr>
@@ -58,7 +59,7 @@
                 <font color="red">
                 {{ key }}
                 </font>
-                {% elif key == today %}
+                {% elif yearmonth == stand_ym and key == today %}
                 <div class="roundtext">{{ key }}</div>
                 {% else %}
                 {{ key }}
@@ -75,7 +76,7 @@
                 <font color="red">
                 {{ value }}
                 </font>
-                {% elif key == today %}
+                {% elif yearmonth == stand_ym and key == today %}
                 <div class="roundtext">{{ value }}</div>
                 {% else %}
                 {{ value }}
@@ -87,11 +88,20 @@
 
         <tbody>
         {% for schedule in schedule_list %}
-        <tr {% if schedule.dept_diff == 'Y' %}style="border-top: 1px solid;"{% endif %}>
+
+        {% if schedule.dept_diff == 'Y' %}
+        <tr style="border-bottom: 1px solid #d3d3d3;">
+            <td></td>
+        </tr>
+        <tr>
+            <td></td>
+        </tr>
+        {% endif %}
+        <tr>
             <td class="align-middle">{{ schedule.dept }}</td>
             <td class="align-middle">{{ schedule.emp_name }}</td>
             {% for key, value in day_list.items %}
-            <td {% if key == today %}class="is-hover"{% endif %}>
+            <td {% if yearmonth == stand_ym and key == today %}class="is-hover"{% endif %}>
                 {% with schedule|get_day_index:key as day %}
                 {% if stand_ym|concat_date:key < schedule.join_date or schedule.out_date < stand_ym|concat_date:key %}
                 <div class="module_box-disabled"></div>

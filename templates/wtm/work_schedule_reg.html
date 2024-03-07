@@ -101,9 +101,17 @@
         {% if user_list %}
         <tbody>
         {% for user in user_list %}
-        <tr {% if user.dept_diff == 'Y' %}style="border-top: 1px solid;"{% endif %}>
-            <td class="align-middle">{{ user.dept }}</td>
-            <td class="align-middle">{{ user.emp_name }}</td>
+        {% if user.dept_diff == 'Y' %}
+        <tr style="border-bottom: 1px solid #d3d3d3;">
+            <th></th>
+        </tr>
+        <tr>
+            <th></th>
+        </tr>
+        {% endif %}
+        <tr>
+            <th class="align-middle">{{ user.dept }}</th>
+            <th class="align-middle">{{ user.emp_name }}</th>
             {% for key, value in day_list.items %}
             <td>
                 {% with user|get_index:key as schedule %}
