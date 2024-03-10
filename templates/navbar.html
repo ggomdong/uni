@@ -11,42 +11,47 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            {% with request.resolver_match.url_name as url_name %}
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if url_name == 'index' %}ci{% endif %}" href="{% url 'wtm:index' %}">TODAY</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if url_name == 'work_schedule' %}ci{% endif %}" href="{% url 'wtm:work_schedule' %}">근무표</a>
+                </li>
                 {% if user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'common:user_list' %}">직원관리</a>
+                    <a class="nav-link {% if url_name == 'work_status' %}ci{% endif %}" href="{% url 'wtm:work_status' %}">근태현황</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if url_name == 'work_log' %}ci{% endif %}" href="{% url 'wtm:work_log' %}">근무로그</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'wtm:work_module' %}">근무모듈</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'wtm:work_schedule' %}">근무표</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'wtm:work_status' %}">근태현황</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'wtm:work_log' %}">근무이력</a>
+                    <a class="nav-link {% if url_name == 'user_list' %}ci{% endif %}" href="{% url 'common:user_list' %}">직원관리</a>
                 </li>
                 <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <a class="nav-link dropdown-toggle {% if url_name == 'dept' or url_name == 'position' or url_name == 'work_module' or url_name == 'holiday' or url_name == 'business' or url_name == 'code' %}ci{% endif %}" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     설정
                   </a>
                   <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="{% url 'common:dept_list' %}">부서관리</a>
-                    <a class="dropdown-item" href="{% url 'common:position_list' %}">직위관리</a>
+                    <a class="dropdown-item" href="{% url 'common:dept' %}">부서관리</a>
+                    <a class="dropdown-item" href="{% url 'common:position' %}">직위관리</a>
                     <hr class="dropdown-divider">
-                    <a class="dropdown-item" href="#">영업일관리</a>
-                    <a class="dropdown-item" href="#">공휴일관리</a>
+                    <a class="dropdown-item" href="{% url 'wtm:work_module' %}">근무모듈</a>
                     <hr class="dropdown-divider">
-                    <a class="dropdown-item" href="{% url 'common:code_list' %}">코드관리</a>
+                    <a class="dropdown-item" href="{% url 'common:holiday' %}">공휴일관리</a>
+                    <a class="dropdown-item" href="{% url 'common:business' %}">영업일관리</a>
+                    <hr class="dropdown-divider">
+                    <a class="dropdown-item" href="{% url 'common:code' %}">코드관리</a>
                   </div>
                 </li>
-                {% endif %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'pybo:index' %}">게시판</a>
+                    <a class="nav-link {% if url_name == 'pybo_index' %}ci{% endif %}" href="{% url 'pybo:pybo_index' %}">공지사항</a>
                 </li>
+                {% endif %}
             </ul>
+            {% endwith %}
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
                     {% if user.is_authenticated %}

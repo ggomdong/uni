@@ -3,8 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db.models.functions import ExtractDay
 from django.db import connection
-from common.models import User
+from common.models import User, Holiday
 from .models import Work, Module, Contract, Schedule
 from .forms import ModuleForm, ContractForm
 from django.utils import timezone
@@ -12,7 +13,6 @@ from common import context_processors
 from datetime import datetime
 
 
-@login_required(login_url='common:login')
 def index(request):
     obj = Module.objects.all()
 
@@ -159,7 +159,6 @@ def work_contract_delete(request, contract_id):
     return redirect('common:user_modify', user_id=user_id)
 
 
-@login_required(login_url='common:login')
 def work_schedule(request, stand_ym=None):
     # 기준년월 값이 없으면 현재로 세팅
     if stand_ym is None:
@@ -175,9 +174,9 @@ def work_schedule(request, stand_ym=None):
             s.d30_id d30, s.d31_id d31,
             d.order as do, p.order as po
         FROM wtm_schedule s
-            INNER JOIN common_user u on (s.user_id = u.id)
-            INNER JOIN common_dept d on (u.dept = d.dept_name)
-            INNER JOIN common_position p on (u.position = p.position_name)
+            LEFT OUTER JOIN common_user u on (s.user_id = u.id)
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name)
         WHERE year = '{stand_ym[0:4]}'
           and month = '{stand_ym[4:6]}'
         ORDER BY do, po, join_date
@@ -209,7 +208,12 @@ def work_schedule(request, stand_ym=None):
     day_list = context_processors.get_day_list(stand_ym)
     module_list = Module.objects.all()  # 근로모듈
 
-    context = {'schedule_list': schedule_list, 'day_list': day_list, 'module_list': module_list, 'stand_ym': stand_ym}
+    # 공휴일 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
+    holiday_list = list(Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6]).annotate(
+        day=ExtractDay('holiday')).values_list('day', flat=True))
+
+    context = {'schedule_list': schedule_list, 'day_list': day_list, 'module_list': module_list, 'stand_ym': stand_ym,
+               'holiday_list': holiday_list}
     return render(request, 'wtm/work_schedule.html', context)
 
 
@@ -311,8 +315,8 @@ def work_schedule_reg(request, stand_ym):
                 DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
                 d.order as do, p.order as po
         FROM common_user u
-            INNER JOIN common_dept d on (u.dept = d.dept_name)
-            INNER JOIN common_position p on (u.position = p.position_name)
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name)
         WHERE is_superuser = false 
             and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
             and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')

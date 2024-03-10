@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 # from django.contrib.auth.models import User
-from .models import User, Dept, Position, Code
+from .models import User, Dept, Position, Holiday, Business, Code
 
 # 속성 추가를 위해 UserCreationForm 사용
 class UserForm(UserCreationForm):
@@ -71,6 +71,55 @@ class PositionForm(forms.ModelForm):
         widgets = {
             'position_name': forms.TextInput(attrs={'class': 'form-control'}),
             'order': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class HolidayForm(forms.ModelForm):
+    class Meta:
+        model = Holiday
+        fields = ['holiday', 'holiday_name']
+
+        labels = {
+            'holiday': '공휴일',
+            'holiday_name': '공휴일명',
+        }
+
+        widgets = {
+            'holiday': forms.DateInput(attrs={'type': 'date', 'max': '9999-12-31', 'class': 'form-control'}),
+            'holiday_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class BusinessForm(forms.ModelForm):
+    class Meta:
+        model = Business
+        fields = ['stand_date', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+
+        labels = {
+            'stand_date': '기준일자',
+            'mon': '월요일',
+            'tue': '화요일',
+            'wed': '수요일',
+            'thu': '목요일',
+            'fri': '금요일',
+            'sat': '토요일',
+            'sun': '일요일',
+        }
+
+        CHOICES = [
+            ('Y', '영업'),
+            ('N', '미영업'),
+        ]
+
+        widgets = {
+            'stand_date': forms.DateInput(attrs={'type': 'date', 'max': '9999-12-31', 'class': 'form-control'}),
+            'mon': forms.RadioSelect(attrs={'class': 'btn-check'}, choices=CHOICES),
+            'tue': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
+            'wed': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
+            'thu': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
+            'fri': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
+            'sat': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
+            'sun': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
         }
 
 

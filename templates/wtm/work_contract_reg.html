@@ -59,8 +59,7 @@
                         <label class="form-label" for="{{module.id}}">
                             <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
                             {% if module.cat == 'OFF' %}
-                                -<br>
-                                &nbsp;
+                                -
                             {% else %}
                                 {{ module.start_time }}
                                 {{ module.end_time }}

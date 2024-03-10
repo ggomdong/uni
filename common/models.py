@@ -34,6 +34,30 @@ class Position(models.Model):
     mod_date = models.DateTimeField()
 
 
+class Holiday(models.Model):
+    holiday = models.DateField()  # 일자
+    holiday_name = models.CharField(max_length=20)  # 공휴일명
+    reg_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='holiday_reg_id')
+    reg_date = models.DateTimeField()
+    mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='holiday_mod_id')
+    mod_date = models.DateTimeField()
+
+
+class Business(models.Model):
+    stand_date = models.DateField()
+    mon = models.CharField(max_length=1)
+    tue = models.CharField(max_length=1)
+    wed = models.CharField(max_length=1)
+    thu = models.CharField(max_length=1)
+    fri = models.CharField(max_length=1)
+    sat = models.CharField(max_length=1)
+    sun = models.CharField(max_length=1)
+    reg_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='business_reg_id')
+    reg_date = models.DateTimeField()
+    mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='business_mod_id')
+    mod_date = models.DateTimeField()
+
+
 class Code(models.Model):
     code_name = models.CharField(max_length=20)  # 코드명
     value = models.CharField(max_length=50) # 코드값

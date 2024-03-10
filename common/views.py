@@ -3,10 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db.models.functions import ExtractYear
 from django.db import connection
 from django.forms import modelformset_factory
-from .forms import UserForm, UserModifyForm, DeptForm, PositionForm, CodeForm
-from .models import User, Dept, Position, Code
+from .forms import UserForm, UserModifyForm, DeptForm, PositionForm, HolidayForm, BusinessForm, CodeForm
+from .models import User, Dept, Position, Holiday, Business, Code
 from wtm.models import Module, Contract
 from django.utils import timezone
 
@@ -89,8 +90,8 @@ def user_list(request):
                 ) 
             ) c
             ON (u.id = c.user_id)
-            INNER JOIN common_dept d on (u.dept = d.dept_name)
-			INNER JOIN common_position p on (u.position = p.position_name)
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
+			LEFT OUTER JOIN common_position p on (u.position = p.position_name)
         WHERE is_superuser = false 
             and {work_condition}
             and {dept_condition}
@@ -157,14 +158,14 @@ def user_modify(request, user_id):
 
 
 @login_required(login_url='common:login')
-def dept_list(request):
+def dept(request):
     DeptFormSet = modelformset_factory(model=Dept, form=DeptForm, extra=1, can_delete=True)
 
     if request.method == 'POST':
         formset = DeptFormSet(request.POST)
         if not formset.has_changed():
             messages.error(request, '수정된 사항이 없습니다.')
-            return redirect('common:dept_list')
+            return redirect('common:dept')
 
         if formset.is_valid():
             depts = formset.save(commit=False)
@@ -179,24 +180,24 @@ def dept_list(request):
                 dept.mod_date = timezone.now()
                 dept.save()
 
-            return redirect('common:dept_list')
+            return redirect('common:dept')
     else:
-        formset = DeptFormSet()
+        formset = DeptFormSet(queryset=Dept.objects.order_by('order'))
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     context = {'formset': formset}
-    return render(request, 'common/dept_list.html', context)
+    return render(request, 'common/dept.html', context)
 
 
 @login_required(login_url='common:login')
-def position_list(request):
+def position(request):
     PositionFormSet = modelformset_factory(model=Position, form=PositionForm, extra=1, can_delete=True)
 
     if request.method == 'POST':
         formset = PositionFormSet(request.POST)
         if not formset.has_changed():
             messages.error(request, '수정된 사항이 없습니다.')
-            return redirect('common:position_list')
+            return redirect('common:position')
 
         if formset.is_valid():
             positions = formset.save(commit=False)
@@ -211,17 +212,89 @@ def position_list(request):
                 position.mod_date = timezone.now()
                 position.save()
 
-            return redirect('common:position_list')
+            return redirect('common:position')
     else:
-        formset = PositionFormSet()
+        formset = PositionFormSet(queryset=Position.objects.order_by('order'))
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     context = {'formset': formset}
-    return render(request, 'common/position_list.html', context)
+    return render(request, 'common/position.html', context)
 
 
 @login_required(login_url='common:login')
-def code_list(request):
+def holiday(request):
+    search = request.GET.get('search', '전체')
+
+    HolidayFormSet = modelformset_factory(model=Holiday, form=HolidayForm, extra=1, can_delete=True)
+
+    if request.method == 'POST':
+        formset = HolidayFormSet(request.POST)
+        if not formset.has_changed():
+            messages.error(request, '수정된 사항이 없습니다.')
+            return redirect('common:holiday')
+
+        if formset.is_valid():
+            holidays = formset.save(commit=False)
+
+            for obj in formset.deleted_objects:
+                obj.delete()
+
+            for holiday in holidays:
+                holiday.reg_id = request.user
+                holiday.reg_date = timezone.now()
+                holiday.mod_id = request.user
+                holiday.mod_date = timezone.now()
+                holiday.save()
+
+            return redirect('common:holiday')
+    else:
+        if search == '전체':
+            formset = HolidayFormSet(queryset=Holiday.objects.order_by('holiday', 'holiday_name'))
+        else:
+            formset = HolidayFormSet(queryset=Holiday.objects.order_by('holiday', 'holiday_name').filter(holiday__year=search))
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    # 년도별 공휴일을 검색하기 위해 QuerySet을 해당값만으로 리스트 구성(flat)하고, 중복제거(distinct)
+    year_list = list(Holiday.objects.annotate(
+        year=ExtractYear('holiday')).values_list('year', flat=True).distinct())
+    context = {'formset': formset, 'year_list': year_list}
+    return render(request, 'common/holiday.html', context)
+
+
+@login_required(login_url='common:login')
+def business(request):
+    BusinessFormSet = modelformset_factory(model=Business, form=BusinessForm, extra=1, can_delete=True)
+
+    if request.method == 'POST':
+        formset = BusinessFormSet(request.POST)
+        if not formset.has_changed():
+            messages.error(request, '수정된 사항이 없습니다.')
+            return redirect('common:business')
+
+        if formset.is_valid():
+            businesses = formset.save(commit=False)
+
+            for obj in formset.deleted_objects:
+                obj.delete()
+
+            for business in businesses:
+                business.reg_id = request.user
+                business.reg_date = timezone.now()
+                business.mod_id = request.user
+                business.mod_date = timezone.now()
+                business.save()
+
+            return redirect('common:business')
+    else:
+        formset = BusinessFormSet()
+
+    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
+    context = {'formset': formset}
+    return render(request, 'common/business.html', context)
+
+
+@login_required(login_url='common:login')
+def code(request):
     search = request.GET.get('search', '전체')
 
     CodeFormSet = modelformset_factory(model=Code, form=CodeForm, extra=1, can_delete=True)
@@ -230,7 +303,7 @@ def code_list(request):
         formset = CodeFormSet(request.POST)
         if not formset.has_changed():
             messages.error(request, '수정된 사항이 없습니다.')
-            return redirect('common:code_list')
+            return redirect('common:code')
 
         if formset.is_valid():
             codes = formset.save(commit=False)
@@ -245,7 +318,7 @@ def code_list(request):
                 code.mod_date = timezone.now()
                 code.save()
 
-            return redirect('common:code_list')
+            return redirect('common:code')
     else:
         if search == '전체':
             qs = CodeFormSet(queryset=Code.objects.order_by('code_name', 'order'))
@@ -257,4 +330,4 @@ def code_list(request):
     formset = qs
     code_name_list = list(Code.objects.values_list('code_name', flat=True).distinct())  # [부서, 직위]
     context = {'formset': formset, 'code_name_list': code_name_list, 'search': search}
-    return render(request, 'common/code_list.html', context)
+    return render(request, 'common/code.html', context)

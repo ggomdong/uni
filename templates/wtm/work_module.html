@@ -41,7 +41,7 @@
                         {{ module.end_time }}
                     </font>
                     {% elif module.cat == '유급휴무' %}
-                        {{ module.name|slice:"0:2" }}
+                        {{ module.name|slice:"0:2" }}<br>
                         {{ module.name|slice:"2:4" }}
                     {% elif module.cat == 'OFF' %}
                         -

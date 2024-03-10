@@ -1,10 +1,12 @@
 from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
 
 from ..models import Question
 
 
+@login_required(login_url='common:login')
 def index(request):
     page = request.GET.get('page', '1')     # 페이지 default 값은 1
     kw = request.GET.get('kw', '')      # 검색어
@@ -24,6 +26,7 @@ def index(request):
     return render(request, 'pybo/question_list.html', context)
 
 
+@login_required(login_url='common:login')
 def detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     context = {'question': question}

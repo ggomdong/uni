@@ -27,7 +27,7 @@
     <table class="text-center">
         <tr>
             {% for module in module_list %}
-            <td style="width: 50px;">
+            <td class="align-middle" style="width: 50px;">
                 <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
                 <label class="form-label" for="{{module.id}}">
                     <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
@@ -37,11 +37,10 @@
                             {{ module.end_time }}
                         </font>
                         {% elif module.cat == '유급휴무' %}
-                        {{ module.name|slice:"0:2" }}
+                        {{ module.name|slice:"0:2" }}<br>
                         {{ module.name|slice:"2:4" }}
                         {% elif module.cat == 'OFF' %}
-                        -<br>
-                        &nbsp;
+                        -
                         {% else %}
                         {{ module.start_time }}
                         {{ module.end_time }}
