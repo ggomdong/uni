@@ -223,7 +223,7 @@ def position(request):
 
 @login_required(login_url='common:login')
 def holiday(request):
-    search = request.GET.get('search', '전체')
+    search_year = request.GET.get('search', '전체')
 
     HolidayFormSet = modelformset_factory(model=Holiday, form=HolidayForm, extra=1, can_delete=True)
 
@@ -248,16 +248,16 @@ def holiday(request):
 
             return redirect('common:holiday')
     else:
-        if search == '전체':
+        if search_year == '전체':
             formset = HolidayFormSet(queryset=Holiday.objects.order_by('holiday', 'holiday_name'))
         else:
-            formset = HolidayFormSet(queryset=Holiday.objects.order_by('holiday', 'holiday_name').filter(holiday__year=search))
+            formset = HolidayFormSet(queryset=Holiday.objects.order_by('holiday', 'holiday_name').filter(holiday__year=search_year))
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     # 년도별 공휴일을 검색하기 위해 QuerySet을 해당값만으로 리스트 구성(flat)하고, 중복제거(distinct)
     year_list = list(Holiday.objects.annotate(
         year=ExtractYear('holiday')).values_list('year', flat=True).distinct())
-    context = {'formset': formset, 'year_list': year_list}
+    context = {'formset': formset, 'year_list': year_list, 'search_year': search_year}
     return render(request, 'common/holiday.html', context)
 
 

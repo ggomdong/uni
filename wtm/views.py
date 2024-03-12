@@ -249,7 +249,6 @@ def work_schedule_reg(request, stand_ym):
         # 마지막 요소를 list에 추가
         dummy = schedule_row.copy()
         schedule_list.append(dummy)
-        # print(schedule_list)
 
         for schedule in schedule_list:
             obj = Schedule(
@@ -336,37 +335,48 @@ def work_schedule_reg(request, stand_ym):
                 i = i + 1
             user_list.append(d)
 
+    # 공휴일 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
+    holiday_list = list(Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6]).annotate(
+        day=ExtractDay('holiday')).values_list('day', flat=True))
+
+    # 공휴일은 OFF 모듈로 지정하기 위해 OFF 모듈의 ID 추출
+    off_module_list = list(Module.objects.filter(cat='OFF').values_list('id', flat=True))
+    off_module_id = (off_module_list[0] if off_module_list else None)
+
     # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
     pre_dept = None
 
     # user_list에 일자별 근무모듈을 매핑
     for user in user_list:
         for key, value in day_list_eng.items():
-            query = f'''
-                SELECT c.val
-                FROM
-                (
-                SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
-                FROM wtm_contract
-                WHERE user_id = {user['id']}
-                  and DATE_FORMAT(stand_date, '%Y%m%d') <= '{stand_ym + key.zfill(2)}'
-                ) c
-                WHERE rownum = 1
-                '''
-            with connection.cursor() as cursor:
-                cursor.execute(query)
-                r = cursor.fetchone()
+            if int(key) in holiday_list:
+                user[key] = off_module_id
+            else:
+                query = f'''
+                    SELECT c.val
+                    FROM
+                    (
+                    SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
+                    FROM wtm_contract
+                    WHERE user_id = {user['id']}
+                      and DATE_FORMAT(stand_date, '%Y%m%d') <= '{stand_ym + key.zfill(2)}'
+                    ) c
+                    WHERE rownum = 1
+                    '''
+                with connection.cursor() as cursor:
+                    cursor.execute(query)
+                    r = cursor.fetchone()
 
-            user[key] = (None if r == None else r[0])
+                user[key] = (None if r == None else r[0])
 
         # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅
         user['dept_diff'] = ('N' if pre_dept == user['dept'] else 'Y')
         pre_dept = user['dept']
 
-    # print(user_list)
-
     module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
-    context = {'stand_ym': stand_ym, 'day_list': day_list, 'user_list': user_list, 'module_list': module_list}
+
+    context = {'stand_ym': stand_ym, 'day_list': day_list, 'user_list': user_list, 'module_list': module_list,
+               'holiday_list': holiday_list}
     return render(request, 'wtm/work_schedule_reg.html', context)
 
 

@@ -113,7 +113,7 @@ class BusinessForm(forms.ModelForm):
 
         widgets = {
             'stand_date': forms.DateInput(attrs={'type': 'date', 'max': '9999-12-31', 'class': 'form-control'}),
-            'mon': forms.RadioSelect(attrs={'class': 'btn-check'}, choices=CHOICES),
+            'mon': forms.RadioSelect(choices=CHOICES),
             'tue': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
             'wed': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
             'thu': forms.RadioSelect(attrs={'class': 'form-control'}, choices=CHOICES),
