@@ -17,7 +17,7 @@ def question_create(request):
             question.author = request.user
             question.create_date = timezone.now()   # 실제 저장을 위해 작성일시 설정
             question.save()     # 실제로 저장
-            return redirect('pybo:index')
+            return redirect('pybo:pybo_index')
     else:   # "질문 등록" 버튼을 눌러서 'pybo:question_create'를 호출하면 GET 방식이므로 질문 등록 화면을 보여줌
         form = QuestionForm()
 
@@ -56,7 +56,7 @@ def question_delete(request, question_id):
         messages.error(request, '삭제 권한이 없습니다.')
         return redirect('pybo:detail', question_id=question.id)
     question.delete()
-    return redirect('pybo:index')
+    return redirect('pybo:pybo_index')
 
 
 @login_required(login_url='common:login')

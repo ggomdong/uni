@@ -4,12 +4,22 @@
 <form id="form" method="post">
 {% csrf_token %}
 <div class="container my-3">
+    <!-- message 표시 -->
+    {% if messages %}
+    <div class="alert alert-danger my-3" role="alert">
+        {% for message in messages %}
+        <strong>{{ message.tags }}</strong>
+        <ul><li>{{ message.message }}</li></ul>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="row my-3 align-items-center text-bg-dark">
         <div class="col-10 text-bg-dark text-center">
                 {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"4:6" }}월
         </div>
         <div class="col-2 text-bg-dark text-end">
-            <a href="{% url 'wtm:work_schedule' %}" class="btn btn-secondary">
+            <a href="{% url 'wtm:work_schedule' stand_ym %}" class="btn btn-secondary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-backspace-fill" viewBox="0 0 16 16">
                   <path d="M15.683 3a2 2 0 0 0-2-2h-7.08a2 2 0 0 0-1.519.698L.241 7.35a1 1 0 0 0 0 1.302l4.843 5.65A2 2 0 0 0 6.603 15h7.08a2 2 0 0 0 2-2zM5.829 5.854a.5.5 0 1 1 .707-.708l2.147 2.147 2.146-2.147a.5.5 0 1 1 .707.708L9.39 8l2.146 2.146a.5.5 0 0 1-.707.708L8.683 8.707l-2.147 2.147a.5.5 0 0 1-.707-.708L7.976 8z"/>
                 </svg>
@@ -121,11 +131,19 @@
                     {% endfor %}">
                     {% for module in module_list %}
                     {% if module.id == schedule %}
-                        {% if module.cat == 'OFF' %}
-                            -
-                        {% else %}
+                        {% if module.cat == '휴일근무' %}
+                        <font color="blue">
                             {{ module.start_time }}
                             {{ module.end_time }}
+                        </font>
+                        {% elif module.cat == '유급휴무' %}
+                        {{ module.name|slice:"0:2" }}<br>
+                        {{ module.name|slice:"2:4" }}
+                        {% elif module.cat == 'OFF' %}
+                        -
+                        {% else %}
+                        {{ module.start_time }}
+                        {{ module.end_time }}
                         {% endif %}
                     {% endif %}
                     {% endfor %}
