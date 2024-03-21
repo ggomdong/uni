@@ -212,6 +212,79 @@ def work_schedule(request, stand_ym=None):
     holiday_list = list(Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6]).annotate(
         day=ExtractDay('holiday')).values_list('day', flat=True))
 
+    # 입사일자가 근무표 말일 이전인 직원만 대상으로 하기 위해 변수 할당, list(day_list)[-1]은 말일
+    schedule_date = stand_ym + list(day_list)[-1]
+
+    # 근무표와 직원현황이 다른 경우 1 : 스케쥴 작성 이후 추가된 직원이 있는 경우 (user minus schedule)
+    raw_query = f'''
+        SELECT emp_name
+        FROM
+        (
+            SELECT id, emp_name
+            FROM common_user u
+            WHERE is_superuser = false 
+                and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
+                and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
+        ) a
+        LEFT JOIN
+        (
+            SELECT u.id
+            FROM wtm_schedule s
+                LEFT OUTER JOIN common_user u on (s.user_id = u.id)
+            WHERE year = '{stand_ym[0:4]}'
+              and month = '{stand_ym[4:6]}'
+        ) b
+        on a.id = b.id
+        WHERE b.id is null
+        '''
+
+    with connection.cursor() as cursor:
+        cursor.execute(raw_query)
+        results = cursor.fetchall()
+
+        need_to_add = []
+        for r in results:
+            need_to_add.append(r[0])
+
+    if schedule_list and need_to_add:
+        messages.warning(request, f'근무표 추가 필요 : {need_to_add}')
+        redirect('wtm:work_schedule', stand_ym=stand_ym)
+
+    # 근무표와 직원현황이 다른 경우 2 : 스케쥴 작성 이후 삭제 또는 입사일 변경 등 직원이 있는 경우 (schedule minus user)
+    raw_query = f'''
+        SELECT b.emp_name
+        FROM
+        (
+            SELECT u.id, u.emp_name
+            FROM wtm_schedule s
+                LEFT OUTER JOIN common_user u on (s.user_id = u.id)
+            WHERE year = '{stand_ym[0:4]}'
+              and month = '{stand_ym[4:6]}'
+        ) b        
+        LEFT JOIN
+        (
+            SELECT id
+            FROM common_user u
+            WHERE is_superuser = false 
+                and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
+                and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
+        ) a
+        on b.id = a.id
+        WHERE a.id is null
+        '''
+
+    with connection.cursor() as cursor:
+        cursor.execute(raw_query)
+        results = cursor.fetchall()
+
+        need_to_sub = []
+        for r in results:
+            need_to_sub.append(r[0])
+
+    if schedule_list and need_to_sub:
+        messages.warning(request, f'근무표 제외 필요 : {need_to_sub}')
+        redirect('wtm:work_schedule', stand_ym=stand_ym)
+
     context = {'schedule_list': schedule_list, 'day_list': day_list, 'module_list': module_list, 'stand_ym': stand_ym,
                'holiday_list': holiday_list}
     return render(request, 'wtm/work_schedule.html', context)
@@ -612,10 +685,12 @@ def work_schedule_modify(request, stand_ym):
     for user in user_list:
         # 기존 스케쥴이 있는 경우 schedule에서 가져옴
         if user['id'] in schedule_user_list:
+            user['is_new'] = False
             for key, value in day_list.items():
                 user[key] = list(schedule_origin.filter(user_id=user['id']).values_list('d' + key + '_id', flat=True))[0]
         # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴
         else:
+            user['is_new'] = True
             for key, value in day_list_eng.items():
                 # 입사 전이나, 최종근무일 후라면 None으로 세팅
                 if stand_ym + key.zfill(2) < user['join_date'] or (

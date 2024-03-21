@@ -2,22 +2,32 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
+    <!-- message 표시 -->
+    {% if messages %}
+    <div class="alert alert-danger my-3" role="alert">
+        {% for message in messages %}
+        <strong>{{ message.tags }}</strong>
+        <ul><li>{{ message.message }}</li></ul>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <form id="form" method="get">
     {% csrf_token %}
-    <div class="row my-3 align-items-center text-bg-dark">
-        <div class="col-10 text-bg-dark text-center" style="font-color: red;">
-            <a href="{% url 'wtm:work_schedule' stand_ym|get_month:-1 %}" style="color: white;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-left-fill" viewBox="0 0 16 16">
-                  <path d="m3.86 8.753 5.482 4.796c.646.566 1.658.106 1.658-.753V3.204a1 1 0 0 0-1.659-.753l-5.48 4.796a1 1 0 0 0 0 1.506z"/>
-                </svg></a> &nbsp;&nbsp;
-                {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"4:6" }}월
-                &nbsp;&nbsp;
-            <a href="{% url 'wtm:work_schedule' stand_ym|get_month:1 %}" style="color: white;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-right-fill" viewBox="0 0 16 16">
-                  <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+    <div class="row my-3 align-items-center">
+        <div class="col-10 fs-3">
+            <a href="{% url 'wtm:work_schedule' stand_ym|get_month:-1 %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
                 </svg></a>
+            &nbsp;
+            <a href="{% url 'wtm:work_schedule' stand_ym|get_month:1 %}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                </svg></a>
+            &nbsp;&nbsp;{{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"4:6" }}월&nbsp;&nbsp;
         </div>
-        <div class="col-2 text-bg-dark text-end">
+        <div class="col-2 text-end">
             {% if schedule_list %}
             <a href="javascript:void(0)" class="delete btn btn-danger"
                    data-uri="{% url 'wtm:work_schedule_delete' stand_ym %}">
