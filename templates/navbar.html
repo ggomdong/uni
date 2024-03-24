@@ -50,9 +50,6 @@
                     <a class="nav-link {% if url_name == 'pybo_index' %}ci{% endif %}" href="{% url 'pybo:pybo_index' %}">공지사항</a>
                 </li>
                 {% endif %}
-            </ul>
-            {% endwith %}
-            <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
                     {% if user.is_authenticated %}
                     <a class="nav-link" href="{% url 'common:logout' %}">{{ user.username }} (로그아웃)</a>
@@ -61,6 +58,7 @@
                     {% endif %}
                 </li>
             </ul>
+            {% endwith %}
         </div>
     </div>
 </nav>
