@@ -195,6 +195,7 @@ nav.navbar .navbar-nav {
 nav.navbar .navbar-collapse {
 	width: 100%;
 	padding-left: 50px;
+	padding-top: 30px;
 }
 nav.navbar .navbar-nav {
 	width: 100%;
