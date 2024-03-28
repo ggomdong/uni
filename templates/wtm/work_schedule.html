@@ -154,7 +154,7 @@
             {% endfor %}
             {% for key, value in next_day_list.items %}
             <td>
-                {% with schedule|get_next_index:key as day %}
+                {% with schedule|get_day_index:key as day %}
                 {% if next_ym|concat_date:key < schedule.join_date or schedule.out_date < next_ym|concat_date:key %}
                 <div class="module_box-disabled"></div>
                 {% else %}
