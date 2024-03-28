@@ -238,7 +238,7 @@ def work_schedule(request, stand_ym=None):
 
         for schedule in schedule_list:
             raw_query = f'''
-                SELECT s.d1_id '1', s.d2_id '2', s.d3_id '3', s.d4_id '4', s.d5_id '5', s.d6_id '6'
+                SELECT s.d1_id n1, s.d2_id n2, s.d3_id n3, s.d4_id n4, s.d5_id n5, s.d6_id n6
                 FROM wtm_schedule s
                 WHERE year = '{next_ym[0:4]}'
                   and month = '{next_ym[4:6]}'
