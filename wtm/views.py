@@ -255,6 +255,8 @@ def work_schedule(request, stand_ym=None):
                         schedule[x[i][0]] = r[i]
                         i = i + 1
 
+        print(schedule_list)
+
     # 근무표와 직원현황이 다른 경우 1 : 스케쥴 작성 이후 추가된 직원이 있는 경우 (user minus schedule)
     raw_query = f'''
         SELECT emp_name
