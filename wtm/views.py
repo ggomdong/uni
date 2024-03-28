@@ -11,6 +11,7 @@ from .forms import ModuleForm, ContractForm
 from django.utils import timezone
 from common import context_processors
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 
 def index(request):
@@ -215,6 +216,45 @@ def work_schedule(request, stand_ym=None):
     # 입사일자가 근무표 말일 이전인 직원만 대상으로 하기 위해 변수 할당, list(day_list)[-1]은 말일
     schedule_date = stand_ym + list(day_list)[-1]
 
+    # 다음달 일요일까지 날짜를 추가하기 위한 로직
+    # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.해당 날짜들로 구성된 day_list 작성
+    # 3.next_ym 기준 공휴일 list 생성 4.next_ym 기준 스케쥴 list 생성
+    last_day_weekday = context_processors.get_weekday(schedule_date)
+
+    # 전달할 변수는 일단 초기화
+    next_ym = None
+    next_day_list = None
+    next_holiday_list = None
+    next_schedule_list = None
+
+    # last_day_weekday가 6(일요일)이면 패스
+    if last_day_weekday is not 6:
+        stand_date = datetime(int(stand_ym[0:4]), int(stand_ym[4:6]), 1)
+        # 다음달 년월 산출
+        next_ym = str(stand_date + relativedelta(months=1)).replace('-', '')[0:6]
+        next_day_list = context_processors.get_day_list(next_ym, 6-last_day_weekday)
+        next_holiday_list = list(Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6]).annotate(
+            day=ExtractDay('holiday')).values_list('day', flat=True))
+
+        for schedule in schedule_list:
+            raw_query = f'''
+                SELECT s.d1_id '1', s.d2_id '2', s.d3_id '3', s.d4_id '4', s.d5_id '5', s.d6_id '6'
+                FROM wtm_schedule s
+                WHERE year = '{next_ym[0:4]}'
+                  and month = '{next_ym[4:6]}'
+                  and user_id = '{schedule["uid"]}'
+                '''
+            with connection.cursor() as cursor:
+                cursor.execute(raw_query)
+                results = cursor.fetchall()
+
+                x = cursor.description
+                for r in results:
+                    i = 0
+                    while i < len(x):
+                        schedule[x[i][0]] = r[i]
+                        i = i + 1
+
     # 근무표와 직원현황이 다른 경우 1 : 스케쥴 작성 이후 추가된 직원이 있는 경우 (user minus schedule)
     raw_query = f'''
         SELECT emp_name
@@ -286,7 +326,8 @@ def work_schedule(request, stand_ym=None):
         redirect('wtm:work_schedule', stand_ym=stand_ym)
 
     context = {'schedule_list': schedule_list, 'day_list': day_list, 'module_list': module_list, 'stand_ym': stand_ym,
-               'holiday_list': holiday_list}
+               'holiday_list': holiday_list, 'next_day_list': next_day_list, 'next_holiday_list': next_holiday_list,
+               'next_ym': next_ym}
     return render(request, 'wtm/work_schedule.html', context)
 
 
