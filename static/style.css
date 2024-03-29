@@ -2,6 +2,82 @@ html {
   font-size: 14px;
 }
 
+body {
+  -webkit-text-size-adjust: none; /* 폰트의 사이즈를 늘어나지 않도록 한다. */
+  .container {
+   max-width: 1500px;
+   }
+}
+
+/* CSS for Bootstrap 5 Fixed Left Sidebar Navigation */
+@media(max-width:1920px){
+body {
+  padding-top: 65px;
+  padding-left: 0px;
+}
+}
+
+@media(min-width:1920px){
+body {
+  padding-left: 300px;
+  padding-right: 60px;
+  padding-top: 0px;
+}
+nav.navbar {
+  position: fixed;
+  left: 0;
+  width: 200px;
+  bottom: 0;
+  top: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: block;
+  border-right: 1px solid #cecece;
+}
+nav.navbar >.container-fluid {
+  flex-direction: column;
+  padding: 0;
+}
+nav.navbar .navbar-nav {
+  flex-direction: column;
+}
+nav.navbar .navbar-collapse {
+  width: 100%;
+  padding-left: 50px;
+  padding-top: 30px;
+}
+nav.navbar .navbar-nav {
+  width: 100%;
+}/*
+nav.navbar .navbar-nav .dropdown-menu {
+  position: static;
+  display: block;
+}
+nav.navbar .dropdown {
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+nav.navbar .dropdown-item {
+  white-space: normal;
+  font-size: 14px;
+  vertical-align: middle;
+}
+nav.navbar .dropdown-item img {
+  margin-right: 5px;
+}
+nav.navbar .dropdown-toggle {
+  cursor: default;
+}
+nav.navbar .dropdown-menu {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+nav.navbar .dropdown-toggle::after {
+  display: none;
+}*/
+}
+
 /* 스크롤바 CSS */
 ::-webkit-scrollbar {
   width: 10px;
@@ -114,8 +190,8 @@ select[readonly] {
   pointer-events: none;
 }
 
-/* 테이블 헤더 고정을 위한 CSS */
-.div-sticky-h { height: 80vh; width: 100%; overflow: auto; }
+/* 테이블 헤더 고정을 위한 css */
+.div-sticky-h { height: 85vh; width: 100%; overflow: auto; }
 .div-sticky-m { height: 70vh; width: 100%; overflow: auto; }
 .sticky-top thead { position: sticky; top: 0; }
 .sticky-left td:first-child { position: sticky; left: 0; }
@@ -133,11 +209,11 @@ select[readonly] {
 
 /* 근무표에서 오늘 날짜를 눈에 띄게 하기 위한 CSS */
 .roundtext {
-    background-color: cyan; /* Changing background color */
-    font-weight: bold; /* Making font bold */
-    border-radius: 20px; /* Making border radius */
-    width: auto; /* Making auto-sizable width */
-    height: auto; /* Making auto-sizable height */
+  background-color: cyan;
+  font-weight: bold;
+  border-radius: 20px;
+  width: auto;
+  height: auto;
 }
 
 /* 근무표 월 캘린더 활용을 위한 CSS */
@@ -167,71 +243,6 @@ input[type='month']::-webkit-calendar-picker-indicator:hover {
   border-radius: 50%;
 }
 
-/* CSS for Bootstrap 5 Fixed Left Sidebar Navigation */
-@media(max-width:1920px){
-body {
-  padding-top: 65px;
-  padding-left: 0px;
-}
-}
-
-@media(min-width:1920px){
-body {
-  padding-left: 300px;
-  padding-right: 60px;
-  padding-top: 0px;
-}
-nav.navbar {
-  position: fixed;
-  left: 0;
-  width: 200px;
-  bottom: 0;
-  top: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: block;
-  border-right: 1px solid #cecece;
-}
-nav.navbar >.container-fluid {
-  flex-direction: column;
-  padding: 0;
-}
-nav.navbar .navbar-nav {
-  flex-direction: column;
-}
-nav.navbar .navbar-collapse {
-  width: 100%;
-  padding-left: 50px;
-  padding-top: 30px;
-}
-nav.navbar .navbar-nav {
-  width: 100%;
-}/*
-nav.navbar .navbar-nav .dropdown-menu {
-  position: static;
-  display: block;
-}
-nav.navbar .dropdown {
-  margin-bottom: 5px;
-  font-size: 14px;
-}
-nav.navbar .dropdown-item {
-  white-space: normal;
-  font-size: 14px;
-  vertical-align: middle;
-}
-nav.navbar .dropdown-item img {
-  margin-right: 5px;
-}
-nav.navbar .dropdown-toggle {
-  cursor: default;
-}
-nav.navbar .dropdown-menu {
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
-}
-nav.navbar .dropdown-toggle::after {
-  display: none;
-}*/
+.next {
+  opacity: 0.3;
 }
