@@ -1,5 +1,6 @@
 from datetime import datetime
 import calendar
+from dateutil.relativedelta import relativedelta
 
 day_of_the_week = {'mon': '월', 'tue': '화', 'wed': '수', 'thu': '목', 'fri': '금', 'sat': '토', 'sun': '일', }
 categories = ['정규근무', '휴일근무', '유급휴무', 'OFF']
@@ -63,3 +64,16 @@ def get_day_list(stand_ym, last_day=None):
 
 def get_weekday(day):
     return datetime(int(day[0:4]), int(day[4:6]), int(day[6:8])).weekday()
+
+
+def get_month(obj, delta):
+    try:
+        return (datetime.strptime(obj, '%Y%m') + relativedelta(months=delta)).strftime('%Y%m')
+    except:
+        return None
+
+
+def get_last_day(stand_ym):
+    year = int(stand_ym[0:4])  # 연도 : 2024
+    month = int(stand_ym[4:6])  # 월 : 1
+    return calendar.monthrange(year, month)[1]  # stand_ym 말일 : 31

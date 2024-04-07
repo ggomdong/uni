@@ -8,8 +8,7 @@
     {% if messages %}
     <div class="alert alert-danger my-3" role="alert">
         {% for message in messages %}
-        <strong>{{ message.tags }}</strong>
-        <ul><li>{{ message.message }}</li></ul>
+        <ul class="m-0"><li>{{ message.message }}</li></ul>
         {% endfor %}
     </div>
     {% endif %}
@@ -72,7 +71,7 @@
     <hr>
     <div class="my-3 div-sticky-m">
     <table class="table text-center table-borderless table-sm sticky-top table-hover">
-        {% if day_list %}
+        {% if user_list %}
         {% now "Ym" as yearmonth %}
         {% now "j" as today %}
         <thead>
@@ -86,6 +85,12 @@
                      {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>{{ key }}</div>
             </th>
             {% endfor %}
+            {% for key, value in next_day_list.items %}
+            <th>
+                <!-- 일요일이나 공휴일 폰트는 빨간색 -->
+                <div class="next" {% if value == '일' or key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ key }}</div>
+            </th>
+            {% endfor %}
         </tr>
         <tr>
             <th></th>
@@ -97,11 +102,15 @@
                      {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>{{ value }}</div>
             </th>
             {% endfor %}
+            {% for key, value in next_day_list.items %}
+            <th>
+                <!-- 일요일이나 공휴일 폰트는 빨간색 -->
+                <div class="next" {% if value == '일' or key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ value }}</div>
+            </th>
+            {% endfor %}
         </tr>
         </thead>
-        {% endif %}
 
-        {% if user_list %}
         <tbody>
         {% for user in user_list %}
         {% if user.dept_diff == 'Y' %}
@@ -128,6 +137,43 @@
                 <div class="module_box-disabled"></div>
                 {% else %}
                 <div class="module_box" id="insert_{{user.id}}_{{key}}" onclick="javascript:insert('{{user.id}}_{{key}}');" style="cursor: pointer;
+                    {% for module in module_list %}
+                    {% if module.id == schedule %}
+                    background-color: {{ module_colors|get_index:module.color }};
+                    {% endif %}
+                    {% endfor %}">
+                    {% for module in module_list %}
+                    {% if module.id == schedule %}
+                        {% if module.cat == '휴일근무' %}
+                        <font color="blue">
+                            {{ module.start_time }}
+                            {{ module.end_time }}
+                        </font>
+                        {% elif module.cat == '유급휴무' %}
+                        {{ module.name|slice:"0:2" }}<br>
+                        {{ module.name|slice:"2:4" }}
+                        {% elif module.cat == 'OFF' %}
+                        -
+                        {% else %}
+                        {{ module.start_time }}
+                        {{ module.end_time }}
+                        {% endif %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+            </td>
+            {% endfor %}
+            {% for key, value in next_day_list.items %}
+            <td>
+                {% with user|get_next_index:key as schedule %}
+                <input type="hidden" name="sch_{{user.id}}_n{{key}}" id="sch_{{user.id}}_n{{key}}"
+                       value="{{schedule|default_if_none:''}}">
+                {% if next_ym|concat_date:key < user.join_date or next_ym|concat_date:key > user.out_date %}
+                <div class="module_box-disabled"></div>
+                {% else %}
+                <div class="module_box" id="insert_{{user.id}}_n{{key}}" onclick="javascript:insert('{{user.id}}_n{{key}}');" style="cursor: pointer;
                     {% for module in module_list %}
                     {% if module.id == schedule %}
                     background-color: {{ module_colors|get_index:module.color }};

@@ -10,6 +10,7 @@ from .forms import UserForm, UserModifyForm, DeptForm, PositionForm, HolidayForm
 from .models import User, Dept, Position, Holiday, Business, Code
 from wtm.models import Module, Contract
 from django.utils import timezone
+from datetime import datetime
 
 
 def page_not_found(request, exception):
@@ -48,13 +49,15 @@ def user_list(request):
     search_dept = request.GET.get('dept', '전체')
     search_position = request.GET.get('position', '전체')
 
+    stand_ym = datetime.today().strftime('%Y%m')
+
     match search_work:
         case '전체':
             work_condition = '1=1'
         case '퇴사자':
-            work_condition = 'out_date is not null'
+            work_condition = f'DATE_FORMAT(u.out_date, "%Y%m") < "{stand_ym}"'
         case _:
-            work_condition = 'out_date is null'
+            work_condition = f'out_date is null or DATE_FORMAT(u.out_date, "%Y%m") >= "{stand_ym}"'
 
     match search_dept:
         case '전체':
@@ -223,7 +226,8 @@ def position(request):
 
 @login_required(login_url='common:login')
 def holiday(request):
-    search_year = request.GET.get('search', '전체')
+    year = datetime.today().year
+    search_year = request.GET.get('search', year)
 
     HolidayFormSet = modelformset_factory(model=Holiday, form=HolidayForm, extra=1, can_delete=True)
 

@@ -30,6 +30,14 @@ def get_day_index(object_list, index):
 
 
 @register.filter
+def get_next_index(object_list, index):
+    try:
+        return object_list["n"+index]
+    except:
+        return None
+
+
+@register.filter
 def concat_date(value1, value2):
     try:
         return str(value1) + str(value2).zfill(2)

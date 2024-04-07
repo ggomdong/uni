@@ -3,46 +3,50 @@
 {% block content %}
 
 <div class="container my-3">
-    <form id="searchForm" method="get" action="{% url 'common:user_list' %}">
-    {% csrf_token %}
-    <div class="row my-3">
-        <div class="col-2">
-            <select class="form-select" name="work" id="work">
-                <option value="전체" {% if search_work == '전체' %} selected {% endif %}>전체(재직여부)</option>
-                <option value="재직자" {% if search_work == '재직자' %} selected {% endif %}>재직자</option>
-                <option value="퇴사자" {% if search_work == '퇴사자' %} selected {% endif %}>퇴사자</option>
-            </select>
-        </div>
-        <div class="col-2">
-            <select class="form-select" name="dept" id="dept">
-                <option value="전체" {% if search_dept == '전체' %} selected {% endif %}>전체(부서)</option>
-                {% for dept in dept_list %}
-                <option value="{{dept}}" {% if search_dept == dept %} selected {% endif %}>{{dept}}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-2">
-            <select class="form-select" name="position" id="position">
-                <option value="전체" {% if search_position == '전체' %} selected {% endif %}>전체(직위)</option>
-                {% for position in position_list %}
-                <option value="{{position}}" {% if search_position == position %} selected {% endif %}>{{position}}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-6 text-end">
-            <a href="{% url 'common:signup' %}" class="btn btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-add" viewBox="0 0 16 16">
-                  <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0Zm-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-                  <path d="M2 13c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Z"/>
-                </svg>
-                직원 등록
-            </a>
-        </div>
-    </div>
-    </form>
-    <div class="div-sticky-h">
+    <div>
     <table class="table sticky-top">
         <thead>
+        <tr>
+            <th colspan="100%">
+                <form id="searchForm" method="get" action="{% url 'common:user_list' %}">
+                {% csrf_token %}
+                <div class="row my-3">
+                    <div class="col-2">
+                        <select class="form-select" name="work" id="work">
+                            <option value="전체" {% if search_work == '전체' %} selected {% endif %}>전체(재직여부)</option>
+                            <option value="재직자" {% if search_work == '재직자' %} selected {% endif %}>재직자</option>
+                            <option value="퇴사자" {% if search_work == '퇴사자' %} selected {% endif %}>퇴사자</option>
+                        </select>
+                    </div>
+                    <div class="col-2">
+                        <select class="form-select" name="dept" id="dept">
+                            <option value="전체" {% if search_dept == '전체' %} selected {% endif %}>전체(부서)</option>
+                            {% for dept in dept_list %}
+                            <option value="{{dept}}" {% if search_dept == dept %} selected {% endif %}>{{dept}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-2">
+                        <select class="form-select" name="position" id="position">
+                            <option value="전체" {% if search_position == '전체' %} selected {% endif %}>전체(직위)</option>
+                            {% for position in position_list %}
+                            <option value="{{position}}" {% if search_position == position %} selected {% endif %}>{{position}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 text-end">
+                        <a href="{% url 'common:signup' %}" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-add" viewBox="0 0 16 16">
+                              <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0Zm-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                              <path d="M2 13c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Z"/>
+                            </svg>
+                            직원 등록
+                        </a>
+                    </div>
+                </div>
+                </form>
+            </th>
+        </tr>
         <tr class="text-center">
             <th class="table-primary" colspan="6">기본정보</th>
             <th class="table-secondary" colspan="12">근로계약</th>

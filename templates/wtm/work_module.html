@@ -2,18 +2,21 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <div class="row my-3">
-        <div class="col-12 text-end">
-            <a href="{% url 'wtm:work_module_reg' %}" class="btn btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock-fill" viewBox="0 0 16 16">
-                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
-                </svg>
-                근무모듈 등록
-            </a>
-        </div>
-    </div>
-    <table class="table">
+
+    <table class="table sticky-top">
         <thead>
+        <tr>
+            <th colspan="100%">
+                <div class="col-12 text-end">
+                    <a href="{% url 'wtm:work_module_reg' %}" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock-fill" viewBox="0 0 16 16">
+                          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+                        </svg>
+                        근무모듈 등록
+                    </a>
+                </div>
+            </th>
+        </tr>
         <tr class="text-center table-dark">
             <th>번호</th>
             <th>표시</th>
