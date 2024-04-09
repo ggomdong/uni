@@ -20,4 +20,6 @@ urlpatterns = [
     path('schedule_delete/<str:stand_ym>/', views.work_schedule_delete, name='work_schedule_delete'),
     path('status/', views.work_status, name='work_status'),
     path('log/', views.work_log, name='work_log'),
+    path('meal/', views.work_meal, name='work_meal'),
+    path('meal/<str:stand_year>', views.work_meal, name='work_meal'),
 ]

@@ -23,9 +23,11 @@
                 <li class="nav-item">
                     <a class="nav-link {% if url_name == 'work_status' %}ci{% endif %}" href="{% url 'wtm:work_status' %}">근태현황</a>
                 </li>
-
                 <li class="nav-item">
                     <a class="nav-link {% if url_name == 'work_log' %}ci{% endif %}" href="{% url 'wtm:work_log' %}">근무로그</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if url_name == 'work_meal' %}ci{% endif %}" href="{% url 'wtm:work_meal' %}">식대관리</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if url_name == 'user_list' %}ci{% endif %}" href="{% url 'common:user_list' %}">직원관리</a>

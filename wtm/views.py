@@ -1020,3 +1020,85 @@ def work_log(request):
 
     context = {'work_module': obj}
     return render(request, 'wtm/work_log.html', context)
+
+
+@login_required(login_url='common:login')
+def work_meal(request, stand_year=None):
+    if stand_year is None:
+        stand_year = datetime.today().year
+
+    # 해당년도의 월일 조합을 list로 생성
+    md_list = []
+    for i in range(1, 13):
+        temp = context_processors.get_day_list(str(stand_year) + str(i).zfill(2))
+
+        for key, value in temp.items():
+            md_list.append(str(i).zfill(2) + key.zfill(2))
+
+    # 엑셀에서 활용하기 위해 리스트를 고정시키고자 함. 따라서 0229를 무조건 포함시켜줌
+    if '0229' not in md_list:
+        md_list.insert(59, '0229')
+
+    # 대상 직원을 추출하여 user_list에 저장
+    query_user = f'''
+        SELECT u.id, u.emp_name, u.dept, u.position,
+                DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
+                d.order as do, p.order as po
+        FROM common_user u
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+        WHERE is_superuser = false 
+            and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{str(stand_year) + "1231"}'
+            and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{str(stand_year) + "0101"}')
+        ORDER BY do, po, join_date
+        '''
+    with connection.cursor() as cursor:
+        cursor.execute(query_user)
+        results = cursor.fetchall()
+
+        x = cursor.description
+        user_list = []
+        for r in results:
+            i = 0
+            d = {}
+            while i < len(x):
+                d[x[i][0]] = r[i]
+                i = i + 1
+            user_list.append(d)
+
+    for user in user_list:
+        for md in md_list:
+            query = f'''
+                SELECT IFNULL(
+                    HOUR( 
+                    TIMEDIFF(
+                    TIMEDIFF( 
+                    TIMEDIFF(replace(end_time, '-', '00:00:00'), replace(start_time, '-', '00:00:00')),
+                    TIMEDIFF(replace(rest1_end_time, '-', '00:00:00'), replace(rest1_start_time, '-', '00:00:00')) ),
+                    TIMEDIFF(replace(rest2_end_time, '-', '00:00:00'), replace(rest2_start_time, '-', '00:00:00')) ) ) * 60
+                    +
+                    MINUTE( 
+                    TIMEDIFF(
+                    TIMEDIFF( 
+                    TIMEDIFF(replace(end_time, '-', '00:00:00'), replace(start_time, '-', '00:00:00')),
+                    TIMEDIFF(replace(rest1_end_time, '-', '00:00:00'), replace(rest1_start_time, '-', '00:00:00')) ),
+                    TIMEDIFF(replace(rest2_end_time, '-', '00:00:00'), replace(rest2_start_time, '-', '00:00:00')) ) )
+                    , 0) as work_time
+                FROM wtm_module 
+                WHERE id = 
+                    (SELECT d{md[2:4].strip("0")}_id
+                    FROM wtm_schedule
+                    WHERE user_id = {user['id']}
+                      and year = '{stand_year}'
+                      and month = '{md[0:2]}')
+                '''
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                r = cursor.fetchone()
+
+            user[md] = (0 if r == None else r[0])
+
+    # TODO : 출퇴근 기록 이후에 재개발 필요 -> 어제까지는 출퇴근대로, 오늘이후는 근무표대로
+
+    context = {'md_list': md_list, 'user_list': user_list}
+    return render(request, 'wtm/work_meal.html', context)

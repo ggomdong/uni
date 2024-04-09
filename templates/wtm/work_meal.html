@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3">
+    <!-- message 표시 -->
+    {% if messages %}
+    <div class="alert alert-danger my-3" role="alert">
+        {% for message in messages %}
+        <ul class="m-0"><li>{{ message.message }}</li></ul>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div>
+    <table class="table text-center table-sm sticky-top">
+        <thead>
+        {% if user_list %}
+        <tr class="table-dark">
+            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+            <th>입사일</th>
+            <th>최종근무일</th>
+            {% for md in md_list %}
+            <th>{{md}}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for user in user_list %}
+        <tr>
+            <td class="align-middle">{{ user.dept }}</td>
+            <td class="align-middle">{{ user.emp_name }}</td>
+            <td class="align-middle">{{ user.join_date }}</td>
+            <td class="align-middle">{{ user.out_date|default_if_none:'' }}</td>
+            {% for md in md_list %}
+            <td>{{ user|get_index:md }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+        {% else %}
+        <tr>
+            <td colspan="100%" class="text-center">식대리스트가 없습니다.</td>
+        </tr>
+        {% endif %}
+    </table>
+    </div>
+</div>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+</script>
+{% endblock %}
