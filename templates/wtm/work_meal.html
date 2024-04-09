@@ -33,7 +33,11 @@
             <td class="align-middle">{{ user.join_date }}</td>
             <td class="align-middle">{{ user.out_date|default_if_none:'' }}</td>
             {% for md in md_list %}
+            {% if stand_year|concat_date:md < user.join_date or user.out_date < stand_year|concat_date:md %}
+            <td>0</td>
+            {% else %}
             <td>{{ user|get_index:md }}</td>
+            {% endif %}
             {% endfor %}
         </tr>
         {% endfor %}

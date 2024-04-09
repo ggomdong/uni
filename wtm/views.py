@@ -1086,7 +1086,7 @@ def work_meal(request, stand_year=None):
                     , 0) as work_time
                 FROM wtm_module 
                 WHERE id = 
-                    (SELECT d{md[2:4].strip("0")}_id
+                    (SELECT d{md[2:4].lstrip("0")}_id
                     FROM wtm_schedule
                     WHERE user_id = {user['id']}
                       and year = '{stand_year}'
@@ -1100,5 +1100,5 @@ def work_meal(request, stand_year=None):
 
     # TODO : 출퇴근 기록 이후에 재개발 필요 -> 어제까지는 출퇴근대로, 오늘이후는 근무표대로
 
-    context = {'md_list': md_list, 'user_list': user_list}
+    context = {'stand_year': stand_year, 'md_list': md_list, 'user_list': user_list}
     return render(request, 'wtm/work_meal.html', context)
