@@ -1022,7 +1022,6 @@ def work_log(request):
     return render(request, 'wtm/work_log.html', context)
 
 
-@login_required(login_url='common:login')
 def work_meal(request, stand_year=None):
     if stand_year is None:
         stand_year = datetime.today().year
