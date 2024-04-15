@@ -179,6 +179,20 @@ function selectCategory() {
         for (const color of colors) {
             if (!color.checked) color.onclick = function() { return(false) };
         }
+    } else if (selVal == '무급휴무') {
+        // 근무명을 제외한 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
+        for (let i=1; i < itemList.length; i++) {
+            itemList[i].value = '-';
+            itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';
+        }
+
+        itemList[0].value = '';
+        itemList[0].style.cssText = 'background-color: #ff; pointer-events: auto;';
+
+        color11.checked = true;
+        for (const color of colors) {
+            if (!color.checked) color.onclick = function() { return(false) };
+        }
     } else if (selVal == 'OFF') {
         // 근무명은 'OFF'로, 그 외 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
         for (let i=0; i < itemList.length; i++) {
