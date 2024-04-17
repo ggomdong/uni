@@ -2,14 +2,14 @@
 {% load pybo_filter %}
 {% block content %}
 
+<form id="searchForm" method="get" action="{% url 'common:user_list' %}">
+{% csrf_token %}
 <div class="container my-3">
     <div>
     <table class="table sticky-top">
         <thead>
         <tr>
             <th colspan="100%">
-                <form id="searchForm" method="get" action="{% url 'common:user_list' %}">
-                {% csrf_token %}
                 <div class="row my-3">
                     <div class="col-2">
                         <select class="form-select" name="work" id="work">
@@ -44,7 +44,6 @@
                         </a>
                     </div>
                 </div>
-                </form>
             </th>
         </tr>
         <tr class="text-center">
@@ -52,12 +51,19 @@
             <th class="table-secondary" colspan="12">근로계약</th>
         </tr>
         <tr class="text-center">
+            <input type="hidden" id="order" name="order" value="{{order|default_if_none:'0'}}">
             <th class="table-primary">번호</th>
-            <th class="table-primary">성명</th>
-            <th class="table-primary">소속</th>
+            <th class="table-primary sortable" onClick="sort(1)">성명 {% if order == '1' %}▲{% elif order == '11' %}▼{% endif %}</th>
+            <th class="table-primary sortable" onClick="sort(0)">부서 {% if order == '0' %}▲{% elif order == '01' %}▼{% endif %}</th>
             <th class="table-primary">직위</th>
-            <th class="table-primary">입사일</th>
-            <th class="table-primary">최종근무일</th>
+            <th class="table-primary sortable" onClick="sort(2)">입사일 {% if order == '2' %}▲{% elif order == '21' %}▼{% endif %}</th>
+            <th class="table-primary sortable" onClick="sort(3)">최종근무일 {% if order == '3' %}▲{% elif order == '31' %}▼{% endif %}</th>
+<!--            <th class="table-primary" onClick="sortTable(0)">번호</th>-->
+<!--            <th class="table-primary" onClick="sortTable(1)">성명</th>-->
+<!--            <th class="table-primary" onClick="sortTable(2)">부서</th>-->
+<!--            <th class="table-primary" onClick="sortTable(3)">직위</th>-->
+<!--            <th class="table-primary" onClick="sortTable(4)">입사일</th>-->
+<!--            <th class="table-primary" onClick="sortTable(5)">최종근무일</th>-->
             <th class="table-secondary">기준일</th>
             <th class="table-secondary">근무형태</th>
             <th class="table-secondary">근태확인</th>
@@ -117,6 +123,7 @@
         </tbody>
     </table>
     </div>
+</form>
 </div>
 {% endblock %}
 {% block script %}
@@ -135,5 +142,83 @@ const selectedPosition = document.getElementById("position");
 selectedPosition.addEventListener('change', function() {
     document.getElementById('searchForm').submit();
 });
+
+function sort(n) {
+  const Order = document.getElementById("order");
+
+  /* 현재 정렬 기준을 다시 클릭하면 역순(desc)으로 정렬을 위해 값을 변경 */
+  if (Order.value == n) {
+    Order.value = n+'1';
+  } else {
+    Order.value = n;
+  }
+
+  document.getElementById('searchForm').submit();
+}
+
+/* (사용X) WEB 상에서 정렬하는 javascript로서, 부서명 가나다순이 아닌 출력순서로 정렬하기가 까다로워서 사용하지 않았음 */
+function sortTable(n) {
+  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+  table = document.getElementById("sortable");
+  switching = true;
+  // 정렬방향을 세팅 : 오름차순
+  dir = "asc";
+  // 더 이상 정렬이 필요없을때까지 반복
+  while (switching) {
+    switching = false;
+    rows = table.rows;
+    // 헤더를 제외한(검색/기본정보/번호 등 헤더가 3개임) 모든 열에 대해 정렬을 시도함
+    for (i = 3; i < (rows.length - 1); i++) {
+      // 변수 초기화
+      shouldSwitch = false;
+      // 현재 열과 다음 열의 값을 가져옴
+      x = rows[i].getElementsByTagName("TD")[n];
+      y = rows[i + 1].getElementsByTagName("TD")[n];
+      // 정렬 필요 여부 체크
+      if (n == 0) {
+          if (dir == "asc") {
+            if (Number(x.innerText) > Number(y.innerText)) {
+              // 정렬이 필요하면 체크하고, while 탈출
+              shouldSwitch = true;
+              break;
+            }
+          } else if (dir == "desc") {
+            if (Number(x.innerText) < Number(y.innerText)) {
+              // 정렬이 필요하면 체크하고, while 탈출
+              shouldSwitch = true;
+              break;
+            }
+          }
+      } else {
+          if (dir == "asc") {
+            if (x.innerText.toLowerCase() > y.innerText.toLowerCase()) {
+              // 정렬이 필요하면 체크하고, while 탈출
+              shouldSwitch = true;
+              break;
+            }
+          } else if (dir == "desc") {
+            if (x.innerText.toLowerCase() < y.innerText.toLowerCase()) {
+              // 정렬이 필요하면 체크하고, while 탈출
+              shouldSwitch = true;
+              break;
+            }
+          }
+      }
+    }
+    if (shouldSwitch) {
+      // 교환 후 완료로 표기
+      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+      switching = true;
+      // 교환 완료시 카운트 1 증가
+      switchcount ++;
+    } else {
+      // 교환이 일어나지 않았고, 오름차순이면(즉, 이미 오름차순으로 정렬을 한번 했다면) -> 내림차순으로 바꾸고 while문 재실행
+      if (switchcount == 0 && dir == "asc") {
+        dir = "desc";
+        switching = true;
+      }
+    }
+  }
+}
 </script>
 {% endblock %}

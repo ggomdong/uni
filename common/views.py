@@ -44,10 +44,26 @@ def signup(request):
 
 @login_required(login_url='common:login')
 def user_list(request):
-    order_by = request.GET.get('order_by', 'do, po, join_date')
+    order = request.GET.get('order', '0')
     search_work = request.GET.get('work', '재직자')
     search_dept = request.GET.get('dept', '전체')
     search_position = request.GET.get('position', '전체')
+
+    # 0~5는 오름차순, 뒤에 1이 붙으면 내림차순
+    match order[0]:
+        case '0':
+            order_condition = 'do asc, po, join_date'
+        case '1':
+            order_condition = 'emp_name asc, do, po, join_date'
+        case '2':
+            order_condition = 'join_date asc, do, po'
+        case '3':
+            order_condition = 'out_date asc, do, po, join_date'
+        case _:
+            order_condition = 'do, po, join_date'
+
+    if len(order) == 2:
+        order_condition = order_condition.replace('asc', 'desc')
 
     stand_ym = datetime.today().strftime('%Y%m')
 
@@ -57,7 +73,7 @@ def user_list(request):
         case '퇴사자':
             work_condition = f'DATE_FORMAT(u.out_date, "%Y%m") < "{stand_ym}"'
         case _:
-            work_condition = f'out_date is null or DATE_FORMAT(u.out_date, "%Y%m") >= "{stand_ym}"'
+            work_condition = f'(out_date is null or DATE_FORMAT(u.out_date, "%Y%m") >= "{stand_ym}")'
 
     match search_dept:
         case '전체':
@@ -99,7 +115,7 @@ def user_list(request):
             and {work_condition}
             and {dept_condition}
             and {position_condition}
-        ORDER BY {order_by}
+        ORDER BY {order_condition}
         '''
 
     #print(raw_query)
@@ -125,7 +141,7 @@ def user_list(request):
 
     module_list = Module.objects.all()
     context = {'user_list': query_set, 'dept_list': dept_list, 'position_list': position_list,
-               'module_list': module_list,
+               'module_list': module_list, 'order': order,
                'search_work': search_work, 'search_dept': search_dept, 'search_position': search_position}
     return render(request, 'common/user_list.html', context)
 
