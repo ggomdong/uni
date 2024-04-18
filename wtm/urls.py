@@ -5,6 +5,7 @@ app_name = 'wtm'
 
 urlpatterns = [
     path('index/', views.index, name='index'),
+    path('index/<str:stand_day>/', views.index, name='index'),
     path('module/', views.work_module, name='work_module'),
     path('module_reg/', views.work_module_reg, name='work_module_reg'),
     path('module_modify/<int:module_id>/', views.work_module_modify, name='work_module_modify'),

@@ -54,6 +54,8 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="out_date">최종근무일자</label>
+            <button type="button" class="btn btn-danger" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;"
+                    onclick="javascript:document.getElementById('out_date').value='';">삭제</button>
             <input type="date" class="form-control" name="out_date" id="out_date" max="9999-12-31"
                    value="{{ form.out_date.value|date:'Y-m-d'|default_if_none:'' }}">
         </div>

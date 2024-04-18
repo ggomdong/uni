@@ -13,10 +13,11 @@ from common import context_processors
 from datetime import datetime
 
 
-def index(request):
-    obj = Module.objects.all()
+def index(request, stand_day=None):
+    if stand_day is None:
+        stand_day = datetime.today().strftime('%Y%m%d')
 
-    context = {'work_module': obj}
+    context = {'stand_day': stand_day}
     return render(request, 'wtm/index.html', context)
 
 
@@ -879,22 +880,25 @@ def work_schedule_modify(request, stand_ym):
                 user[key] = list(schedule_origin.filter(user_id=user['id']).values_list('d' + key + '_id', flat=True))[0]
                 # None일 경우는 2가지 케이스(계약이 없거나, 전달에 next_ym으로 입력한 경우)인데, 후자의 경우를 위해 근로계약에서 가져옴
                 if user[key] is None:
-                    query = f'''
-                        SELECT c.val
-                        FROM
-                        (
-                        SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
-                        FROM wtm_contract
-                        WHERE user_id = {user['id']}
-                          and DATE_FORMAT(stand_date, '%Y%m%d') <= '{stand_ym + key.zfill(2)}'
-                        ) c
-                        WHERE rownum = 1
-                        '''
-                    with connection.cursor() as cursor:
-                        cursor.execute(query)
-                        r = cursor.fetchone()
+                    if int(key) in holiday_list:
+                        user[key] = off_module_id
+                    else:
+                        query = f'''
+                            SELECT c.val
+                            FROM
+                            (
+                            SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
+                            FROM wtm_contract
+                            WHERE user_id = {user['id']}
+                              and DATE_FORMAT(stand_date, '%Y%m%d') <= '{stand_ym + key.zfill(2)}'
+                            ) c
+                            WHERE rownum = 1
+                            '''
+                        with connection.cursor() as cursor:
+                            cursor.execute(query)
+                            r = cursor.fetchone()
 
-                    user[key] = (None if r == None else r[0])
+                        user[key] = (None if r == None else r[0])
 
         # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴
         else:

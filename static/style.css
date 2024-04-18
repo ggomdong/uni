@@ -251,3 +251,18 @@ input[type='month']::-webkit-calendar-picker-indicator:hover {
 .sortable {
   cursor: pointer;
 }
+
+//플로팅배너 가운대로 맞추기
+.area_basket{
+  position : fixed;
+  left: 200px;
+  top: 300px;
+}
+
+.basket{
+  position: fixed;
+  left: 200px;
+  top: 300px;
+  width: 100px;
+  height: 250px;
+}
