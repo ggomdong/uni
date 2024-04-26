@@ -38,6 +38,14 @@ def get_next_index(object_list, index):
 
 
 @register.filter
+def split(value, key):
+    try:
+        return value.split(key)
+    except:
+        return None
+
+
+@register.filter
 def concat_date(value1, value2):
     try:
         return str(value1) + str(value2).zfill(2)
