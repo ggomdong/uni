@@ -346,7 +346,7 @@ def work_schedule(request, stand_ym=None):
 
     if schedule_list and need_to_add:
         messages.warning(request, f'근무표 추가 필요 : {need_to_add}')
-        return redirect('wtm:work_schedule', stand_ym=stand_ym)
+        redirect('wtm:work_schedule', stand_ym=stand_ym)
 
     # 근무표와 직원현황이 다른 경우 2 : 스케쥴 작성 이후 삭제 또는 입사일 변경 등 직원이 있는 경우 (schedule minus user)
     raw_query = f'''
@@ -381,7 +381,7 @@ def work_schedule(request, stand_ym=None):
 
     if schedule_list and need_to_sub:
         messages.warning(request, f'근무표 제외 필요 : {need_to_sub}')
-        return redirect('wtm:work_schedule', stand_ym=stand_ym)
+        redirect('wtm:work_schedule', stand_ym=stand_ym)
 
     context = {'schedule_list': schedule_list, 'stand_ym': stand_ym, 'day_list': day_list,
                'holiday_list': holiday_list, 'next_ym': next_ym, 'next_day_list': next_day_list,
@@ -955,7 +955,7 @@ def work_schedule_modify(request, stand_ym):
 
                         user[key] = (None if r == None else r[0])
 
-        # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴
+        # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴달
         else:
             user['is_new'] = True
             for key, value in day_list_eng.items():
