@@ -46,7 +46,7 @@
                 <table>
                     <tr>
                         {% for module in module_list %}
-                        <th style="width: 50px; font-weight: normal;">
+                        <th style="vertical-align: bottom; width: 50px; font-weight: normal;">
                         <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
                         <label class="form-label" for="{{module.id}}">
                             <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
@@ -74,15 +74,9 @@
                         </th>
                         {% endfor %}
                     </tr>
-                </table>
-            </th>
-        </tr>
-        <tr style="font-size: 10px">
-            <th colspan="100%">
-                <table>
                     <tr>
                         {% for module in module_list %}
-                        <th style="width: 50px; font-weight: normal;">
+                        <th style="width: 50px; font-weight: normal; font-size: 10px">
                             {{ module.name }}
                         </th>
                         {% endfor %}
