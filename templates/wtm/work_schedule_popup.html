@@ -19,7 +19,7 @@
 {% csrf_token %}
 <input type="hidden" name="user_id" value="{{target_user.id}}">
 <input type="hidden" name="stand_date" value="{{stand_date}}">
-<input type="hidden" name="module_id" value="">
+<input type="hidden" name="module_id" value="{{old_module_id}}">
 <div class="container my-3">
     <!-- message 표시 -->
     {% if messages %}
@@ -96,22 +96,14 @@ const modify_elements = document.getElementsByClassName("modify");
 const cancel_elements = document.getElementsByClassName("cancel");
 Array.from(modify_elements).forEach(function(element) {
   element.addEventListener('click', function() {
-    if(confirm("수정하시겠습니까?")) {
-      const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked").value;
+    const oldModuleId = document.querySelector("input[type='hidden'][name='module_id']").value;
+    const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked").value;
+
+    if(oldModuleId == moduleIdSelected) {
+      alert("변경사항이 없습니다.");
+    } else if(confirm("수정하시겠습니까?")) {
       document.querySelector("input[type='hidden'][name='module_id']").value = moduleIdSelected;
-      //alert(document.querySelector("input[type='hidden'][name='module_id']").value);
       document.getElementById('form').submit();
-
-      /*let url = "{% url 'wtm:work_schedule_popup' 'ID' 'DATE' 'MODULE' %}";
-      user_id = document.querySelector("input[type='hidden'][name='user_id']").value;
-      stand_date = document.querySelector("input[type='hidden'][name='stand_date']").value;
-      module_id = document.querySelector("input[type='radio'][name='module']:checked").value;
-
-      url = url.replace(/ID/g, user_id);
-      url = url.replace(/DATE/g, stand_date);
-      url = url.replace(/MODULE/g, module_id);
-
-      location.href = url;*/
     };
   });
 });
