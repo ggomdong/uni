@@ -125,7 +125,8 @@
                 {% else %}
                 {% with day|split:',' as module %} <!-- 0:'id', 1:'cat', 2:'name', 3:'start_time', 4:'end_time', 5:'color' -->
                 {% with module.5|to_int as color %}
-                <div class="module_box" style="background-color: {{ module_colors|get_index:color }};">
+                <div class="module_box" style="cursor: pointer; background-color: {{ module_colors|get_index:color }};"
+                onclick="module_modify({{ schedule.id }}, {{ stand_ym|concat_date:key }}, {{ module.0 }});">
                     {% if module.1 == '휴일근무' %}
                         <font color="blue">
                         {{ module.3 }}
@@ -159,7 +160,8 @@
                 {% else %}
                 {% with day|split:',' as module %} <!-- 0:'id', 1:'cat', 2:'name', 3:'start_time', 4:'end_time', 5:'color' -->
                 {% with module.5|to_int as color %}
-                <div class="module_box" style="background-color: {{ module_colors|get_index:color }};">
+                <div class="module_box" style="cursor: pointer; background-color: {{ module_colors|get_index:color }};"
+                onclick="module_modify({{ schedule.id }}, {{ next_ym|concat_date:key }}, {{ module.0 }});">
                     {% if module.1 == '휴일근무' %}
                         <font color="blue">
                         {{ module.3 }}
@@ -213,5 +215,17 @@ selectYM.addEventListener('change', function() {
     target = selectYM.value.replace('-','');
     location.href = target;
 });
+
+function module_modify(user_id, stand_date, module_id) {
+  let url = "{% url 'wtm:work_schedule_popup' 'ID' 'DATE' 'MODULE' %}";
+  const name = "스케쥴 수정";
+  const option = "width=1000, height=300, location=no, resizable=no";
+
+  url = url.replace(/ID/g, user_id);
+  url = url.replace(/DATE/g, stand_date);
+  url = url.replace(/MODULE/g, module_id);
+
+  window.open(url, name, option);
+}
 </script>
 {% endblock %}

@@ -19,6 +19,7 @@ urlpatterns = [
     path('schedule_reg/<str:stand_ym>/', views.work_schedule_reg, name='work_schedule_reg'),
     path('schedule_modify/<str:stand_ym>/', views.work_schedule_modify, name='work_schedule_modify'),
     path('schedule_delete/<str:stand_ym>/', views.work_schedule_delete, name='work_schedule_delete'),
+    path('schedule_popup/<str:user_id>/<str:stand_date>/<str:module_id>/', views.work_schedule_popup, name='work_schedule_popup'),
     path('status/', views.work_status, name='work_status'),
     path('log/', views.work_log, name='work_log'),
     path('meal/', views.work_meal, name='work_meal'),

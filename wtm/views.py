@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models.functions import ExtractDay
@@ -1063,6 +1064,47 @@ def work_schedule_delete(request, stand_ym):
         return redirect('wtm:work_schedule_reg', stand_ym=stand_ym)
 
     return redirect('wtm:work_schedule', stand_ym=stand_ym)
+
+
+@login_required(login_url='common:login')
+def work_schedule_popup(request, user_id, stand_date, module_id):
+    # if request.user != question.author:
+    #     messages.error(request, '삭제 권한이 없습니다.')
+    #     return redirect('pybo:detail', question_id=question.id)
+
+    if request.method == 'POST':
+        new_user_id = request.POST.get("user_id")
+        new_stand_date = request.POST.get("stand_date")
+        new_module_id = request.POST.get("module_id")
+        column = f'd{str(int(new_stand_date[6:8]))}_id'
+
+        try:
+            obj = Schedule.objects.filter(year=new_stand_date[0:4], month=new_stand_date[4:6],
+                                          user_id=new_user_id)
+
+            obj_to_update = obj[0]
+
+            # 날짜에 해당하는 컬럼을 변경하기 위해 setattr() 사용
+            setattr(obj_to_update, column, new_module_id)
+            obj_to_update.mod_id = request.user
+            obj_to_update.mod_date = timezone.now()
+
+            obj_to_update.save()
+
+            return HttpResponse('<script type="text/javascript">window.close(); window.opener.parent.location.href="/wtm/schedule/";</script>')
+        except Exception as e:
+            messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
+            return redirect('wtm:work_schedule_popup', user_id=user_id, stand_date=stand_date, module_id=module_id)
+    else:
+        target_user = get_object_or_404(User, pk=user_id)  # 근로계약 대상 표시를 위함
+        module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
+        old_module_id = module_id
+        stdt = datetime.strptime(stand_date, '%Y%m%d')
+
+        context = {'stand_date': stand_date, 'stdt': stdt, 'target_user': target_user,
+                   'old_module_id': old_module_id, 'module_list': module_list}
+
+        return render(request, 'wtm/work_schedule_popup.html', context)
 
 
 @login_required(login_url='common:login')
