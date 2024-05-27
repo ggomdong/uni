@@ -96,13 +96,15 @@ const modify_elements = document.getElementsByClassName("modify");
 const cancel_elements = document.getElementsByClassName("cancel");
 Array.from(modify_elements).forEach(function(element) {
   element.addEventListener('click', function() {
-    const oldModuleId = document.querySelector("input[type='hidden'][name='module_id']").value;
-    const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked").value;
+    const oldModuleId = document.querySelector("input[type='hidden'][name='module_id']");
+    const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked");
 
-    if(oldModuleId == moduleIdSelected) {
+    if (moduleIdSelected === null) {
+      alert("모듈 선택 후 수정하기 버튼을 누르세요.");
+    } else if(oldModuleId.value == moduleIdSelected.value) {
       alert("변경사항이 없습니다.");
     } else if(confirm("수정하시겠습니까?")) {
-      document.querySelector("input[type='hidden'][name='module_id']").value = moduleIdSelected;
+      document.querySelector("input[type='hidden'][name='module_id']").value = moduleIdSelected.value;
       document.getElementById('form').submit();
     };
   });
