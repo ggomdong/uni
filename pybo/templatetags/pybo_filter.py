@@ -75,3 +75,11 @@ def get_month(obj, delta):
         return (datetime.strptime(obj, '%Y%m') + relativedelta(months=delta)).strftime('%Y%m')
     except:
         return None
+
+
+@register.filter
+def get_day(obj, delta):
+    try:
+        return (datetime.strptime(obj, '%Y%m%d') + relativedelta(days=delta)).strftime('%Y%m%d')
+    except:
+        return None

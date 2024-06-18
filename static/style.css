@@ -222,11 +222,11 @@ input[type='month'] {
   cursor: pointer;
 }
 
-input[type='month']::-webkit-calendar-picker-indicator {
+input[type='month']::-webkit-calendar-picker-indicator, input[type='date']::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
-input[type='month']::-webkit-calendar-picker-indicator:hover {
+input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']::-webkit-calendar-picker-indicator:hover {
   opacity: 0.5;
 }
 

@@ -2,11 +2,89 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <div class="row my-3">
-        <div class="col-6">
-            준비중입니다.
-        </div>
+    <!-- message 표시 -->
+    {% if messages %}
+    <div class="alert alert-danger my-3" role="alert">
+        {% for message in messages %}
+        <ul class="m-0"><li>{{ message.message }}</li></ul>
+        {% endfor %}
     </div>
+    {% endif %}
 
+    <div>
+    <table class="table text-center table-borderless table-sm sticky-top">
+        <thead>
+        <tr>
+            <th colspan="100%">
+            <div class="row my-3 text-start">
+                <div class="col-10 fs-3">
+                    <a href="{% url 'wtm:work_log' stand_day|get_day:-1 %}">
+                        <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                        </svg>
+                        </button></a>
+                    <a href="{% url 'wtm:work_log' stand_day|get_day:1 %}">
+                        <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                        </svg>
+                        </button></a>
+                    <span class="nativeDatePicker">
+                        <input type="date" id="selectDay" name="selectDay" onkeydown="return false" onfocus="this.showPicker()"
+                               value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}}"/>
+                    </span>
+                </div>
+            </div>
+            </th>
+        </tr>
+        <tr class="table-dark">
+            <th>번호</th>
+            <th>시간</th>
+            <th>부서</th>
+            <th>직위</th>
+            <th>성명</th>
+            <th></th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% if log_list %}
+        {% for log in log_list %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ log.record_date|date:'H:i:s' }}</td>
+            <td>{{ log.user.dept }}</td>
+            <td>{{ log.user.position }}</td>
+            <td>{{ log.user.emp_name }}</td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr class="text-center">
+            <td colspan="100%">근무로그가 없습니다.</td>
+        </tr>
+        {% endif %}
+        </tbody>
+    </table>
+    </div>
 </div>
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+const delete_elements = document.getElementsByClassName("delete");
+Array.from(delete_elements).forEach(function(element) {
+    element.addEventListener('click', function() {
+        if(confirm("정말 삭제하시겠습니까?")) {
+            location.href = this.dataset.uri;
+        };
+    });
+});
+
+const selectDay = document.getElementById("selectDay");
+selectDay.addEventListener('change', function() {
+    // g: 전역검색, i: 대소문자 구분안함
+    target = selectDay.value.replace(/-/gi, '');
+    location.href = target;
+});
+</script>
 {% endblock %}

@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models.functions import ExtractDay
@@ -384,9 +383,11 @@ def work_schedule(request, stand_ym=None):
         messages.warning(request, f'근무표 제외 필요 : {need_to_sub}')
         redirect('wtm:work_schedule', stand_ym=stand_ym)
 
+    module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
+
     context = {'schedule_list': schedule_list, 'stand_ym': stand_ym, 'day_list': day_list,
                'holiday_list': holiday_list, 'next_ym': next_ym, 'next_day_list': next_day_list,
-               'next_holiday_list': next_holiday_list}
+               'next_holiday_list': next_holiday_list, 'module_list': module_list}
     return render(request, 'wtm/work_schedule.html', context)
 
 
@@ -1067,7 +1068,7 @@ def work_schedule_delete(request, stand_ym):
 
 
 @login_required(login_url='common:login')
-def work_schedule_popup(request, user_id, stand_date, module_id):
+def work_schedule_popup(request):
     # if request.user != question.author:
     #     messages.error(request, '삭제 권한이 없습니다.')
     #     return redirect('pybo:detail', question_id=question.id)
@@ -1077,6 +1078,8 @@ def work_schedule_popup(request, user_id, stand_date, module_id):
         new_stand_date = request.POST.get("stand_date")
         new_module_id = request.POST.get("module_id")
         column = f'd{str(int(new_stand_date[6:8]))}_id'
+
+        user = User.objects.get(pk=new_user_id)
 
         try:
             obj = Schedule.objects.filter(year=new_stand_date[0:4], month=new_stand_date[4:6],
@@ -1091,20 +1094,11 @@ def work_schedule_popup(request, user_id, stand_date, module_id):
 
             obj_to_update.save()
 
-            return HttpResponse('<script type="text/javascript">window.close(); window.opener.parent.location.href="/wtm/schedule/";</script>')
+            messages.success(request, f'[{user.position} {user.emp_name}({user.dept}), {new_stand_date[0:4]}-{new_stand_date[4:6]}-{new_stand_date[6:8]}] 근무표가 수정되었습니다.')
         except Exception as e:
-            messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-            return redirect('wtm:work_schedule_popup', user_id=user_id, stand_date=stand_date, module_id=module_id)
-    else:
-        target_user = get_object_or_404(User, pk=user_id)  # 근로계약 대상 표시를 위함
-        module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
-        old_module_id = module_id
-        stdt = datetime.strptime(stand_date, '%Y%m%d')
+            messages.warning(request, f'데이터베이스 오류가 발생했습니다. {e}')
 
-        context = {'stand_date': stand_date, 'stdt': stdt, 'target_user': target_user,
-                   'old_module_id': old_module_id, 'module_list': module_list}
-
-        return render(request, 'wtm/work_schedule_popup.html', context)
+    return redirect('wtm:work_schedule')
 
 
 @login_required(login_url='common:login')
@@ -1116,10 +1110,14 @@ def work_status(request):
 
 
 @login_required(login_url='common:login')
-def work_log(request):
-    obj = Module.objects.all()
+def work_log(request, stand_day=None):
+    # 기준일 값이 없으면 현재로 세팅
+    if stand_day is None:
+        stand_day = datetime.today().strftime('%Y%m%d')
 
-    context = {'work_module': obj}
+    obj = Work.objects.filter(record_date__year=stand_day[0:4], record_date__month=stand_day[4:6], record_date__day=stand_day[6:8]).order_by('-record_date')
+
+    context = {'stand_day': stand_day, 'log_list': obj}
     return render(request, 'wtm/work_log.html', context)
 
 

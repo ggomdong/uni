@@ -53,11 +53,11 @@
         <tr class="text-center">
             <input type="hidden" id="order" name="order" value="{{order|default_if_none:'0'}}">
             <th class="table-primary">번호</th>
-            <th class="table-primary sortable" onClick="sort(1)">성명 {% if order == '1' %}▲{% elif order == '11' %}▼{% endif %}</th>
-            <th class="table-primary sortable" onClick="sort(0)">부서 {% if order == '0' %}▲{% elif order == '01' %}▼{% endif %}</th>
+            <th class="table-primary sortable" onClick="sort(1)">성명 {% if order == '1' %}▲{% elif order == '11' %}▼{% else %}↕{% endif %}</th>
+            <th class="table-primary sortable" onClick="sort(0)">부서 {% if order == '0' %}▲{% elif order == '01' %}▼{% else %}↕{% endif %}</th>
             <th class="table-primary">직위</th>
-            <th class="table-primary sortable" onClick="sort(2)">입사일 {% if order == '2' %}▲{% elif order == '21' %}▼{% endif %}</th>
-            <th class="table-primary sortable" onClick="sort(3)">최종근무일 {% if order == '3' %}▲{% elif order == '31' %}▼{% endif %}</th>
+            <th class="table-primary sortable" onClick="sort(2)">입사일 {% if order == '2' %}▲{% elif order == '21' %}▼{% else %}↕{% endif %}</th>
+            <th class="table-primary sortable" onClick="sort(3)">최종근무일 {% if order == '3' %}▲{% elif order == '31' %}▼{% else %}↕{% endif %}</th>
 <!--            <th class="table-primary" onClick="sortTable(0)">번호</th>-->
 <!--            <th class="table-primary" onClick="sortTable(1)">성명</th>-->
 <!--            <th class="table-primary" onClick="sortTable(2)">부서</th>-->
