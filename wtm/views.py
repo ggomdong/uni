@@ -66,15 +66,24 @@ def index(request, stand_day=None):
                 user_list[category].append(d)
 
             # print(user_list)
-        # print(category)
         i = 0
+        max_workers = 0
         for i in range(category+1):
+            # TODAY의 테이블 row 크기를 정하기 위해 max 값 계산
+            # (틀린 로직) 오전 / 오후 근무인원과 비교하여 당일 최대 근무인원수 계산
+            # max_workers = max(max_workers, d['sum_am'], d['sum_pm'])
+            # (맞는 로직) 근무인원이 아닌 전체 인원수를 계산
+            if max_workers < len(user_list[i]):
+                max_workers = len(user_list[i])
+
+            # print(f'max_workers: {max_workers}')
+
+            # 부서별 오전/오후 근무인원 합계를 dict에 추가
             d = {}
             d['sum_am'] = sum(item['am'] for item in user_list[i])
             d['sum_pm'] = sum(item['pm'] for item in user_list[i])
-            user_list[i].insert(0, d)
 
-        print(user_list)
+            user_list[i].insert(0, d)
 
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')
@@ -120,7 +129,8 @@ def index(request, stand_day=None):
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')
 
-    context = {'stand_day': stand_day, 'days': days, 'user_list': user_list, 'work_list': work_list}
+    context = {'stand_day': stand_day, 'days': days, 'user_list': user_list, 'work_list': work_list,
+               'max_workers': max_workers}
     return render(request, 'wtm/index.html', context)
 
 

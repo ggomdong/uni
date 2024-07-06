@@ -42,26 +42,28 @@
         </thead>
     </table>
 
+    {% if user_list %}
     <table class="table text-center table-borderless table-sm">
-        <thead>
-        <tr>
         <tbody>
         <tr>
-            {% if user_list %}
             {% for users in user_list %}
+            {% if forloop.last %}
             <td>
-                <table class="table text-center table-sm table-bordered">
+            {% else %}
+            <td style="padding-right: 20px;">
+            {% endif %}
+                <table class="today table text-center table-sm table-bordered">
                     <thead>
-                    <tr class="table-dark">
+                    <tr>
                         <th colspan="2">{{users.1.dept}}</th>
                         <th>오전</th>
                         <th>오후</th>
                     </tr>
-                    <tr class="table-dark">
-                        <th>직위</th>
-                        <th>성명</th>
-                        <th class="table-light">{{users.0.sum_am}}</span></th>
-                        <th class="table-light">{{users.0.sum_pm}}</th>
+                    <tr>
+                        <th style="width: 75px;">직위</th>
+                        <th style="width: 75px;">성명</th>
+                        <th style="width: 45px;">{{users.0.sum_am}}</span></th>
+                        <th style="width: 45px;">{{users.0.sum_pm}}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -85,33 +87,44 @@
                             {% endif %}
                         </td>
                     </tr>
+                    {% if forloop.last %}
+                    {% with max_workers|get_range:forloop.counter as range %}
+                    {% for i in range %}
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    {% endfor %}
+                    {% endwith %}
+                    {% endif %}
                     {% endif %}
                     {% endfor %}
                     </tbody>
                 </table>
             </td>
             {% endfor %}
-            {% endif %}
         </tr>
         </tbody>
     </table>
     </div>
 
-    <table class="table text-center table-borderless table-sm">
+    <table class="today-2 table text-center table-borderless table-sm">
         <thead>
-        <tr class="table-dark">
-            <td>부서</td>
-            <td>직위</td>
-            <td>성명</td>
-            <td>근무구분</td>
-            <td>시업</td>
-            <td>종업</td>
-            <td>출근</td>
-            <td>퇴근</td>
-            <td>지각</td>
-            <td>조퇴</td>
-            <td>연장</td>
-            <td>휴일근무</td>
+        <tr>
+            <th>부서</th>
+            <th>직위</th>
+            <th>성명</th>
+            <th>근무구분</th>
+            <th>시업</th>
+            <th>종업</th>
+            <th>출근</th>
+            <th>퇴근</th>
+            <th>지각</th>
+            <th>조퇴</th>
+            <th>연장</th>
+            <th>휴일근무</th>
         </tr>
         </thead>
         {% if work_list %}
@@ -135,10 +148,13 @@
         </tbody>
         {% else %}
         <tr>
-            <td>데이터가 없습니다.</td>
+            <td colspan="100%">데이터가 없습니다.</td>
         </tr>
         {% endif %}
     </table>
+    {% else %}
+    근무표 데이터가 없습니다.
+    {% endif %}
 </div>
 {% endblock %}
 {% block script %}

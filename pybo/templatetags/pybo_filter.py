@@ -86,5 +86,5 @@ def get_day(obj, delta):
 
 
 @register.filter
-def get_total(role_total):
-    return sum([d.get('total') for d in role_total])
+def get_range(max_value, current):
+    return range(max_value - current + 1)

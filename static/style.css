@@ -1,3 +1,7 @@
+/****************************************************************/
+/* 공통영역
+/****************************************************************/
+
 html {
   font-size: 14px;
 }
@@ -150,12 +154,6 @@ nav.navbar .dropdown-toggle::after {
 
 /* 근무모듈 div의 스타일 정의 */
 .module_box {
-/*
-    font-size: 0.5vw;
-    border: 0.05vw solid gray;
-    width: 1.5vw;
-    height: 1.5vw;
-    margin: 0 auto;     /* div 가운데 정렬 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -196,6 +194,65 @@ select[readonly] {
 .sticky-top thead { position: sticky; top: 0; }
 .sticky-left td:first-child { position: sticky; left: 0; }
 
+
+/****************************************************************/
+/* TODAY
+/****************************************************************/
+
+.today th {
+  border: 1px solid white;
+  background-color: #595959;
+  font-size: 13px;
+  color: white;
+}
+
+.today td {
+  border: 1px solid white;
+  background-color: #eeeeee;
+  font-size: 13px;
+  height: 30px;
+}
+
+.today-2 th, td {
+  background-color: #595959;
+  font-size: 13px;
+  color: white;
+}
+
+/* TODAY, 근무로그 등 일 캘린더 스타일 */
+.uniTodayDate {
+  border: 0;
+  width: 200px;
+}
+
+.uniTodayDatePicker {
+  border: none;
+  width: 28px;
+}
+
+.uniTodayDatePicker::-webkit-datetime-edit-text {
+  -webkit-appearance: none;
+  display: none;
+}
+
+.uniTodayDatePicker::-webkit-datetime-edit-year-field {
+  -webkit-appearance: none;
+  display: none;
+}
+.uniTodayDatePicker::-webkit-datetime-edit-month-field{
+  -webkit-appearance: none;
+  display: none;
+}
+.uniTodayDatePicker::-webkit-datetime-edit-day-field {
+  -webkit-appearance: none;
+  display: none;
+}
+
+
+/****************************************************************/
+/* 근무표
+/****************************************************************/
+
 /* 근무표 입력시 column hover효과를 위한 CSS */
 .table-hover tbody tr:hover td {
   --bs-bg-opacity: 0.1;
@@ -230,35 +287,6 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   opacity: 0.5;
 }
 
-.uniTodayDate {
-  border: 0;
-  width: 200px;
-}
-
-.uniTodayDatePicker {
-  border: none;
-  width: 28px;
-}
-
-.uniTodayDatePicker::-webkit-datetime-edit-text {
-  -webkit-appearance: none;
-  display: none;
-}
-
-.uniTodayDatePicker::-webkit-datetime-edit-year-field {
-  -webkit-appearance: none;
-  display: none;
-}
-.uniTodayDatePicker::-webkit-datetime-edit-month-field{
-  -webkit-appearance: none;
-  display: none;
-}
-.uniTodayDatePicker::-webkit-datetime-edit-day-field {
-  -webkit-appearance: none;
-  display: none;
-}
-
-
 /* 근무표에서 전/후 월 이동 버튼위에 mouse over 시 표현을 위한 CSS */
 .btn-hover {
   width: 40px;
@@ -275,6 +303,11 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 .next {
   opacity: 0.3;
 }
+
+
+/****************************************************************/
+/* 직원관리
+/****************************************************************/
 
 /* 직원관리 관련 CSS */
 .sortable {
