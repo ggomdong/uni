@@ -17,7 +17,110 @@ def index(request, stand_day=None):
     if stand_day is None:
         stand_day = datetime.today().strftime('%Y%m%d')
 
-    context = {'stand_day': stand_day}
+    days = context_processors.get_days_korean(stand_day)
+
+    query = f'''
+        SELECT u.dept, u.position, u.emp_name,
+            m.start_time, m.end_time,
+            case when STR_TO_DATE(m.start_time, '%H:%i') <= STR_TO_DATE('13:00', '%H:%i') then 1
+                else 0
+            end as am,
+            case when STR_TO_DATE(m.end_time, '%H:%i') >= STR_TO_DATE('14:00', '%H:%i') then 1
+                else 0
+            end as pm,
+            d.order as do, p.order as po
+        FROM common_user u
+            LEFT OUTER JOIN wtm_schedule s on (u.id = s.user_id)
+            LEFT OUTER JOIN wtm_module m on (s.d{int(stand_day[6:8])}_id = m.id)
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+        WHERE is_superuser = false
+          and s.year = '{stand_day[0:4]}'
+          and s.month = '{stand_day[4:6]}'
+          and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
+          and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
+        ORDER BY do, po, join_date
+        '''
+    # print(query)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            results = cursor.fetchall()
+
+            x = cursor.description
+            user_list = []
+            dept = ''
+            category = -1
+            for r in results:
+                # 부서가 달라지면, 새로운 리스트를 추가
+                if r[0] != '의사' and dept != r[0]:
+                    dept = r[0]
+                    category += 1
+                    user_list.append([])
+                # print(f'dept: {dept}, category: {category}')
+                i = 0
+                d = {}
+                while i < len(x):
+                    d[x[i][0]] = r[i]
+                    i = i + 1
+                user_list[category].append(d)
+
+            # print(user_list)
+        # print(category)
+        i = 0
+        for i in range(category+1):
+            d = {}
+            d['sum_am'] = sum(item['am'] for item in user_list[i])
+            d['sum_pm'] = sum(item['pm'] for item in user_list[i])
+            user_list[i].insert(0, d)
+
+        print(user_list)
+
+    except Exception as e:
+        messages.warning(request, f'오류가 발생했습니다. {e}')
+
+    query = f'''
+        SELECT u.dept, u.position, u.emp_name,
+            s.d{int(stand_day[6:8])}_id,
+            m.cat, m.name, m.start_time, m.end_time, m.rest1_start_time, m.rest1_end_time, m.rest2_start_time, m.rest2_end_time,
+            w.user_id, w.min, w.max,
+            d.order as do, p.order as po
+        FROM common_user u
+            LEFT OUTER JOIN wtm_schedule s on (u.id = s.user_id)
+            LEFT OUTER JOIN wtm_module m on (s.d{int(stand_day[6:8])}_id = m.id)
+            LEFT OUTER JOIN wtm_contract c on (u.id = c.user_id)
+            LEFT OUTER JOIN ( select user_id, min(record_date) min,	max(record_date) max from wtm_work where DATE_FORMAT(record_date, '%Y%m%d') = '{stand_day}' group by user_id) w on (w.user_id = u.id)
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+        WHERE is_superuser = false
+          and c.check_yn = 'Y'
+          and s.year = '{stand_day[0:4]}'
+          and s.month = '{stand_day[4:6]}'
+          and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
+          and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
+        ORDER BY do, po, join_date
+        '''
+    # print(query)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            results = cursor.fetchall()
+
+            x = cursor.description
+            work_list = []
+            for r in results:
+                i = 0
+                d = {}
+                while i < len(x):
+                    d[x[i][0]] = r[i]
+                    i = i + 1
+                work_list.append(d)
+
+            # print(work_list)
+    except Exception as e:
+        messages.warning(request, f'오류가 발생했습니다. {e}')
+
+    context = {'stand_day': stand_day, 'days': days, 'user_list': user_list, 'work_list': work_list}
     return render(request, 'wtm/index.html', context)
 
 
@@ -177,7 +280,7 @@ def work_schedule(request, stand_ym=None):
 
     # 기준이 되는 최종 일요일(이번달 말일이 일요일인 경우 or 다음달 첫 일요일) 날짜를 지정 -> 해당 날짜 기준으로 대상 직원 추출
     schedule_date = stand_ym + list(day_list)[-1]
-    last_day_weekday = context_processors.get_weekday(schedule_date)
+    last_day_weekday = context_processors.get_days(schedule_date)
 
     # 말일이 일요일인 경우에 아예 해당 변수를 만들지 않으면 context에서 오류가 발생하므로, 전달할 변수는 일단 모두 초기화
     next_ym = None
@@ -436,7 +539,7 @@ def work_schedule_reg(request, stand_ym):
         # 다음달 근무표를 저장하기 위한 변수
         # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.next_ym 계산
         schedule_date = stand_ym + str(context_processors.get_last_day(stand_ym))
-        last_day_weekday = context_processors.get_weekday(schedule_date)
+        last_day_weekday = context_processors.get_days(schedule_date)
         next_ym = context_processors.get_month(stand_ym, 1)[0:6]
 
         with transaction.atomic():
@@ -542,7 +645,7 @@ def work_schedule_reg(request, stand_ym):
 
     # 기준이 되는 최종 일요일(이번달 말일이 일요일인 경우 or 다음달 첫 일요일) 날짜를 지정 -> 해당 날짜 기준으로 대상 직원 추출
     schedule_date = stand_ym + list(day_list)[-1]
-    last_day_weekday = context_processors.get_weekday(schedule_date)
+    last_day_weekday = context_processors.get_days(schedule_date)
 
     # 말일이 일요일인 경우에 아예 해당 변수를 만들지 않으면 context에서 오류가 발생하므로, 전달할 변수는 일단 모두 초기화
     next_ym = None
@@ -733,7 +836,7 @@ def work_schedule_modify(request, stand_ym):
         # 다음달 근무표를 저장하기 위한 변수
         # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.next_ym 계산
         schedule_date = stand_ym + str(context_processors.get_last_day(stand_ym))
-        last_day_weekday = context_processors.get_weekday(schedule_date)
+        last_day_weekday = context_processors.get_days(schedule_date)
         next_ym = context_processors.get_month(stand_ym, 1)[0:6]
 
         with transaction.atomic():
@@ -869,7 +972,7 @@ def work_schedule_modify(request, stand_ym):
 
     # 기준이 되는 최종 일요일(이번달 말일이 일요일인 경우 or 다음달 첫 일요일) 날짜를 지정 -> 해당 날짜 기준으로 대상 직원 추출
     schedule_date = stand_ym + list(day_list)[-1]
-    last_day_weekday = context_processors.get_weekday(schedule_date)
+    last_day_weekday = context_processors.get_days(schedule_date)
 
     # 말일이 일요일인 경우에 아예 해당 변수를 만들지 않으면 context에서 오류가 발생하므로, 전달할 변수는 일단 모두 초기화
     next_ym = None
@@ -1115,9 +1218,11 @@ def work_log(request, stand_day=None):
     if stand_day is None:
         stand_day = datetime.today().strftime('%Y%m%d')
 
+    days = context_processors.get_days_korean(stand_day)
+
     obj = Work.objects.filter(record_date__year=stand_day[0:4], record_date__month=stand_day[4:6], record_date__day=stand_day[6:8]).order_by('-record_date')
 
-    context = {'stand_day': stand_day, 'log_list': obj}
+    context = {'stand_day': stand_day, 'days': days, 'log_list': obj}
     return render(request, 'wtm/work_log.html', context)
 
 

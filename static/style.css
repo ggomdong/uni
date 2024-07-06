@@ -230,6 +230,35 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   opacity: 0.5;
 }
 
+.uniTodayDate {
+  border: 0;
+  width: 200px;
+}
+
+.uniTodayDatePicker {
+  border: none;
+  width: 28px;
+}
+
+.uniTodayDatePicker::-webkit-datetime-edit-text {
+  -webkit-appearance: none;
+  display: none;
+}
+
+.uniTodayDatePicker::-webkit-datetime-edit-year-field {
+  -webkit-appearance: none;
+  display: none;
+}
+.uniTodayDatePicker::-webkit-datetime-edit-month-field{
+  -webkit-appearance: none;
+  display: none;
+}
+.uniTodayDatePicker::-webkit-datetime-edit-day-field {
+  -webkit-appearance: none;
+  display: none;
+}
+
+
 /* 근무표에서 전/후 월 이동 버튼위에 mouse over 시 표현을 위한 CSS */
 .btn-hover {
   width: 40px;

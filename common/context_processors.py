@@ -2,6 +2,7 @@ from datetime import datetime
 import calendar
 from dateutil.relativedelta import relativedelta
 
+week_list = ["월", "화", "수", "목", "금", "토", "일"]
 day_of_the_week = {'mon': '월', 'tue': '화', 'wed': '수', 'thu': '목', 'fri': '금', 'sat': '토', 'sun': '일', }
 categories = ['정규근무', '휴일근무', '유급휴무', '무급휴무', 'OFF']
 times = ['-', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00',
@@ -62,8 +63,12 @@ def get_day_list(stand_ym, last_day=None):
     return day_list
 
 
-def get_weekday(day):
+def get_days(day):
     return datetime(int(day[0:4]), int(day[4:6]), int(day[6:8])).weekday()
+
+
+def get_days_korean(day):
+    return week_list[datetime(int(day[0:4]), int(day[4:6]), int(day[6:8])).weekday()]
 
 
 def get_month(obj, delta):
