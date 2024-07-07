@@ -30,6 +30,7 @@ body {
   padding-right: 60px;
   padding-top: 0px;
 }
+
 nav.navbar {
   position: fixed;
   left: 0;
@@ -232,7 +233,16 @@ select[readonly] {
 .uniTodayDatePicker {
   border: none;
   width: 28px;
-  min-height: 30px;
+  max-height: 30px;
+}
+
+/* Mobile - Landscape */
+@media (max-width: 1000px) {
+  .uniTodayDatePicker {
+    border: none;
+    width: 150px;
+    max-height: 30px;
+  }
 }
 
 .uniTodayDatePicker::-webkit-datetime-edit-text {
