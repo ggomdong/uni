@@ -231,8 +231,7 @@ select[readonly] {
 
 .uniTodayDatePicker {
   border: none;
-  align: left;
-  /*width: 28px;*/
+  width: 28px;
   min-height: 30px;
 }
 
