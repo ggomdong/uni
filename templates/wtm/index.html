@@ -12,7 +12,7 @@
     {% endif %}
 
     <div>
-    <table class="table text-center table-borderless table-sm sticky-top">
+    <table class="main table text-center table-borderless table-sm sticky-top">
         <thead>
         <tr>
             <th colspan="100%">
@@ -43,7 +43,7 @@
     </table>
 
     {% if user_list %}
-    <table class="table text-center table-borderless table-sm">
+    <table class="main table text-center table-borderless table-sm">
         <tbody>
         <tr>
             {% for users in user_list %}
@@ -108,9 +108,8 @@
         </tr>
         </tbody>
     </table>
-    </div>
 
-    <table class="today-2 table text-center table-borderless table-sm">
+    <table class="main today-2 table text-center table-borderless table-sm">
         <thead>
         <tr>
             <th>부서</th>
@@ -155,6 +154,7 @@
     {% else %}
     근무표 데이터가 없습니다.
     {% endif %}
+    </div>
 </div>
 {% endblock %}
 {% block script %}

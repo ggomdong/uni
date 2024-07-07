@@ -12,7 +12,7 @@
     {% endif %}
 
     <div>
-    <table class="table text-center table-borderless table-sm sticky-top">
+    <table class="table text-center table-borderless table-sm sticky-top sticky-left2">
         <thead>
         <tr>
             <th colspan="100%">
@@ -125,7 +125,7 @@
                 {% with day|split:',' as module %} <!-- 0:'id', 1:'cat', 2:'name', 3:'start_time', 4:'end_time', 5:'color' -->
                 {% with module.5|to_int as color %}
                 <div class="module_box" name="schedule_module" style="cursor: pointer; background-color: {{ module_colors|get_index:color }};"
-                data-bs-toggle="modal" data-bs-target="#scheduleModal" data-id="{{schedule.id}}"
+                {% if authenticated %} data-bs-toggle="modal" {% endif %} data-bs-target="#scheduleModal" data-id="{{schedule.id}}"
                      data-name="{{schedule.emp_name}}" data-dept="{{schedule.dept}}" data-position="{{schedule.position}}"
                      data-date="{{ stand_ym|concat_date:key }}" data-module="{{module.0}}">
 <!--                     onclick="module_modify({{ schedule.id }}, {{ stand_ym|concat_date:key }}, {{ module.0 }});">-->
@@ -163,7 +163,7 @@
                 {% with day|split:',' as module %} <!-- 0:'id', 1:'cat', 2:'name', 3:'start_time', 4:'end_time', 5:'color' -->
                 {% with module.5|to_int as color %}
                 <div class="module_box" name="schedule_module" style="cursor: pointer; background-color: {{ module_colors|get_index:color }};"
-                data-bs-toggle="modal" data-bs-target="#scheduleModal" data-id="{{schedule.id}}"
+                {% if authenticated %} data-bs-toggle="modal" {% endif %} data-bs-target="#scheduleModal" data-id="{{schedule.id}}"
                      data-name="{{schedule.emp_name}}" data-dept="{{schedule.dept}}" data-position="{{schedule.position}}"
                      data-date="{{ stand_ym|concat_date:key }}" data-module="{{module.0}}">
 <!--                     onclick="module_modify({{ schedule.id }}, {{ next_ym|concat_date:key }}, {{ module.0 }});">-->

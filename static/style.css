@@ -11,6 +11,9 @@ body {
   .container {
    max-width: 1500px;
    }
+  .main {
+   width: 1500px;
+   }
 }
 
 /* CSS for Bootstrap 5 Fixed Left Sidebar Navigation */
@@ -193,6 +196,7 @@ select[readonly] {
 .div-sticky-m { height: 70vh; width: 100%; overflow: auto; }
 .sticky-top thead { position: sticky; top: 0; }
 .sticky-left td:first-child { position: sticky; left: 0; }
+.sticky-left2 td:nth-child(2) { position: sticky; left: 0; }
 
 
 /****************************************************************/
@@ -228,6 +232,7 @@ select[readonly] {
 .uniTodayDatePicker {
   border: none;
   width: 28px;
+  min-height: 30px;
 }
 
 .uniTodayDatePicker::-webkit-datetime-edit-text {
