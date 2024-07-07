@@ -33,7 +33,8 @@
                     <input type="text" readonly class="uniTodayDate" onkeydown="return false" onfocus="this.showPicker()"
                         value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}} ({{days}})"/>
                     <span class="nativeDatePicker">
-                        <input type="date" class="uniTodayDatePicker" id="selectDay" name="selectDay" onfocus="this.showPicker()"/>
+                        <input type="date" class="uniTodayDatePicker" id="selectDay" name="selectDay" onfocus="this.showPicker()"
+                            value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}}"/>
                     </span>
                 </div>
             </div>
