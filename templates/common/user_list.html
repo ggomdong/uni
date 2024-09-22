@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
+{% load static %}
 {% block content %}
 
+<div class="container my-3">
 <form id="searchForm" method="get" action="{% url 'common:user_list' %}">
 {% csrf_token %}
-<div class="container my-3">
     <div>
-    <table class="main table sticky-top sticky-left2">
+    <table class="main table sticky-top">
         <thead>
         <tr>
             <th colspan="100%">
@@ -85,6 +86,9 @@
             </td>
             <td>
                 <a href="{% url 'common:user_modify' user.id %}">{{ user.emp_name }}</a>
+                <span style='cursor: pointer;' onclick="javascript:print_nametag('{{user.emp_name}}', '{{user.position}}');">🏷️</span>
+<!--                <div name="nametag" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#nametagModal"-->
+<!--                data-name="{{ user.emp_name }}" data-position="{{ user.position }}">{{ user.position }}</div>-->
             </td>
             <td>{{ user.dept }}</td>
             <td>{{ user.position }}</td>
@@ -125,6 +129,37 @@
     </div>
 </form>
 </div>
+
+<!-- Modal dialog -->
+<!--<div class="modal fade" id="nametagModal" tabindex="-1" aria-labelledby="nametagModalLabel" aria-hidden="true">-->
+<!--    <div class="modal-dialog modal-lg">-->
+<!--        <div class="modal-content">-->
+<!--            <div class="modal-header">-->
+<!--                <h1 class="modal-title fs-5" id="nametagModalLabel">명찰 출력</h1>-->
+<!--                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--            </div>-->
+<!--            <div class="modal-body">-->
+<!--                <div class="nametag-parent">-->
+<!--                    <div class="nametag-left"></div>-->
+<!--                    <div class="nametag-main">-->
+<!--                        <div class="left">-->
+<!--                            <div><img src="{% static 'logo.png' %}" width="200" height="75"></div>-->
+<!--                            <div><img src="{% static 'logo2.png' %}" width="150" height="22"></div>-->
+<!--                        </div>-->
+<!--                        <div class="right">-->
+<!--                            <div id="nametag_position"></div>-->
+<!--                            <div id="nametag_name"></div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--            <div class="modal-footer">-->
+<!--                <button type="button" class="print btn btn-primary">인쇄</button>-->
+<!--                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
@@ -154,6 +189,26 @@ function sort(n) {
   }
 
   document.getElementById('searchForm').submit();
+}
+
+/*
+const nametag_element = document.getElementsByName("nametag");
+Array.from(nametag_element).forEach(function(element) {
+  element.addEventListener('click', function() {
+    document.getElementById('nametag_position').textContent = this.dataset.position;
+    document.getElementById('nametag_name').textContent = this.dataset.name;
+  });
+});
+*/
+
+function print_nametag(emp_name, position) {
+  let url = "{% url 'common:nametag' 'NAME' 'POSITION' %}";
+  const name = "명찰 출력"
+  const option = "width=750, height=350, location=no, resizable=no";
+  url = url.replace(/NAME/g, emp_name);
+  url = url.replace(/POSITION/g, position);
+  window.open(url, name, option);
+  //location.href=url;
 }
 
 /* (사용X) WEB 상에서 정렬하는 javascript로서, 부서명 가나다순이 아닌 출력순서로 정렬하기가 까다로워서 사용하지 않았음 */

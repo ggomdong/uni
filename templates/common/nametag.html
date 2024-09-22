@@ -1,0 +1,125 @@
+{% load static %}
+
+<!doctype html>
+<html lang="ko">
+<head>
+    <!-- required meta tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
+    <!-- etc CSS -
+<!--    <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">-->
+    <link rel="shortcut icon" href="{% static 'favicon.png' %}">
+	<style>
+		/* print 할때 적용되는 css */
+		@media print {
+			@page {
+			  size:210mm 297mm;	/* 실제 인쇄용지 크기 지정 */
+			  margin:0mm
+			}
+
+			/* 프린트할때 background-color 나오게 하기 */
+			* {
+			  -webkit-print-color-adjust: exact !important;   /* Chrome, Safari 6 – 15.3, Edge */
+			  color-adjust: exact !important;                 /* Firefox 48 – 96 */
+			  print-color-adjust: exact !important;           /* Firefox 97+, Safari 15.4+ */
+			}
+
+			/* 프린트할때 아래쪽에 빈페이지 생기는것 방지 : height: auto; */
+			body {
+			  margin: 0;
+			  padding: 0;
+			  height: auto;
+			  margin-top: 170px;
+			  /* 실제 명찰 크기에 맞게 출력시 크기 조정 */
+			  transform: scale(0.1);
+			}
+
+			/* 프린트할때 버튼 숨기기 */
+			.pop_footer { display:none; }
+		}
+
+		/* 명찰 CSS */
+		body {
+		  max-width: 700px;
+		  display: flex;
+		  flex-wrap: wrap;
+		  justify-content: center;
+		}
+
+		.nametag-parent {
+		  display: grid;
+		  grid-template-columns: 35px 665px;
+		  grid-template-rows: 250px;
+		  border: 1px solid #02b3bb;
+		}
+
+		.nametag-left {
+		  background-color: #02b3bb;
+		}
+
+		.nametag-main {
+		  background-color: white;
+		  display: grid;
+		  grid-template-columns: 40% 60%;
+		}
+
+		.nametag-main .left {
+		  display: flex;
+		  flex-wrap: wrap;
+		  justify-content: center;
+		  align-content: center;
+		}
+
+		.nametag-main .right {
+		  display: grid;
+		  grid-template-rows: 40% 60%;
+		}
+
+		.nametag-main .right #nametag_position {
+		  color: #02b3bb;
+		  font-size: 25px;
+		  font-weight: 600;
+		  display: flex;
+		  justify-content: flex-end;
+		  align-items: flex-end;
+		  padding-right: 60px;
+		}
+
+		.nametag-main .right #nametag_name {
+		  color: black;
+		  font-size: 70px;
+		  font-weight: 500;
+		  letter-spacing: 60px;
+		  display: flex;
+		  justify-content: flex-end;
+		  align-items: flex-start;
+		}
+
+		.pop_footer { margin-top: 20px; }
+	</style>
+	<title>명찰 출력</title>
+</head>
+<body id="nametag">
+	<div class="nametag-parent">
+		<div class="nametag-left"></div>
+		<div class="nametag-main">
+			<div class="left">
+				<div><img src="{% static 'logo.png' %}" width="200" height="75"></div>
+				<div><img src="{% static 'logo2.png' %}" width="150" height="22"></div>
+			</div>
+			<div class="right">
+				<div id="nametag_position">{{position}}</div>
+				<div id="nametag_name">{{emp_name}}</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="pop_footer">
+		<a href="javascript:window.print()" class="btn btn-primary">인쇄하기</a>
+		<a href="javascript:window.close()" class="btn btn-danger">닫기</a>
+	</div>
+</body>
+</html>

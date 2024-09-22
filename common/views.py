@@ -147,6 +147,12 @@ def user_list(request):
 
 
 @login_required(login_url='common:login')
+def nametag(request, emp_name, position):
+    context = {'emp_name': emp_name, 'position': position}
+    return render(request, 'common/nametag.html', context)
+
+
+@login_required(login_url='common:login')
 def user_modify(request, user_id):
     user = get_object_or_404(User, pk=user_id)
 
