@@ -1,87 +1,68 @@
-from django.contrib.auth import authenticate
-from common.models import User
-from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser  # json 형식으로 오는 request에 대한 parsing을 위한 라이브러리
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework.exceptions import AuthenticationFailed
+from common.models import User
 from wtm.models import Work
-
 from .serializers import UserSerializer, WorkSerializer
 
 
-@csrf_exempt
-def user_list(request):
-    if request.method == 'GET':
-        query_set = User.objects.all()
-        # 다수의 query_set 형태를 serialize 할때는 many=True 사용
-        serializer = UserSerializer(query_set, many=True)
-        # 데이터 유형과 무관하게 return 하기 위해 safe=False 사용
-        return JsonResponse(serializer.data, safe=False)
-
-    # POST의 경우, Postman에서 테스트할때 Param이 아닌 Body-raw-JSON으로 send 해야 함
-    elif request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = UserSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.error, status=400)
-
-@csrf_exempt
-def user(request, username):
-    # username(사번)을 기준으로 처리
-    obj = User.objects.get(username=username)
-
-    if request.method == 'GET':
-        serializer = UserSerializer(obj)
-        return JsonResponse(serializer.data, safe=False)
-
-    elif request.method == 'PUT':
-        data = JSONParser().parse(request)
-        serializer = UserSerializer(obj, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.error, status=400)
-
-    elif request.method == 'DELETE':
-        obj.delete()
-        return HttpResponse(status=204)
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        try:
+            response = super().post(request, *args, **kwargs)
+            return response
+        except AuthenticationFailed as e:
+            return Response(
+                {"error": "invalid_credentials", "message": str(e)},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        except InvalidToken as e:
+            return Response(
+                {"error": "token_expired", "message": str(e)},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
 
-@csrf_exempt
-def login(request):
-    if request.method == 'POST':
-        data = JSONParser().parse(request)
-        username = data['username']
-        password = data['password']
+class Me(APIView):
+    permission_classes = [IsAuthenticated]
 
-        login_result = authenticate(username=username, password=password)
-
-        if login_result:
-            # 앱에서 로그인시 사용자 정보를 가져오기 위함
-            obj = User.objects.get(username=username)
-            return JsonResponse({'code': '0000', 'msg': '로그인 성공', 'username': obj.username, 'emp_name': obj.emp_name}, status=200)
-        else:
-            return JsonResponse({'code': '0001', 'msg': '로그인 실패', 'username': '', 'emp_name': ''}, status=401)
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
 
 
-@csrf_exempt
-def work_record(request):
-    if request.method == 'POST':
-        data = JSONParser().parse(request)
+class WorkRecord(APIView):
+    permission_classes = [IsAuthenticated]
 
-        # Work.username은 User테이블을 참조하고 있으므로, User테이블에서 먼저 user정보를 가져와서 매핑해줘야 함
-        obj = User.objects.get(username=data['username'])
-        work = Work()
+    def post(self, request):
+        # 데이터 유효성 확인
+        username = request.data.get('username')
+        work_code = request.data.get('work_code')
 
-        # work와 user 매핑
-        work.user_id = obj.id
-        work.work_code = data['work_code']
-        work.record_date = timezone.now()
+        if not username or not work_code:
+            return Response({"error": "ID(username)와 근태구분(work_code)이 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            work.save()
-            return JsonResponse({'code': '0000', 'msg': '출/퇴근 성공', 'username': obj.username, 'record_date': work.record_date}, status=200)
-        except:
-            return JsonResponse({'code': '0001', 'msg': '출/퇴근 실패', 'username': obj.username, 'record_date': work.record_date}, status=401)
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({"error": "존재하지 않는 사용자입니다."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Serializer 초기화
+        serializer = WorkSerializer(data={
+            'user': user.id,  # ID를 전달해야 함
+            'work_code': work_code,
+            'record_date': timezone.now()
+        })
+
+        # 유효성 검사
+        if serializer.is_valid():
+            work = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

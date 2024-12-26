@@ -12,4 +12,4 @@ class UserSerializer(serializers.ModelSerializer):
 class WorkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Work
-        fields = ['username', 'work_code', 'record_date']
+        fields = ['user', 'work_code', 'record_date']
