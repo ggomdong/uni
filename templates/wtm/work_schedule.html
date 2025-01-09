@@ -165,7 +165,7 @@
                 <div class="module_box" name="schedule_module" style="cursor: pointer; background-color: {{ module_colors|get_index:color }};"
                 {% if user.is_authenticated %} data-bs-toggle="modal" {% endif %} data-bs-target="#scheduleModal" data-id="{{schedule.id}}"
                      data-name="{{schedule.emp_name}}" data-dept="{{schedule.dept}}" data-position="{{schedule.position}}"
-                     data-date="{{ stand_ym|concat_date:key }}" data-module="{{module.0}}">
+                     data-date="{{ next_ym|concat_date:key }}" data-module="{{module.0}}">
 <!--                     onclick="module_modify({{ schedule.id }}, {{ next_ym|concat_date:key }}, {{ module.0 }});">-->
                     {% if module.1 == '휴일근무' %}
                         <font color="blue">
