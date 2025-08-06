@@ -1262,7 +1262,7 @@ def work_log(request, stand_day=None):
 
     days = context_processors.get_days_korean(stand_day)
 
-    obj = Work.objects.filter(record_day=stand_day).order_by('-record_date')
+    obj = Work.objects.filter(record_day=datetime.strptime(stand_day, '%Y%m%d').date()).order_by('-record_date')
 
     context = {'stand_day': stand_day, 'days': days, 'log_list': obj}
     return render(request, 'wtm/work_log.html', context)
