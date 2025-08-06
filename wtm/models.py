@@ -1,4 +1,8 @@
 from django.db import models
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from django.utils import timezone
+
 from common.models import User
 
 
@@ -82,6 +86,18 @@ class Schedule(models.Model):
 
 # 근태로그
 class Work(models.Model):
+    class WorkCode(models.TextChoices):
+        IN = 'I', '출근'
+        OUT = 'O', '퇴근'
+
     user = models.ForeignKey(User, on_delete=models.PROTECT)
-    work_code = models.CharField(max_length=1)
-    record_date = models.DateTimeField()
+    work_code = models.CharField(max_length=1, choices=WorkCode.choices, verbose_name="근무코드")
+    record_date = models.DateTimeField(auto_now_add=True)
+    record_day = models.DateField(editable=False, null=False, blank=False, db_index=True)
+
+
+@receiver(pre_save, sender=Work)
+def set_record_day(sender, instance, **kwargs):
+    if not instance.record_date:
+        instance.record_date = timezone.now()
+    instance.record_day = instance.record_date.date()

@@ -94,7 +94,18 @@
             <td>{{ user.position }}</td>
             <td>{{ user.join_date|date:'Y-m-d' }}</td>
             <td>{{ user.out_date|date:'Y-m-d' }}</td>
-            <td><a href="{% url 'wtm:work_contract_modify' user.cid %}">{{ user.stand_date|date:'Y-m-d' }}</td>
+            <!-- 계약이 없는 경우 user.cid가 None이므로 NoReverseMatch 오류가 발생할 수 있으므로, 계약유무에 따라 분기처리 -->
+            <td>
+              {% if user.cid %}
+                <a href="{% url 'wtm:work_contract_modify' user.cid %}">
+                  {{ user.stand_date|date:'Y-m-d' }}
+                </a>
+              {% else %}
+                <a href="{% url 'wtm:work_contract_reg' user.id %}">
+                  계약등록
+                </a>
+              {% endif %}
+            </td>
             <td>{{ user.type|default_if_none:'' }}</td>
             <td>{{ user.check_yn|default_if_none:'' }}</td>
 

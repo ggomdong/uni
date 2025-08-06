@@ -8,6 +8,7 @@ class User(AbstractUser):
     position = models.CharField(max_length=50)  # 직위명
     join_date = models.DateField(null=True)     # 입사일자
     out_date = models.DateField(null=True, blank=True)     # 퇴사일자
+    device_id = models.CharField(max_length=255, blank=True, null=True) # 기기정보
 
     emp_name.verbose_name = "직원명"
     dept.verbose_name = "부서명"

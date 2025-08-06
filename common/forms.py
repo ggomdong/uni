@@ -42,6 +42,24 @@ class UserModifyForm(UserChangeForm):
         }
 
 
+class PasswordChangeForm(forms.Form):
+    new_password = forms.CharField(
+        label="새 비밀번호", widget=forms.PasswordInput,
+        min_length=8, help_text="8자 이상 입력하세요."
+    )
+    confirm_password = forms.CharField(
+        label="비밀번호 확인", widget=forms.PasswordInput
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        pw1 = cleaned_data.get("new_password")
+        pw2 = cleaned_data.get("confirm_password")
+        if pw1 != pw2:
+            raise forms.ValidationError("비밀번호가 일치하지 않습니다.")
+        return cleaned_data
+
+
 class DeptForm(forms.ModelForm):
     class Meta:
         model = Dept

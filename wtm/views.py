@@ -5,12 +5,12 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models.functions import ExtractDay
 from django.db import connection, transaction
-from common.models import User, Holiday
+from django.utils import timezone
+from datetime import datetime
 from .models import Work, Module, Contract, Schedule
 from .forms import ModuleForm, ContractForm
-from django.utils import timezone
+from common.models import User, Holiday
 from common import context_processors
-from datetime import datetime
 
 
 def index(request, stand_day=None):
@@ -92,13 +92,45 @@ def index(request, stand_day=None):
         SELECT u.dept, u.position, u.emp_name,
             s.d{int(stand_day[6:8])}_id,
             m.cat, m.name, m.start_time, m.end_time, m.rest1_start_time, m.rest1_end_time, m.rest2_start_time, m.rest2_end_time,
-            w.user_id, w.min, w.max,
+            w.user_id, w.checkin_time, w.checkout_time,
+            CASE 
+                WHEN TIME(w.checkin_time) > STR_TO_DATE(m.start_time, '%H:%i') THEN 'Y' ELSE '' 
+            END AS is_late,
+            CASE 
+                WHEN TIME(w.checkout_time) < STR_TO_DATE(m.end_time, '%H:%i') THEN 'Y' ELSE '' 
+            END AS is_early_out,
+            CASE 
+                WHEN TIME(w.checkout_time) > STR_TO_DATE(m.end_time, '%H:%i') THEN 'Y' ELSE '' 
+            END AS is_overtime,
+            CASE 
+                WHEN m.cat = '휴일근무' THEN 'Y' ELSE '' 
+            END AS is_holiday,
             d.order as do, p.order as po
         FROM common_user u
             LEFT OUTER JOIN wtm_schedule s on (u.id = s.user_id)
             LEFT OUTER JOIN wtm_module m on (s.d{int(stand_day[6:8])}_id = m.id)
-            LEFT OUTER JOIN wtm_contract c on (u.id = c.user_id)
-            LEFT OUTER JOIN ( select user_id, min(record_date) min,	max(record_date) max from wtm_work where DATE_FORMAT(record_date, '%Y%m%d') = '{stand_day}' group by user_id) w on (w.user_id = u.id)
+            LEFT OUTER JOIN (
+            SELECT * FROM wtm_contract WHERE (user_id, stand_date) in
+            (
+                SELECT a.user_id, min(a.stand_date)
+                FROM 
+                (
+                    SELECT user_id, max(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() GROUP BY user_id
+                    UNION
+                    SELECT user_id, min(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() GROUP BY user_id
+                    ) a
+                    group by a.user_id
+                ) 
+            ) c on (u.id = c.user_id)
+            LEFT OUTER JOIN ( 
+                SELECT
+                    user_id,
+                    MIN(CASE WHEN work_code = 'I' THEN record_date END) AS checkin_time,
+                    MAX(CASE WHEN work_code = 'O' THEN record_date END) AS checkout_time
+                FROM wtm_work
+                WHERE record_day = '{stand_day}'
+                GROUP BY user_id
+            ) w on (w.user_id = u.id)
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
             LEFT OUTER JOIN common_position p on (u.position = p.position_name)
         WHERE is_superuser = false
@@ -1230,7 +1262,7 @@ def work_log(request, stand_day=None):
 
     days = context_processors.get_days_korean(stand_day)
 
-    obj = Work.objects.filter(record_date__year=stand_day[0:4], record_date__month=stand_day[4:6], record_date__day=stand_day[6:8]).order_by('-record_date')
+    obj = Work.objects.filter(record_day=stand_day).order_by('-record_date')
 
     context = {'stand_day': stand_day, 'days': days, 'log_list': obj}
     return render(request, 'wtm/work_log.html', context)

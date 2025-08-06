@@ -41,6 +41,7 @@
         </tr>
         <tr class="table-dark">
             <th>번호</th>
+            <th>구분</th>
             <th>시간</th>
             <th>부서</th>
             <th>직위</th>
@@ -54,6 +55,7 @@
         {% for log in log_list %}
         <tr>
             <td>{{ forloop.counter }}</td>
+            <td>{{ log.get_work_code_display }}</td>
             <td>{{ log.record_date|date:'H:i:s' }}</td>
             <td>{{ log.user.dept }}</td>
             <td>{{ log.user.position }}</td>

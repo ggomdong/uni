@@ -137,12 +137,12 @@
             <td>{{work.cat}}</td>
             <td>{{work.start_time}}</td>
             <td>{{work.end_time}}</td>
-            <td>{{work.min}}</td>
-            <td>{{work.max}}</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td>{{work.checkin_time|date:"H:i:s"}}</td>
+            <td>{{work.checkout_time|date:"H:i:s"}}</td>
+            <td>{{work.is_late}}</td>
+            <td>{{work.is_early_out}}</td>
+            <td>{{work.is_overtime}}</td>
+            <td>{{work.is_holiday}}</td>
         </tr>
         {% endfor %}
         </tbody>

@@ -1,0 +1,9 @@
+.idea
+db.sqlite3
+*.pyc
+__pycache__
+secrets.json
+logs
+.env
+__init__.py
+.DS_Store

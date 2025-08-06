@@ -1,16 +1,17 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models.functions import ExtractYear
 from django.db import connection
 from django.forms import modelformset_factory
-from .forms import UserForm, UserModifyForm, DeptForm, PositionForm, HolidayForm, BusinessForm, CodeForm
-from .models import User, Dept, Position, Holiday, Business, Code
-from wtm.models import Module, Contract
 from django.utils import timezone
 from datetime import datetime
+from .forms import UserForm, UserModifyForm, PasswordChangeForm, DeptForm, PositionForm, HolidayForm, BusinessForm, CodeForm
+from .models import User, Dept, Position, Holiday, Business, Code
+from wtm.models import Module, Contract
 
 
 def page_not_found(request, exception):
@@ -108,7 +109,7 @@ def user_list(request):
                     group by a.user_id
                 ) 
             ) c
-            ON (u.id = c.user_id)
+            on (u.id = c.user_id)
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
 			LEFT OUTER JOIN common_position p on (u.position = p.position_name)
         WHERE is_superuser = false 
@@ -180,6 +181,20 @@ def user_modify(request, user_id):
     context = {'form': form, 'dept_list': dept_list, 'position_list': position_list,
                'module_list': module_list, 'contract_list': contract_list, 'user_id': user_id}
     return render(request, 'common/user_modify.html', context)
+
+
+def password_change(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.POST)
+        if form.is_valid():
+            user.password = make_password(form.cleaned_data['new_password'])
+            user.save()
+            messages.success(request, "비밀번호가 변경되었습니다.")
+            return redirect('common:user_modify', user_id=user.id)
+    else:
+        form = PasswordChangeForm()
+    return render(request, 'common/password_change.html', {'form': form, 'user': user})
 
 
 @login_required(login_url='common:login')
