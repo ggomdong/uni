@@ -7,3 +7,5 @@ logs
 .env
 __init__.py
 .DS_Store
+/static/*
+!/static/.gitkeep
