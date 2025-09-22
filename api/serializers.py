@@ -12,6 +12,22 @@ class AttendanceSerializer(serializers.Serializer):
     is_early_checkout = serializers.BooleanField()
 
 
+# serializers.py
+class AttendanceDaySerializer(serializers.Serializer):
+    record_day = serializers.DateField()
+    work_start = serializers.CharField(allow_null=True)
+    work_end = serializers.CharField(allow_null=True)
+    checkin_time = serializers.CharField(allow_null=True)  # HH:mm or null
+    checkout_time = serializers.CharField(allow_null=True)  # HH:mm or null
+    work_cat = serializers.CharField(allow_null=True)  # 근무 대분류
+    work_name = serializers.CharField(allow_null=True)  # 근무 세부명
+    work_color_code = serializers.IntegerField(allow_null=True)  # DB의 정수값
+    work_color_hex = serializers.CharField(allow_null=True)       # 매핑된 HEX
+    is_late = serializers.BooleanField()
+    is_early_checkout = serializers.BooleanField()
+    is_overtime = serializers.BooleanField()
+
+
 class WorkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Work

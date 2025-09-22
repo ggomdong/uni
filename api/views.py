@@ -8,10 +8,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
-from datetime import datetime
-from .serializers import UserSerializer, AttendanceSerializer, WorkSerializer
+from datetime import datetime, date
+from calendar import monthrange
+from .serializers import UserSerializer, AttendanceSerializer, AttendanceDaySerializer, WorkSerializer
 from common.models import User
-from wtm.models import Work, Schedule
+from common.context_processors import module_colors
+from wtm.models import Work, Schedule, Module
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -153,6 +155,148 @@ class AttendanceAPIView(APIView):
 
         serializer = AttendanceSerializer(data)
         return Response(serializer.data)
+
+
+class MonthlyAttendanceAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        now = timezone.now()
+
+        try:
+            year = int(request.query_params.get("year", now.year))
+            month = int(request.query_params.get("month", now.month))
+        except ValueError:
+            return Response(
+                {"error": "year, month는 정수여야 합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 1. 스케줄 조회
+        try:
+            schedule = Schedule.objects.get(
+                user=user, year=str(year), month=f"{month:02d}"
+            )
+        except Schedule.DoesNotExist:
+            return Response([], status=status.HTTP_200_OK)
+
+        # 2. 근태 기록 조회
+        works = Work.objects.filter(
+            user=user, record_day__year=year, record_day__month=month
+        )
+
+        # 날짜별로 출퇴근 나누기
+        work_map = {}
+        for w in works:
+            day = w.record_day
+            if day not in work_map:
+                work_map[day] = {"I": [], "O": []}
+            work_map[day][w.work_code].append(w)
+
+        results = []
+        days_in_month = monthrange(year, month)[1]
+
+        # 3. 월간 루프 돌면서 데이터 구성
+        for day in range(1, days_in_month + 1):
+            module: Module = getattr(schedule, f"d{day}", None)
+            record_day = date(year, month, day)
+
+            work_in_list = work_map.get(record_day, {}).get("I", [])
+            work_out_list = work_map.get(record_day, {}).get("O", [])
+
+            work_in = min(work_in_list, key=lambda w: w.record_date) if work_in_list else None
+            work_out = max(work_out_list, key=lambda w: w.record_date) if work_out_list else None
+
+            checkin_time = work_in.record_date.strftime("%H:%M") if work_in else None
+            if work_in:
+                if work_out:
+                    checkout_time = work_out.record_date.strftime("%H:%M")
+                else:
+                    checkout_time = module.end_time if module else None
+            else:
+                checkout_time = None
+
+            # minutes 계산
+            late_minutes = early_leave_minutes = overtime_minutes = holiday_minutes = 0
+
+            if module and module.cat in ["정규근무", "휴일근무"]:
+                fmt = "%H:%M"
+
+                if work_in:
+                    work_start_dt = datetime.strptime(module.start_time, fmt)
+                    checkin_dt = datetime.strptime(checkin_time, fmt)
+                    diff = (checkin_dt - work_start_dt).total_seconds() / 60
+                    if diff > 0:
+                        late_minutes = int(diff)
+
+                if checkout_time:
+                    work_end_dt = datetime.strptime(module.end_time, fmt)
+                    checkout_dt = datetime.strptime(checkout_time, fmt)
+                    diff = (work_end_dt - checkout_dt).total_seconds() / 60
+                    if diff > 0:
+                        early_leave_minutes = int(diff)
+
+                    diff = (checkout_dt - work_end_dt).total_seconds() / 60
+                    if diff > 0:
+                        overtime_minutes = int(diff)
+
+                if module.cat == "휴일근무" and work_in and checkout_time:
+                    checkin_dt = datetime.strptime(checkin_time, fmt)
+                    checkout_dt = datetime.strptime(checkout_time, fmt)
+                    diff = (checkout_dt - checkin_dt).total_seconds() / 60
+                    if diff > 0:
+                        holiday_minutes = int(diff)
+
+            # status 구분 (9가지)
+            if not module:
+                status_str = "스케쥴없음"
+            elif module.cat == "OFF":
+                status_str = "OFF"
+            elif module.cat == "무급휴무":
+                status_str = "무급휴무"
+            elif module.cat == "유급휴무":
+                status_str = "유급휴무"
+            elif module.cat in ["정규근무", "휴일근무"]:
+                if not work_in:
+                    status_str = "결근"
+                else:
+                    if late_minutes > 0:
+                        status_str = "지각"
+                    elif early_leave_minutes > 0:
+                        status_str = "조퇴"
+                    elif overtime_minutes > 0:
+                        status_str = "연장"
+                    elif module.cat == "휴일근무":
+                        status_str = "휴일근무"
+                    else:
+                        status_str = "정상"
+            else:
+                status_str = "스케쥴없음"  # 방어 처리
+
+            work_color_code = module.color if module else None
+            work_color_hex = module_colors.get(module.color) if module else None
+
+            results.append({
+                "record_day": record_day,
+                "work_start": module.start_time if module else None,
+                "work_end": module.end_time if module else None,
+                "checkin_time": checkin_time,
+                "checkout_time": checkout_time,
+                "status": status_str,  # 9가지 상태(스케쥴없음, OFF, 무급휴무, 유급휴무, 정상, 결근, 지각, 조퇴, 연장)
+                "work_cat": module.cat if module else None,
+                "work_name": module.name if module else None,
+                "work_color_code": work_color_code,
+                "work_color_hex": work_color_hex,
+                "late_minutes": late_minutes,
+                "early_leave_minutes": early_leave_minutes,
+                "overtime_minutes": overtime_minutes,
+                "holiday_minutes": holiday_minutes,
+            })
+
+        print(results)
+
+        return Response(results, status=status.HTTP_200_OK)
 
 
 class WorkCreateAPIView(APIView):
