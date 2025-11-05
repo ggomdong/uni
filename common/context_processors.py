@@ -23,6 +23,20 @@ module_colors = {
         11: '#ffffff',  # 휴일근무, 유급휴무, 무급휴무, OFF 색상
     }
 
+STATUS_LABELS = {
+    "WORKDAY": "정규근무",
+    "HOLIDAY": "휴근",
+    "NORMAL": "정상",
+    "LATE": "지각",
+    "EARLY": "조퇴",
+    "OVERTIME": "연장",
+    "ERROR": "오류",
+    "PAY": "유급휴무",
+    "NOPAY": "무급휴무",
+    "OFF": "OFF",
+    "NOSCHEDULE": "스케쥴없음",
+}
+
 
 def get_day_of_the_week(self):
     return {'day_of_the_week': day_of_the_week}

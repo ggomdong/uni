@@ -121,15 +121,34 @@
             <th>종업</th>
             <th>출근</th>
             <th>퇴근</th>
-            <th>지각</th>
-            <th>조퇴</th>
-            <th>연장</th>
-            <th>휴일근무</th>
+            <th class="bg-danger text-white">상태</th>
+            <th class="bg-danger text-white">지각</th>
+            <th class="bg-danger text-white">조퇴</th>
+            <th class="bg-primary text-white">연장</th>
+            <th class="bg-primary text-white">휴일근무</th>
         </tr>
         </thead>
         {% if work_list %}
         <tbody>
         {% for work in work_list %}
+        {% ifchanged work.dept %}
+            {% if not forloop.first %}
+            <tr>
+                <td colspan="100%" style="border-top:1px solid #d3d3d3;"></td>
+            </tr>
+            {% endif %}
+        {% endifchanged %}
+
+        <!--tr
+          class="
+            {% if work.status_codes %}
+              {% if 'ERROR' in work.status_codes %} bg-danger-subtle border-start border-4 border-danger {% endif %}
+            {% else %}
+              {% if work.status == '오류' or work.status|upper == 'ERROR' %} bg-danger-subtle border-start border-4 border-danger {% endif %}
+            {% endif %}
+          "
+          title="{% if work.status_codes and 'ERROR' in work.status_codes %}오류 상태(세부 사유는 칼럼에서 확인){% elif work.status == '오류' or work.status|upper == 'ERROR' %}오류 상태(세부 사유는 칼럼에서 확인){% endif %}"
+        -->
         <tr>
             <td>{{work.dept}}</td>
             <td>{{work.position}}</td>
@@ -137,12 +156,46 @@
             <td>{{work.cat}}</td>
             <td>{{work.start_time}}</td>
             <td>{{work.end_time}}</td>
-            <td>{{work.checkin_time|date:"H:i:s"}}</td>
-            <td>{{work.checkout_time|date:"H:i:s"}}</td>
-            <td>{{work.is_late}}</td>
-            <td>{{work.is_early_out}}</td>
-            <td>{{work.is_overtime}}</td>
-            <td>{{work.is_holiday}}</td>
+            <td class="
+                {% if work.cat == 'OFF' and work.checkin_time %} bg-warning-subtle{% endif %}
+                {% if work.cat == '정규근무' and not work.checkin_time %} bg-warning-subtle{% endif %}
+              ">
+            {{ work.checkin_time|default_if_none:"" }}
+            </td>
+
+            <td class="{% if work.cat == 'OFF' and work.checkout_time %}bg-warning-subtle{% endif %}">
+            {{ work.checkout_time|default_if_none:"" }}
+            </td>
+
+            {% if work.status %}
+            <td>
+              {% if work.status_codes %}
+                {% if 'ERROR' in work.status_codes %}
+                  <span class="badge text-bg-danger">오류</span>
+                {% else %}
+                  {{ work.status }}
+                {% endif %}
+              {% else %}
+                {% if work.status == '오류' or work.status|upper == 'ERROR' %}
+                  <span class="badge text-bg-danger">오류</span>
+                {% else %}
+                  {{ work.status }}
+                {% endif %}
+              {% endif %}
+            </td>
+            {% endif %}
+            <td class="{% if work.late_minutes %}text-danger{% endif %}">
+            {% if work.late_minutes %}{{ work.late_minutes }}분{% endif %}
+            </td>
+            <td class="{% if work.early_minutes %}text-danger{% endif %}">
+            {% if work.early_minutes %}{{ work.early_minutes }}분{% endif %}
+            </td>
+            <td class="{% if work.overtime_minutes %}text-primary{% endif %}">
+            {% if work.overtime_minutes %}{{ work.overtime_minutes }}분{% endif %}
+            </td>
+            <td class="{% if work.holiday_minutes %}text-primary{% endif %}">
+            {% if work.holiday_minutes %}{{ work.holiday_minutes }}분{% endif %}
+            </td>
         </tr>
         {% endfor %}
         </tbody>

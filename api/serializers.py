@@ -12,17 +12,40 @@ class AttendanceSerializer(serializers.Serializer):
     is_early_checkout = serializers.BooleanField()
 
 
-# serializers.py
-class AttendanceDaySerializer(serializers.Serializer):
+class MonthlyAttendanceDaySerializer(serializers.Serializer):
     record_day = serializers.DateField()
+
     work_start = serializers.CharField(allow_null=True)
     work_end = serializers.CharField(allow_null=True)
-    checkin_time = serializers.CharField(allow_null=True)  # HH:mm or null
-    checkout_time = serializers.CharField(allow_null=True)  # HH:mm or null
-    work_cat = serializers.CharField(allow_null=True)  # 근무 대분류
-    work_name = serializers.CharField(allow_null=True)  # 근무 세부명
-    work_color_code = serializers.IntegerField(allow_null=True)  # DB의 정수값
-    work_color_hex = serializers.CharField(allow_null=True)       # 매핑된 HEX
+    checkin_time = serializers.CharField(allow_null=True)   # "HH:mm" or null
+    checkout_time = serializers.CharField(allow_null=True)  # "HH:mm" or null
+
+    # (하위호환) 조합 문자열은 남겨두되, 앱에선 안 써도 됨
+    status = serializers.CharField()
+
+    # 상태 코드 리스트
+    status_codes = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True
+    )
+
+    # 상태 라벨 리스트
+    status_labels = serializers.ListField(
+        child=serializers.CharField(), allow_empty=True
+    )
+
+    # 모듈(스케줄) 정보
+    work_cat = serializers.CharField(allow_null=True)
+    work_name = serializers.CharField(allow_null=True)
+    work_color_code = serializers.IntegerField(allow_null=True)
+    work_color_hex = serializers.CharField(allow_null=True)
+
+    # 분 단위 지표
+    late_minutes = serializers.IntegerField()
+    early_minutes = serializers.IntegerField()
+    overtime_minutes = serializers.IntegerField()
+    holiday_minutes = serializers.IntegerField()
+
+    # 편의 boolean
     is_late = serializers.BooleanField()
     is_early_checkout = serializers.BooleanField()
     is_overtime = serializers.BooleanField()
