@@ -57,7 +57,7 @@ class WorkSerializer(serializers.ModelSerializer):
         fields = ['user', 'work_code', 'record_date']
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'emp_name', 'dept', 'position', 'email', 'join_date', 'out_date']
