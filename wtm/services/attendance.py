@@ -1,11 +1,9 @@
-# wtm/services/attendance_builder.py
-# from __future__ import annotations
 from datetime import date
 from calendar import monthrange
 from django.utils import timezone
 from wtm.models import Work, Schedule, Module
 from wtm.attendance_calc import (
-    LogsDay, to_dt, compute_minutes_status_for_day
+    LogsDay, to_dt, compute_seconds_status_for_day
 )
 from types import SimpleNamespace
 
@@ -46,8 +44,8 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
         work_in = min(work_in_list, key=lambda w: w.record_date) if work_in_list else None
         work_out = max(work_out_list, key=lambda w: w.record_date) if work_out_list else None
 
-        # 화면용 HH:mm 문자열
-        checkin_time = work_in.record_date.strftime("%H:%M") if work_in else None
+        # 화면/계산용 HH:mm:ss 문자열
+        checkin_time = work_in.record_date.strftime("%H:%M:%S") if work_in else None
 
         # 스케줄 종료시각 파싱
         sched_end_hhmm = module.end_time if (module and module.end_time and module.end_time != "-") else None
@@ -60,10 +58,11 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
         # 1) 실제 퇴근 로그가 있으면 그대로 사용
         # 2) 없으면 '어제까지'이고 '출근 ≤ 스케줄 종료'일 때만 스케줄 종료로 보정
         if work_out:
-            checkout_time = work_out.record_date.strftime("%H:%M")
+            checkout_time = work_out.record_date.strftime("%H:%M:%S")
         else:
             if (record_day < today) and sched_end_dt and checkin_dt and (checkin_dt <= sched_end_dt):
-                checkout_time = sched_end_hhmm
+                # 스케줄은 분 단위만 있으므로 초는 ':00' 보정
+                checkout_time = f"{sched_end_hhmm}:00"
             else:
                 checkout_time = None
 
@@ -73,8 +72,8 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
             checkout=checkout_time,
         )
 
-        # compute_minutes_for_day 로 분 계산
-        res = compute_minutes_status_for_day(record_day, module, log)
+        # compute_seconds_status_for_day 로 초 단위 계산
+        res = compute_seconds_status_for_day(record_day, module, log)
 
         results.append({
             "record_day": record_day,
@@ -92,16 +91,16 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
             "work_cat": module.cat if module else None,
             "work_name": module.name if module else None,
 
-            # 분 단위 지표(휴게 반영)
-            "late_minutes": res.late_minutes,
-            "early_minutes": res.early_minutes,
-            "overtime_minutes": res.overtime_minutes,
-            "holiday_minutes": res.holiday_minutes,
+            # 초 단위 지표(휴게 반영)
+            "late_seconds": res.late_seconds,
+            "early_seconds": res.early_seconds,
+            "overtime_seconds": res.overtime_seconds,
+            "holiday_seconds": res.holiday_seconds,
 
             # 프런트 편의
-            "is_late": res.late_minutes > 0,
-            "is_early_checkout": res.early_minutes > 0,
-            "is_overtime": res.overtime_minutes > 0,
+            "is_late": res.late_seconds > 0,
+            "is_early_checkout": res.early_seconds > 0,
+            "is_overtime": res.overtime_seconds > 0,
         })
 
     return results
@@ -115,7 +114,7 @@ def build_work_list_for_index(base_rows: list[dict], day: date) -> list[dict]:
     - day: 기준 일자 (datetime.date)
     정책:
       - 체크아웃 보정: 오늘은 보정 안 함. 과거일이고 (출근 ≤ 스케줄 종료)일 때만 스케줄 종료로 보정.
-      - 분/상태 계산은 compute_minutes_status_for_day 재사용.
+      - 초/상태 계산은 compute_seconds_status_for_day 재사용.
     반환:
       - 템플릿(index.html)의 컬럼명에 맞춘 dict 리스트.
     """
@@ -169,8 +168,8 @@ def build_work_list_for_index(base_rows: list[dict], day: date) -> list[dict]:
                 rest2_end_time=r.get("rest2_end_time"),
             )
 
-        # IN/OUT HH:mm
-        checkin_time = first_in[uid].strftime("%H:%M") if uid in first_in else None
+        # IN/OUT HH:mm:ss
+        checkin_time = first_in[uid].strftime("%H:%M:%S") if uid in first_in else None
 
         # 스케줄 종료
         sched_end_hhmm = r["end_time"] if r.get("end_time") and r["end_time"] != "-" else None
@@ -179,14 +178,15 @@ def build_work_list_for_index(base_rows: list[dict], day: date) -> list[dict]:
 
         # 체크아웃 결정 (보정 정책)
         if uid in last_out:
-            checkout_time = last_out[uid].strftime("%H:%M")
+            checkout_time = last_out[uid].strftime("%H:%M:%S")
         else:
             if (day < today) and sched_end_dt and checkin_dt and (checkin_dt <= sched_end_dt):
-                checkout_time = sched_end_hhmm
+                # 스케줄은 분 단위 → 초 보정
+                checkout_time = f"{sched_end_hhmm}:00"
             else:
                 checkout_time = None
 
-        metrics = compute_minutes_status_for_day(
+        metrics = compute_seconds_status_for_day(
             record_day=day,
             module=mod,
             log=LogsDay(checkin=checkin_time, checkout=checkout_time),
@@ -201,11 +201,10 @@ def build_work_list_for_index(base_rows: list[dict], day: date) -> list[dict]:
             "end_time": r.get("end_time"),
             "checkin_time": checkin_time,
             "checkout_time": checkout_time,
-            "late_minutes": metrics.late_minutes,
-            "early_minutes": metrics.early_minutes,
-            "overtime_minutes": metrics.overtime_minutes,
-            "holiday_minutes": metrics.holiday_minutes,
-            # 필요 시:
+            "late_seconds": metrics.late_seconds,
+            "early_seconds": metrics.early_seconds,
+            "overtime_seconds": metrics.overtime_seconds,
+            "holiday_seconds": metrics.holiday_seconds,
             "status": metrics.status,
             "status_codes": metrics.status_codes,
             "status_labels": metrics.status_labels,

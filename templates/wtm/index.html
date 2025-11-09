@@ -184,17 +184,17 @@
               {% endif %}
             </td>
             {% endif %}
-            <td class="{% if work.late_minutes %}text-danger{% endif %}">
-            {% if work.late_minutes %}{{ work.late_minutes }}분{% endif %}
+            <td class="{% if work.late_seconds %}text-danger{% endif %}">
+              {% if work.late_seconds %}{{ work.late_seconds|ss_to_hhmmss }}{% endif %}
             </td>
-            <td class="{% if work.early_minutes %}text-danger{% endif %}">
-            {% if work.early_minutes %}{{ work.early_minutes }}분{% endif %}
+            <td class="{% if work.early_seconds %}text-danger{% endif %}">
+              {% if work.early_seconds %}{{ work.early_seconds|ss_to_hhmmss }}{% endif %}
             </td>
-            <td class="{% if work.overtime_minutes %}text-primary{% endif %}">
-            {% if work.overtime_minutes %}{{ work.overtime_minutes }}분{% endif %}
+            <td class="{% if work.overtime_seconds %}text-primary{% endif %}">
+              {% if work.overtime_seconds %}{{ work.overtime_seconds|ss_to_hhmmss }}{% endif %}
             </td>
-            <td class="{% if work.holiday_minutes %}text-primary{% endif %}">
-            {% if work.holiday_minutes %}{{ work.holiday_minutes }}분{% endif %}
+            <td class="{% if work.holiday_seconds %}text-primary{% endif %}">
+              {% if work.holiday_seconds %}{{ work.holiday_seconds|ss_to_hhmmss }}{% endif %}
             </td>
         </tr>
         {% endfor %}

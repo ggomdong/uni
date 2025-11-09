@@ -17,8 +17,8 @@ class MonthlyAttendanceDaySerializer(serializers.Serializer):
 
     work_start = serializers.CharField(allow_null=True)
     work_end = serializers.CharField(allow_null=True)
-    checkin_time = serializers.CharField(allow_null=True)   # "HH:mm" or null
-    checkout_time = serializers.CharField(allow_null=True)  # "HH:mm" or null
+    checkin_time = serializers.CharField(allow_null=True)   # "HH:mm:ss" or null
+    checkout_time = serializers.CharField(allow_null=True)  # "HH:mm:ss" or null
 
     # (하위호환) 조합 문자열은 남겨두되, 앱에선 안 써도 됨
     status = serializers.CharField()
@@ -40,10 +40,10 @@ class MonthlyAttendanceDaySerializer(serializers.Serializer):
     work_color_hex = serializers.CharField(allow_null=True)
 
     # 분 단위 지표
-    late_minutes = serializers.IntegerField()
-    early_minutes = serializers.IntegerField()
-    overtime_minutes = serializers.IntegerField()
-    holiday_minutes = serializers.IntegerField()
+    late_seconds = serializers.IntegerField()
+    early_seconds = serializers.IntegerField()
+    overtime_seconds = serializers.IntegerField()
+    holiday_seconds = serializers.IntegerField()
 
     # 편의 boolean
     is_late = serializers.BooleanField()

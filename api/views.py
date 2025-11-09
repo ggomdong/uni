@@ -173,7 +173,7 @@ class MonthlyAttendanceAPIView(APIView):
             )
         results = build_monthly_attendance_for_user(user, year, month)
 
-        print(results)
+        # print(results)
 
         serializer = MonthlyAttendanceDaySerializer(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

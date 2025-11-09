@@ -88,3 +88,16 @@ def get_day(obj, delta):
 @register.filter
 def get_range(max_value, current):
     return range(max_value - current + 1)
+
+
+@register.filter
+def ss_to_hhmmss(value):
+    try:
+        s = int(value)
+    except (TypeError, ValueError):
+        return ""
+    if s <= 0:
+        return ""
+    h, rem = divmod(s, 3600)
+    m, sec = divmod(rem, 60)
+    return f"{h:02d}:{m:02d}:{sec:02d}"
