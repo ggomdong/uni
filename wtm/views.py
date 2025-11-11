@@ -7,12 +7,13 @@ from django.db.models.functions import ExtractDay
 from django.db import connection, transaction
 from django.utils import timezone
 from datetime import datetime, date
+from calendar import monthrange
 
 from .models import Work, Module, Contract, Schedule
 from .forms import ModuleForm, ContractForm
 from common.models import User, Holiday
 from common import context_processors
-from wtm.services.attendance import build_work_list_for_index
+from wtm.services.attendance import build_work_list_for_index, build_monthly_attendance_for_user
 
 
 def index(request, stand_day=None):
@@ -100,6 +101,10 @@ def index(request, stand_day=None):
     ymd = stand_day if stand_day else timezone.now().strftime("%Y%m%d")
     day = date(int(ymd[:4]), int(ymd[4:6]), int(ymd[6:8]))
 
+    # User를 메인으로 Contract를 LEFT OUTER JOIN 하여, 계약이 있는 경우에만 리스트에 보여줌
+    # 1. 직원관리 화면과 다르게, 현재(NOW())가 아닌 기준일자 보다 과거인 기준일이 존재하면 max(과거 기준일)
+    # 2. 기준일자 보다 과거인 기준일이 없으면 min(미래 기준일)
+    # SQL에 조건을 넣기가 애매해서, 1,2를 union한 후 min 값을 얻는 걸로 구현함
     query = f'''
             SELECT u.id as user_id, u.dept, u.position, u.emp_name,
                 s.d{int(stand_day[6:8])}_id,
@@ -114,9 +119,9 @@ def index(request, stand_day=None):
                         SELECT a.user_id, MIN(a.stand_date)
                         FROM
                         (
-                            SELECT user_id, MAX(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() GROUP BY user_id
+                            SELECT user_id, MAX(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= '{stand_day}' GROUP BY user_id
                             UNION
-                            SELECT user_id, MIN(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() GROUP BY user_id
+                            SELECT user_id, MIN(stand_date) as stand_date FROM wtm_contract WHERE stand_date > '{stand_day}' GROUP BY user_id
                             ) a
                             group by a.user_id
                         )
@@ -1230,48 +1235,77 @@ def work_schedule_popup(request):
 
 @login_required(login_url='common:login')
 def work_status(request, stand_ym=None):
-    return
-    # # 기준 월
-    # stand_ym = request.GET.get("ym")
-    # if not stand_ym:
-    #     now = timezone.now()
-    #     stand_ym = f"{now.year}{now.month:02d}"
-    # year, month = int(stand_ym[:4]), int(stand_ym[4:6])
-    #
-    # # 직원 대상: wtm_contract.check_yn='Y'
-    # # (현 구조에 맞춰 RAW로 가장 최근 계약 상태를 조인하거나, Contract 모델 필터로 대체)
-    # query = """
-    #         SELECT u.id, u.emp_name
-    #         FROM common_user u
-    #         JOIN (
-    #             SELECT user_id, MAX(stand_date) AS st
-    #             FROM wtm_contract
-    #             WHERE check_yn='Y'
-    #             GROUP BY user_id
-    #         ) c ON c.user_id = u.id
-    #         WHERE u.is_superuser=0
-    #     """
-    # with connection.cursor() as cur:
-    #     cur.execute(query)
-    #     emps = [{"id": r[0], "name": r[1]}] if False else [{"id": rid, "name": rname} for rid, rname in cur.fetchall()]
-    #
-    # # 월간 데이터 계산
-    # overview = {}
-    # for e in emps:
-    #     user = User.objects.get(pk=e["id"])
-    #     rows = build_monthly_attendance_for_user(user, year, month)
-    #     overview[e["id"]] = {
-    #         "emp_name": e["name"],
-    #         "rows": rows,  # 일자별 세부
-    #     }
-    #
-    # context = {
-    #     "stand_ym": stand_ym,
-    #     "year": year, "month": month,
-    #     # 프런트에서 바로 쓰게 JSON 문자열로 제공
-    #     "overview_json": json.dumps(overview, default=str),
-    # }
-    # return render(request, "wtm/attendance_overview.html", context)
+    """
+    근태현황(월 단위, hh:mm:ss). INDEX와 동일한 대상자 기준을 따름.
+    - 지각/결근(ERROR)/조퇴/초과/휴일 : '횟수 + 누적시간(hh:mm:ss)'
+    """
+    if not stand_ym:
+        stand_ym = timezone.now().strftime("%Y%m")
+
+    year = int(stand_ym[:4])
+    month = int(stand_ym[4:6])
+    first_day = date(year, month, 1)
+    last_day = date(year, month, monthrange(year, month)[1])
+
+    # === 대상 직원: index() 기준을 그대로 반영 ===
+    qs = User.objects.filter(
+        Q(join_date__lte=last_day) &
+        (Q(out_date__isnull=True) | Q(out_date__gte=first_day))
+    )
+    # 개인 속성에 '근태확인 제외'류 필드가 있다면 제외(없으면 무시)
+    for field in ("attendance_exempt", "exclude_attendance", "work_exempt"):
+        try:
+            User._meta.get_field(field)
+            qs = qs.filter(Q(**{field: False}) | Q(**{f"{field}__isnull": True}))
+            break
+        except Exception:
+            pass
+
+    qs = qs.order_by("dept", "position", "emp_name")
+
+    def _sum_seconds(days, key):  # 분 → 초
+        return sum(int(d.get(key, 0)) * 60 for d in days)
+
+    def _count(days, pred):
+        return sum(1 for d in days if pred(d))
+
+    rows = []
+    for u in qs:
+        days = build_monthly_attendance_for_user(u, year, month)
+
+        late_sec = _sum_seconds(days, "late_seconds")
+        early_sec = _sum_seconds(days, "early_seconds")
+        overtime_sec = _sum_seconds(days, "overtime_seconds")
+        holiday_sec = _sum_seconds(days, "holiday_seconds")
+
+        rows.append({
+            "dept": getattr(u, "dept", ""),
+            "position": getattr(u, "position", ""),
+            "emp_name": getattr(u, "emp_name", ""),
+
+            "late_cnt": _count(days, lambda d: d.get("late_seconds", 0) > 0),
+            "late_sec": late_sec,
+
+            # ‘결근’은 ERROR 일수로 대체
+            "absent_cnt": _count(days, lambda d: d.get("status_codes", []) == ["ERROR"]),
+
+            "early_cnt": _count(days, lambda d: d.get("early_seconds", 0) > 0),
+            "early_sec": early_sec,
+
+            "overtime_cnt": _count(days, lambda d: d.get("overtime_seconds", 0) > 0),
+            "overtime_sec": overtime_sec,
+
+            "holiday_cnt": _count(days, lambda d: d.get("holiday_seconds", 0) > 0),
+            "holiday_sec": holiday_sec,
+        })
+
+    context = {
+        "stand_ym": stand_ym,
+        "rows": rows,
+        "prev_ym": f"{year - 1 if month == 1 else year}{(12 if month == 1 else month - 1):02d}",
+        "next_ym": f"{year + 1 if month == 12 else year}{(1 if month == 12 else month + 1):02d}",
+    }
+    return render(request, "wtm/work_status.html", context)
 
 
 @login_required(login_url='common:login')
