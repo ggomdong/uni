@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3">
+<!--  <h4>{{ metric_label }} 현황 — {{ stand_ym|slice:":4" }}년 {{ stand_ym|slice:"4:" }}월</h4>-->
+
+    <!-- 상단 필터 버튼 -->
+    <div class="btn-group mb-3" role="group" aria-label="근태 지표 필터">
+    <a href="{% url 'wtm:work_status' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'ALL' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      전체
+    </a>
+    <a href="{% url 'wtm:work_metric' 'LATE' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'LATE' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      지각
+    </a>
+    <a href="{% url 'wtm:work_metric' 'EARLY' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'EARLY' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      조퇴
+    </a>
+    <a href="{% url 'wtm:work_metric' 'OVERTIME' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'OVERTIME' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      연장근무
+    </a>
+    <a href="{% url 'wtm:work_metric' 'HOLIDAY' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'HOLIDAY' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      휴일근무
+    </a>
+    </div>
+
+  {% now "Ymd" as nowymd %}
+  {% with nowym=nowymd|slice:":6" nowd=nowymd|slice:"6:" %}
+
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle text-center">
+      <thead>
+        <tr>
+            <th colspan="100%">
+            <div class="row my-3 text-start">
+                <div class="col-10 fs-3">
+                    <a href="{% url 'wtm:work_metric' metric stand_ym|get_month:-1 %}">
+                        <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                        </svg>
+                        </button></a>
+                    <a href="{% url 'wtm:work_metric' metric stand_ym|get_month:1 %}">
+                        <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                        </svg>
+                        </button></a>
+                    <span class="nativeDatePicker">
+                        <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
+                               value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
+                    </span>
+                </div>
+                <div class="col-2 text-end">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'wtm:work_schedule_reg' stand_ym %}" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                        </svg>
+                        엑셀
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            </th>
+        </tr>
+        <tr class="table-light">
+          <th rowspan="2" style="min-width:80px">부서</th>
+<!--          <th rowspan="2" style="min-width:80px">직위</th>-->
+          <th rowspan="2" style="min-width:80px">성명</th>
+          <th rowspan="2">횟수</th>
+          <th rowspan="2">합계</th>
+          {% for key, dow in day_list.items %}
+            {% with dd=key|add:""|stringformat:"s" %}
+            <th>
+              <div
+                {% if dow == '일' or key|to_int in holiday_list %}style="color:red"{% endif %}
+                {% if stand_ym == nowym and dd == nowd %}class="roundtext"{% endif %}
+              >{{ key }}</div>
+            </th>
+            {% endwith %}
+          {% endfor %}
+        </tr>
+        <tr class="table-light">
+          {% for key, dow in day_list.items %}
+            {% with dd=key|add:""|stringformat:"s" %}
+            <th>
+              <div
+                {% if dow == '일' or key|to_int in holiday_list %}style="color:red"{% endif %}
+                {% if stand_ym == nowym and dd == nowd %}class="roundtext"{% endif %}
+              >{{ dow }}</div>
+            </th>
+            {% endwith %}
+          {% endfor %}
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.dept }}</td>
+<!--            <td>{{ r.position }}</td>-->
+            <td>{{ r.emp_name }}</td>
+            <td class="fw-semibold">{{ r.count }}</td>
+            <td class="fw-semibold">{{ r.total_seconds|ss_to_hhmmss }}</td>
+
+            {% for sec in r.cells %}
+              {% if sec > 0 %}
+                <td>{{ sec|ss_to_hhmmss }}</td>
+              {% else %}
+                <td class="text-muted">·</td>
+              {% endif %}
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% endwith %}
+</div>
+{% endblock %}

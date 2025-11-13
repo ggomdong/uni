@@ -41,19 +41,23 @@ def to_dt(day: date, hhmmss: Optional[str]) -> Optional[datetime]:
     'HH:mm:ss' 또는 'HH:mm' 문자열을 datetime으로 변환.
     None 또는 "-"는 유효하지 않은 시각으로 간주하여 None 반환.
     """
-    if not hhmmss or hhmmss == "-":
+    if hhmmss is None:
         return None
-    s = hhmmss.strip()
-    # 1) 초까지 들어오면 그대로
-    # 2) 분까지만 들어오면 ':00'을 붙여서 초 보정
-    if len(s) == 5:  # 'HH:mm'
-        s = s + ":00"
-    # 방어적으로 공백이나 이상값이 와도 에러 막고 None 반환
+
+    time_str = hhmmss.strip()
+    if time_str in ("", "-"):
+        return None
+
     try:
-        t = datetime.strptime(s, "%H:%M:%S").time()
+        if len(time_str) == 5:  # HH:mm
+            time_str += ":00"
+        elif len(time_str) != 8:  # HH:mm:ss 아니면 에러 취급
+            return None
+
+        time_obj = datetime.strptime(time_str, "%H:%M:%S").time()
+        return datetime.combine(day, time_obj)
     except ValueError:
         return None
-    return datetime.combine(day, t)
 
 
 def make_paid_segments(day: date, module: "Module") -> List[Segment]:
@@ -107,28 +111,24 @@ def make_paid_segments(day: date, module: "Module") -> List[Segment]:
     return [(a, b) for (a, b) in segments if b > a]
 
 
-def segments_total_seconds(segments: Sequence[Segment]) -> int:
-    """
-    구간 리스트의 총 초(seconds) 합산.
-    """
-    return sum(int((b - a).total_seconds()) for a, b in segments if b > a)
-
-
 def seconds_before(t: Optional[datetime], segments: Sequence[Segment]) -> int:
     """
     시각 t '이전'의 유급 근로 누적 초.
     - '지각(late)' 계산에 사용: 스케줄상의 유급 근로가 시작됐는데, 출근(t)이 그 이후라면
       t 이전의 유급 근로가 모두 지각 초로 잡힌다.
     """
-    if not t:
+    if t is None:
         return 0
-    parts: List[Segment] = []
+    total = 0
     for a, b in segments:
         if t <= a:
-            # t가 세그먼트 시작 이전이면 교집합 없음
             continue
-        parts.append((a, min(b, t)))
-    return segments_total_seconds(parts)
+        if t >= b:
+            total += int((b - a).total_seconds())
+        else:
+            total += int((t - a).total_seconds())
+            break # 이후 세그먼트는 불필요
+    return total
 
 
 def seconds_after(t: Optional[datetime], segments: Sequence[Segment]) -> int:
@@ -137,15 +137,17 @@ def seconds_after(t: Optional[datetime], segments: Sequence[Segment]) -> int:
     - '조퇴(early)' 계산에 사용: 스케줄상의 유급 근로가 남아 있는데, 퇴근(t)이 그 이전이라면
       t 이후의 유급 근로가 모두 조퇴 초로 잡힌다.
     """
-    if not t:
+    if t is None:
         return 0
-    parts: List[Segment] = []
+    total = 0
     for a, b in segments:
         if t >= b:
-            # t가 세그먼트 끝 이후면 교집합 없음
             continue
-        parts.append((max(a, t), b))
-    return segments_total_seconds(parts)
+        if t <= a:
+            total += int((b-a).total_seconds())
+        else:
+            total += int((b-t).total_seconds())
+    return total
 
 
 def intersection_seconds(a: Optional[datetime], b: Optional[datetime], segments: Sequence[Segment]) -> int:
@@ -154,15 +156,16 @@ def intersection_seconds(a: Optional[datetime], b: Optional[datetime], segments:
     - '휴일근무(holiday)' 초 계산에 사용: 휴일 스케줄이라면 실제 체류와 유급 근로가 겹친 시간만 인정.
     - 일반 일자에서도 '실제 유급 체류'가 얼마나 있었는지 확인할 때 쓸 수 있음.
     """
-    if not a or not b or b <= a:
+    if a is None or b is None or b <= a:
         return 0
-    parts: List[Segment] = []
+    total = 0
     for s, e in segments:
-        # 각 세그먼트와 [a,b) 교집합을 취함
+        # 각 세그먼트와 [a, b) 교집합
         x, y = max(a, s), min(b, e)
         if y > x:
-            parts.append((x, y))
-    return segments_total_seconds(parts)
+            total += int((y - x).total_seconds())
+
+    return total
 
 
 def last_paid_end(segments: Sequence[Segment]) -> Optional[datetime]:
@@ -210,7 +213,9 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
 
     # 1) 휴게 반영 유급 세그먼트 생성
     paid_segments = make_paid_segments(record_day, module)
-    paid_total_seconds = segments_total_seconds(paid_segments)
+    paid_total_seconds = sum(
+        int((b - a).total_seconds()) for a, b in paid_segments
+    )
 
     # 2) 출퇴근 dt
     checkin_dt = to_dt(record_day, log.checkin)

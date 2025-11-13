@@ -2,326 +2,97 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <!-- message 표시 -->
-    {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-{{message.tags}} my-3" role="alert">
-        <ul class="m-0"><li>{{ message.message }}</li></ul>
+  <!-- 상단 필터 버튼 -->
+  <div class="btn-group mb-3" role="group" aria-label="근태 지표 필터">
+    <a href="{% url 'wtm:work_status' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'ALL' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      전체
+    </a>
+    <a href="{% url 'wtm:work_metric' 'LATE' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'LATE' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      지각
+    </a>
+    <a href="{% url 'wtm:work_metric' 'EARLY' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'EARLY' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      조퇴
+    </a>
+    <a href="{% url 'wtm:work_metric' 'OVERTIME' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'OVERTIME' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      연장근무
+    </a>
+    <a href="{% url 'wtm:work_metric' 'HOLIDAY' stand_ym %}"
+       class="btn btn-sm {% if active_metric == 'HOLIDAY' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      휴일근무
+    </a>
+  </div>
+
+  <div class="row align-items-center mb-3">
+    <div class="col fs-4 fw-semibold">근태현황 (월간)</div>
+    <div class="col text-end">
+      <a class="btn btn-light me-2" href="{% url 'wtm:work_status' prev_ym %}">◀</a>
+      <input type="month" id="ym" class="form-control d-inline-block w-auto"
+             value="{{ stand_ym|slice:'0:4' }}-{{ stand_ym|slice:'4:6' }}" onkeydown="return false">
+      <a class="btn btn-light ms-2" href="{% url 'wtm:work_status' next_ym %}">▶</a>
     </div>
-    {% endfor %}
-    {% endif %}
+  </div>
 
-    <div>
-    <table class="table text-center table-borderless table-sm sticky-top sticky-left2">
-        <thead>
-        <tr>
-            <th colspan="100%">
-            <div class="row my-3 text-start">
-                <div class="col-10 fs-3">
-                    <a href="{% url 'wtm:work_schedule' stand_ym|get_month:-1 %}">
-                        <button type="button" class="btn-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
-                        </svg>
-                        </button></a>
-                    <a href="{% url 'wtm:work_schedule' stand_ym|get_month:1 %}">
-                        <button type="button" class="btn-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
-                        </svg>
-                        </button></a>
-                    <span class="nativeDatePicker">
-                        <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
-                               value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
-                    </span>
-                </div>
-                <div class="col-2 text-end">
-                    {% if user.is_authenticated %}
-                    {% if schedule_list %}
-                    <a href="javascript:void(0)" class="delete btn btn-danger"
-                           data-uri="{% url 'wtm:work_schedule_delete' stand_ym %}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
-                          <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
-                        </svg>
-                        삭제
-                    </a>
-                    <a href="{% url 'wtm:work_schedule_modify' stand_ym %}" class="btn btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
-                          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-                        </svg>
-                        수정
-                    </a>
-                    {% else %}
-                    <a href="{% url 'wtm:work_schedule_reg' stand_ym %}" class="btn btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
-                          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-                        </svg>
-                        신규
-                    </a>
-                    {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-            </th>
-        </tr>
-        {% if schedule_list %}
-        {% now "Ym" as yearmonth %}
-        {% now "j" as today %}
-        <tr>
-            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
-            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
-            {% for key, value in day_list.items %}
-            <th>
-                <!-- key가 공휴일이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
-                <div {% if value == '일' or key|to_int in holiday_list %}style="color: red"{% endif %}
-                     {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>{{ key }}</div>
-            </th>
-            {% endfor %}
-            {% for key, value in next_day_list.items %}
-            <th>
-                <!-- 일요일이나 공휴일 폰트는 빨간색 -->
-                <div class="next" {% if value == '일' or key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ key }}</div>
-            </th>
-            {% endfor %}
-        </tr>
-        <tr>
-            <th></th>
-            <th></th>
-            {% for key, value in day_list.items %}
-            <th>
-                <!-- key가 공휴일이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
-                <div {% if value == '일' or key|to_int in holiday_list %}style="color: red"{% endif %}
-                     {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>{{ value }}</div>
-            </th>
-            {% endfor %}
-            {% for key, value in next_day_list.items %}
-            <th>
-                <!-- 일요일이나 공휴일 폰트는 빨간색 -->
-                <div class="next" {% if value == '일' or key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ value }}</div>
-            </th>
-            {% endfor %}
-        </tr>
-        </thead>
+<!--  <div class="alert alert-secondary py-2 small">-->
+<!--    • 개인 속성의 “근태확인 제외”는 집계 제외 • 시간단위: hh:mm:ss-->
+<!--  </div>-->
 
-        <tbody>
-        {% for schedule in schedule_list %}
-        {% if schedule.dept_diff == 'Y' %}
-        <tr style="border-bottom: 1px solid #d3d3d3;">
-            <td></td>
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle text-center">
+      <thead class="table-light">
+        <tr>
+          <th rowspan="2">부서</th>
+          <th rowspan="2">직위</th>
+          <th rowspan="2">성명</th>
+          <th rowspan="2">오류<br>(일수)</th>
+          <th colspan="2">지각</th>
+          <th colspan="2">조퇴</th>
+          <th colspan="2">초과근무</th>
+          <th colspan="2">휴일근무</th>
         </tr>
         <tr>
-            <td></td>
+          <th>횟수</th><th>시간</th>
+          <th>횟수</th><th>시간</th>
+          <th>횟수</th><th>시간</th>
+          <th>횟수</th><th>시간</th>
         </tr>
-        {% endif %}
+      </thead>
+      <tbody>
+        {% for r in rows %}
         <tr>
-            <td class="align-middle">{{ schedule.dept }}</td>
-            <td class="align-middle">{{ schedule.emp_name }}</td>
-            {% for key, value in day_list.items %}
-            <td class="{% if yearmonth == stand_ym and key == today %}is-hover{% endif %}">
-                {% with schedule|get_day_index:key as day %}
-                {% if stand_ym|concat_date:key < schedule.join_date or schedule.out_date < stand_ym|concat_date:key %}
-                <div class="module_box-disabled"></div>
-                {% else %}
-                {% with day|split:',' as module %} <!-- 0:'id', 1:'cat', 2:'name', 3:'start_time', 4:'end_time', 5:'color' -->
-                {% with module.5|to_int as color %}
-                <div class="module_box" name="schedule_module" style="cursor: pointer; background-color: {{ module_colors|get_index:color }};"
-                {% if user.is_authenticated %} data-bs-toggle="modal" {% endif %} data-bs-target="#scheduleModal" data-id="{{schedule.id}}"
-                     data-name="{{schedule.emp_name}}" data-dept="{{schedule.dept}}" data-position="{{schedule.position}}"
-                     data-date="{{ stand_ym|concat_date:key }}" data-module="{{module.0}}">
-<!--                     onclick="module_modify({{ schedule.id }}, {{ stand_ym|concat_date:key }}, {{ module.0 }});">-->
-                    {% if module.1 == '휴일근무' %}
-                        <font color="blue">
-                        {{ module.3 }}
-                        {{ module.4 }}
-                        </font>
-                    {% elif module.1 == '유급휴무' %}
-                        {{ module.2|slice:"0:2" }}<br>
-                        {{ module.2|slice:"2:4" }}
-                    {% elif module.1 == '무급휴무' %}
-                        <font color="red">
-                        {{ module.2|slice:"0:2" }}<br>
-                        {{ module.2|slice:"2:4" }}
-                        </font>
-                    {% elif module.1 == 'OFF' %}
-                        -
-                    {% else %}
-                        {{ module.3 }}
-                        {{ module.4 }}
-                    {% endif %}
-                </div>
-                {% endwith %}{% endwith %}
-                {% endif %}
-                {% endwith %}
-            </td>
-            {% endfor %}
-            {% for key, value in next_day_list.items %}
-            <td>
-                {% with schedule|get_next_index:key as day %}
-                {% if next_ym|concat_date:key < schedule.join_date or schedule.out_date < next_ym|concat_date:key %}
-                <div class="module_box-disabled"></div>
-                {% else %}
-                {% with day|split:',' as module %} <!-- 0:'id', 1:'cat', 2:'name', 3:'start_time', 4:'end_time', 5:'color' -->
-                {% with module.5|to_int as color %}
-                <div class="module_box" name="schedule_module" style="cursor: pointer; background-color: {{ module_colors|get_index:color }};"
-                {% if user.is_authenticated %} data-bs-toggle="modal" {% endif %} data-bs-target="#scheduleModal" data-id="{{schedule.id}}"
-                     data-name="{{schedule.emp_name}}" data-dept="{{schedule.dept}}" data-position="{{schedule.position}}"
-                     data-date="{{ next_ym|concat_date:key }}" data-module="{{module.0}}">
-<!--                     onclick="module_modify({{ schedule.id }}, {{ next_ym|concat_date:key }}, {{ module.0 }});">-->
-                    {% if module.1 == '휴일근무' %}
-                        <font color="blue">
-                        {{ module.3 }}
-                        {{ module.4 }}
-                        </font>
-                    {% elif module.1 == '유급휴무' %}
-                        {{ module.2|slice:"0:2" }}<br>
-                        {{ module.2|slice:"2:4" }}
-                    {% elif module.1 == '무급휴무' %}
-                        <font color="red">
-                        {{ module.2|slice:"0:2" }}<br>
-                        {{ module.2|slice:"2:4" }}
-                        </font>
-                    {% elif module.1 == 'OFF' %}
-                        -
-                    {% else %}
-                        {{ module.3 }}
-                        {{ module.4 }}
-                    {% endif %}
-                </div>
-                {% endwith %}{% endwith %}
-                {% endif %}
-                {% endwith %}
-            </td>
-            {% endfor %}
+          <td class="text-nowrap">{{ r.dept }}</td>
+          <td class="text-nowrap">{{ r.position }}</td>
+          <td class="text-nowrap">{{ r.emp_name }}</td>
+          <td>{{ r.error_cnt|default:"" }}</td>
+
+          <td>{{ r.late_cnt|default:"" }}</td>
+          <td class="text-end">{{ r.late_sec|ss_to_hhmmss }}</td>
+
+          <td>{{ r.early_cnt|default:"" }}</td>
+          <td class="text-end">{{ r.early_sec|ss_to_hhmmss }}</td>
+
+          <td>{{ r.overtime_cnt|default:"" }}</td>
+          <td class="text-end">{{ r.overtime_sec|ss_to_hhmmss }}</td>
+
+          <td>{{ r.holiday_cnt|default:"" }}</td>
+          <td class="text-end">{{ r.holiday_sec|ss_to_hhmmss }}</td>
         </tr>
+        {% empty %}
+        <tr><td colspan="12" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
         {% endfor %}
-        </tbody>
-        {% else %}
-        <tr>
-            <td colspan="5" class="text-center">근무표가 없습니다.</td>
-        </tr>
-        {% endif %}
+      </tbody>
     </table>
-    </div>
+  </div>
 </div>
 
-<!-- Modal dialog -->
-<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="scheduleModalLabel">근무표 수정</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="form" method="post" action="{% url 'wtm:work_schedule_popup' %}">
-                {% csrf_token %}
-                <input type="hidden" name="user_id" value="{{target_user.id}}">
-                <input type="hidden" name="stand_date" value="{{stand_date}}">
-                <input type="hidden" name="module_id" value="{{old_module_id}}">
-                <div class="container my-3">
-                    <!-- module 정보 표시 -->
-                    <div class="mb-3 col-md-6">
-                        <div class="alert alert-warning" role="alert">
-                            <div id="module_info"></div>
-                        </div>
-                    </div>
-
-                <table class="text-center table-borderless my-4">
-                    <tr>
-                        {% for module in module_list %}
-                        <th style="vertical-align: bottom; width: 50px; font-weight: normal;">
-                        <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
-                        <label class="form-label" for="{{module.id}}">
-                            <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
-                                {% if module.cat == '휴일근무' %}
-                                <font color="blue">
-                                    {{ module.start_time }}
-                                    {{ module.end_time }}
-                                </font>
-                                {% elif module.cat == '유급휴무' %}
-                                {{ module.name|slice:"0:2" }}<br>
-                                {{ module.name|slice:"2:4" }}
-                                {% elif module.cat == '무급휴무' %}
-                                <font color="red">
-                                {{ module.name|slice:"0:2" }}<br>
-                                {{ module.name|slice:"2:4" }}
-                                </font>
-                                {% elif module.cat == 'OFF' %}
-                                -
-                                {% else %}
-                                {{ module.start_time }}
-                                {{ module.end_time }}
-                                {% endif %}
-                            </div>
-                        </label>
-                        </th>
-                        {% endfor %}
-                    </tr>
-                    <tr>
-                        {% for module in module_list %}
-                        <th style="width: 50px; font-weight: normal; font-size: 10px">
-                            {{ module.name }}
-                        </th>
-                        {% endfor %}
-                    </tr>
-                </table>
-                </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="modify btn btn-primary">수정</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-{% block script %}
-<script type="text/javascript">
-const delete_elements = document.getElementsByClassName("delete");
-Array.from(delete_elements).forEach(function(element) {
-  element.addEventListener('click', function() {
-    if(confirm("정말 삭제하시겠습니까?")) {
-      location.href = this.dataset.uri;
-    };
+<script>
+  const ym = document.getElementById('ym');
+  ym?.addEventListener('change', () => {
+    const v = ym.value.replace('-', '');
+    window.location.href = `/wtm/status/${v}/`;
   });
-});
-
-const selectYM = document.getElementById("selectYM");
-selectYM.addEventListener('change', function() {
-  target = selectYM.value.replace('-', '');
-  location.href = target;
-});
-
-const module_elements = document.getElementsByName("schedule_module");
-Array.from(module_elements).forEach(function(element) {
-  element.addEventListener('click', function() {
-    // 모듈의 대상을 div에 표시
-    document.getElementById('module_info').textContent = this.dataset.position + " " + this.dataset.name + "(" + this.dataset.dept + "), " + this.dataset.date.substring(0,4) + "-" + this.dataset.date.substring(4,6) + "-" + this.dataset.date.substring(6,8);
-    // 클릭 모듈의 값을 DOM에 세팅
-    document.querySelector("input[type='hidden'][name='user_id']").value = this.dataset.id;
-    document.querySelector("input[type='hidden'][name='stand_date']").value = this.dataset.date;
-    document.querySelector("input[type='hidden'][name='module_id']").value = this.dataset.module;
-    // 입력자의 편의를 위해 현재 모듈을 체크 처리
-    document.getElementById(this.dataset.module).checked = true;
-  });
-});
-
-const modify_elements = document.getElementsByClassName("modify");
-Array.from(modify_elements).forEach(function(element) {
-  element.addEventListener('click', function() {
-    const oldModuleId = document.querySelector("input[type='hidden'][name='module_id']");
-    const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked");
-
-    if (moduleIdSelected === null) {
-      alert("모듈 선택 후 수정하기 버튼을 누르세요.");
-    } else if(oldModuleId.value == moduleIdSelected.value) {
-      alert("변경사항이 없습니다.");
-    } else if(confirm("수정하시겠습니까?")) {
-      document.querySelector("input[type='hidden'][name='module_id']").value = moduleIdSelected.value;
-      document.getElementById('form').submit();
-    };
-  });
-});
 </script>
 {% endblock %}

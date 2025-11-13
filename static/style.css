@@ -195,9 +195,35 @@ select[readonly] {
 /* 테이블 헤더 고정을 위한 css */
 .div-sticky-h { height: 85vh; width: 100%; overflow: auto; }
 .div-sticky-m { height: 70vh; width: 100%; overflow: auto; }
-.sticky-top thead { position: sticky; top: 0; }
-.sticky-left td:first-child { position: sticky; left: 0; }
-.sticky-left2 td:nth-child(2) { position: sticky; left: 0; }
+
+/* 헤더는 가장 위에 표시 */
+.sticky-top thead {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background-color: white;
+}
+
+/* 헤더의 th도 배경색 추가 */
+.sticky-top thead th {
+  background-color: white;
+}
+
+/* 첫 번째 열(부서) 고정 */
+.sticky-left td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: white;
+}
+
+/* 두 번째 열(이름) 고정 */
+.sticky-left2 td:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: white;
+}
 
 
 /****************************************************************/

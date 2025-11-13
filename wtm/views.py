@@ -13,7 +13,7 @@ from .models import Work, Module, Contract, Schedule
 from .forms import ModuleForm, ContractForm
 from common.models import User, Holiday
 from common import context_processors
-from wtm.services.attendance import build_work_list_for_index, build_monthly_attendance_for_user
+from wtm.services.attendance import build_daily_attendance_for_users, build_monthly_attendance_summary_for_users, build_monthly_metric_details_for_users
 
 
 def index(request, stand_day=None):
@@ -143,7 +143,7 @@ def index(request, stand_day=None):
             base_rows = dictfetchall(cur)
 
         # 계산은 attendance 모듈에 위임
-        work_list = build_work_list_for_index(base_rows, day)
+        work_list = build_daily_attendance_for_users(base_rows, day)
 
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')
@@ -1233,79 +1233,202 @@ def work_schedule_popup(request):
     return redirect('wtm:work_schedule')
 
 
-@login_required(login_url='common:login')
-def work_status(request, stand_ym=None):
+@login_required(login_url="common:login")
+def work_status(request, stand_ym: str | None = None):
     """
-    근태현황(월 단위, hh:mm:ss). INDEX와 동일한 대상자 기준을 따름.
-    - 지각/결근(ERROR)/조퇴/초과/휴일 : '횟수 + 누적시간(hh:mm:ss)'
+    근태현황(월 요약) 화면.
     """
-    if not stand_ym:
-        stand_ym = timezone.now().strftime("%Y%m")
+    stand_ym = stand_ym or timezone.now().strftime("%Y%m")
+    year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
-    year = int(stand_ym[:4])
-    month = int(stand_ym[4:6])
-    first_day = date(year, month, 1)
-    last_day = date(year, month, monthrange(year, month)[1])
+    # prev_ym / next_ym 바로 계산 (헬퍼함수 X)
+    prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
+    next_year, next_month = (year + 1, 1)  if month == 12 else (year, month + 1)
+    prev_ym = f"{prev_year:04d}{prev_month:02d}"
+    next_ym = f"{next_year:04d}{next_month:02d}"
 
-    # === 대상 직원: index() 기준을 그대로 반영 ===
-    qs = User.objects.filter(
-        Q(join_date__lte=last_day) &
-        (Q(out_date__isnull=True) | Q(out_date__gte=first_day))
-    )
-    # 개인 속성에 '근태확인 제외'류 필드가 있다면 제외(없으면 무시)
-    for field in ("attendance_exempt", "exclude_attendance", "work_exempt"):
-        try:
-            User._meta.get_field(field)
-            qs = qs.filter(Q(**{field: False}) | Q(**{f"{field}__isnull": True}))
-            break
-        except Exception:
-            pass
+    first_day = f"{year:04d}{month:02d}01"
+    last_day  = f"{year:04d}{month:02d}{monthrange(year, month)[1]:02d}"
 
-    qs = qs.order_by("dept", "position", "emp_name")
+    # 1) 대상자 RAW SQL (index() 기준)
+    sql = """
+        SELECT u.id, u.dept, u.position, u.emp_name
+          FROM common_user u
+          LEFT JOIN wtm_schedule s ON s.user_id = u.id
+         WHERE u.is_superuser = false
+           AND s.year  = %s
+           AND s.month = %s
+           AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+           AND (DATE_FORMAT(u.out_date, '%%Y%%m%%d') IS NULL OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
+           AND EXISTS (
+                 SELECT 1
+                   FROM wtm_contract c
+                  WHERE c.user_id = u.id
+                    AND c.check_yn = 'Y'
+                    AND (c.user_id, c.stand_date) IN (
+                        SELECT a.user_id, MIN(a.stand_date)
+                          FROM (
+                                SELECT user_id, MAX(stand_date) stand_date FROM wtm_contract WHERE stand_date <= %s GROUP BY user_id
+                                UNION
+                                SELECT user_id, MIN(stand_date) stand_date FROM wtm_contract WHERE stand_date > %s GROUP BY user_id
+                              ) a
+                      GROUP BY a.user_id
+                    )
+               )
+      GROUP BY u.id, u.dept, u.position, u.emp_name
+      ORDER BY (SELECT `order` FROM common_dept     d WHERE d.dept_name     = u.dept),
+               (SELECT `order` FROM common_position p WHERE p.position_name = u.position),
+               u.join_date
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [str(year), f"{month:02d}", last_day, first_day, last_day, last_day])
+        base_users = [{
+            "user_id":  r[0],
+            "dept":     r[1] or "",
+            "position": r[2] or "",
+            "emp_name": r[3] or "",
+        } for r in cur.fetchall()]
 
-    def _sum_seconds(days, key):  # 분 → 초
-        return sum(int(d.get(key, 0)) * 60 for d in days)
-
-    def _count(days, pred):
-        return sum(1 for d in days if pred(d))
-
-    rows = []
-    for u in qs:
-        days = build_monthly_attendance_for_user(u, year, month)
-
-        late_sec = _sum_seconds(days, "late_seconds")
-        early_sec = _sum_seconds(days, "early_seconds")
-        overtime_sec = _sum_seconds(days, "overtime_seconds")
-        holiday_sec = _sum_seconds(days, "holiday_seconds")
-
-        rows.append({
-            "dept": getattr(u, "dept", ""),
-            "position": getattr(u, "position", ""),
-            "emp_name": getattr(u, "emp_name", ""),
-
-            "late_cnt": _count(days, lambda d: d.get("late_seconds", 0) > 0),
-            "late_sec": late_sec,
-
-            # ‘결근’은 ERROR 일수로 대체
-            "absent_cnt": _count(days, lambda d: d.get("status_codes", []) == ["ERROR"]),
-
-            "early_cnt": _count(days, lambda d: d.get("early_seconds", 0) > 0),
-            "early_sec": early_sec,
-
-            "overtime_cnt": _count(days, lambda d: d.get("overtime_seconds", 0) > 0),
-            "overtime_sec": overtime_sec,
-
-            "holiday_cnt": _count(days, lambda d: d.get("holiday_seconds", 0) > 0),
-            "holiday_sec": holiday_sec,
+    if not base_users:
+        return render(request, "wtm/work_status.html", {
+            "stand_ym": stand_ym, "rows": [],
+            "prev_ym": prev_ym, "next_ym": next_ym,
         })
 
-    context = {
+    # 2) 월 요약 계산(초 단위)
+    uid_list = [u["user_id"] for u in base_users]
+    summary_map = build_monthly_attendance_summary_for_users(users=uid_list, year=year, month=month)
+
+    # 3) 템플릿 rows (초→HH:MM:SS 포맷은 템플릿 필터에서)
+    rows = []
+    for u in base_users:
+        s = summary_map.get(u["user_id"], {})
+        rows.append({
+            "dept": u["dept"],
+            "position": u["position"],
+            "emp_name": u["emp_name"],
+            "error_cnt": s.get("error_count", 0),
+            "late_cnt":     s.get("late_count", 0),
+            "late_sec":     s.get("late_seconds", 0),
+            "early_cnt":    s.get("early_count", 0),
+            "early_sec":    s.get("early_seconds", 0),
+            "overtime_cnt": s.get("overtime_count", 0),
+            "overtime_sec": s.get("overtime_seconds", 0),
+            "holiday_cnt":  s.get("holiday_count", 0),
+            "holiday_sec":  s.get("holiday_seconds", 0),
+        })
+
+    return render(request, "wtm/work_status.html", {
         "stand_ym": stand_ym,
         "rows": rows,
-        "prev_ym": f"{year - 1 if month == 1 else year}{(12 if month == 1 else month - 1):02d}",
-        "next_ym": f"{year + 1 if month == 12 else year}{(1 if month == 12 else month + 1):02d}",
-    }
-    return render(request, "wtm/work_status.html", context)
+        "prev_ym": prev_ym,
+        "next_ym": next_ym,
+        "active_metric": "all",
+    })
+
+
+@login_required(login_url="common:login")
+def work_metric(request, metric: str, stand_ym: str | None = None):
+    """
+    지각/조퇴/연장/휴근 탭 화면 (월간 일자 그리드).
+    - unit: month
+    - calc: seconds (템플릿에서 HH:MM:SS 포맷)
+    """
+    _ALLOWED_METRICS = {"late": "지각", "early": "조퇴", "overtime": "연장근무", "holiday": "휴일근무"}
+    metric = metric.lower()
+    if metric not in _ALLOWED_METRICS:
+        return render(request, "wtm/work_metric.html", {
+            "error": "잘못된 지표 요청입니다.",
+        })
+
+    stand_ym = stand_ym or timezone.now().strftime("%Y%m")
+    year, month = int(stand_ym[:4]), int(stand_ym[4:6])
+
+    first_day = f"{year:04d}{month:02d}01"
+    last_day  = f"{year:04d}{month:02d}{monthrange(year, month)[1]:02d}"
+
+    # 1) 대상자 (index() 기준 RAW SQL)
+    sql = """
+        SELECT u.id, u.dept, u.position, u.emp_name
+          FROM common_user u
+          LEFT JOIN wtm_schedule s ON s.user_id = u.id
+         WHERE u.is_superuser = FALSE
+           AND s.year  = %s
+           AND s.month = %s
+           AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+           AND (DATE_FORMAT(u.out_date, '%%Y%%m%%d') IS NULL OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
+           AND EXISTS (
+                 SELECT 1
+                   FROM wtm_contract c
+                  WHERE c.user_id = u.id
+                    AND c.check_yn = 'Y'
+                    AND (c.user_id, c.stand_date) IN (
+                        SELECT a.user_id, MIN(a.stand_date)
+                          FROM (
+                                SELECT user_id, MAX(stand_date) stand_date FROM wtm_contract WHERE stand_date <= %s GROUP BY user_id
+                                UNION
+                                SELECT user_id, MIN(stand_date) stand_date FROM wtm_contract WHERE stand_date > %s GROUP BY user_id
+                              ) a
+                      GROUP BY a.user_id
+                    )
+               )
+      GROUP BY u.id, u.dept, u.position, u.emp_name
+      ORDER BY (SELECT `order` FROM common_dept     d WHERE d.dept_name     = u.dept),
+               (SELECT `order` FROM common_position p WHERE p.position_name = u.position),
+               u.join_date
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [str(year), f"{month:02d}", last_day, first_day, last_day, last_day])
+        base_users = [{
+            "user_id":  r[0],
+            "dept":     r[1] or "",
+            "position": r[2] or "",
+            "emp_name": r[3] or "",
+        } for r in cur.fetchall()]
+
+    if not base_users:
+        return render(request, "wtm/work_metric.html", {
+            "metric": metric,
+            "metric_label": _ALLOWED_METRICS[metric],
+            "stand_ym": stand_ym,
+            "rows": [],
+            "day_list": {}, "holiday_list": [],
+            "active_metric": "all",
+        })
+
+    # 2) 일자 리스트 (헤더용)
+    day_list = context_processors.get_day_list(stand_ym)
+    holiday_list = list(
+        Holiday.objects
+        .filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6])
+        .annotate(day=ExtractDay('holiday'))
+        .values_list('day', flat=True)
+    )
+
+    # 3) 메트릭 디테일 계산
+    uid_list = [u["user_id"] for u in base_users]
+    detail_map = build_monthly_metric_details_for_users(users=uid_list, year=year, month=month, metric=metric)
+
+    # 4) 템플릿 rows 구성 (좌측: 부서/직급/성명/횟수/합계, 오른쪽: 일자별 초)
+    days_order = list(range(1, monthrange(year, month)[1] + 1))
+    rows = []
+    for u in base_users:
+        d = detail_map.get(u["user_id"], {"days": {}, "count": 0, "total_seconds": 0})
+        cell_seconds = [d["days"].get(date(year, month, dd), 0) for dd in days_order]
+        rows.append({
+            "dept": u["dept"], "position": u["position"], "emp_name": u["emp_name"],
+            "count": d["count"], "total_seconds": d["total_seconds"], "cells": cell_seconds,
+        })
+
+    return render(request, "wtm/work_metric.html", {
+        "metric": metric,
+        "metric_label": _ALLOWED_METRICS[metric],
+        "stand_ym": stand_ym,
+        "day_list": day_list,
+        "holiday_list": holiday_list,
+        "rows": rows,
+        "active_metric": metric,
+    })
 
 
 @login_required(login_url='common:login')
