@@ -1241,12 +1241,6 @@ def work_status(request, stand_ym: str | None = None):
     stand_ym = stand_ym or timezone.now().strftime("%Y%m")
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
-    # prev_ym / next_ym 바로 계산 (헬퍼함수 X)
-    prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
-    next_year, next_month = (year + 1, 1)  if month == 12 else (year, month + 1)
-    prev_ym = f"{prev_year:04d}{prev_month:02d}"
-    next_ym = f"{next_year:04d}{next_month:02d}"
-
     first_day = f"{year:04d}{month:02d}01"
     last_day  = f"{year:04d}{month:02d}{monthrange(year, month)[1]:02d}"
 
@@ -1292,7 +1286,6 @@ def work_status(request, stand_ym: str | None = None):
     if not base_users:
         return render(request, "wtm/work_status.html", {
             "stand_ym": stand_ym, "rows": [],
-            "prev_ym": prev_ym, "next_ym": next_ym,
         })
 
     # 2) 월 요약 계산(초 단위)
@@ -1321,8 +1314,6 @@ def work_status(request, stand_ym: str | None = None):
     return render(request, "wtm/work_status.html", {
         "stand_ym": stand_ym,
         "rows": rows,
-        "prev_ym": prev_ym,
-        "next_ym": next_ym,
         "active_metric": "all",
     })
 

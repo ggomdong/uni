@@ -349,6 +349,54 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   opacity: 0.3;
 }
 
+/****************************************************************/
+/* 근태현황
+/****************************************************************/
+
+  /* 버튼 그룹 전체 폭 줄이고 가운데 정렬 */
+  .metric-filter {
+    max-width: 420px;   /* 원하는 만큼 조절 가능 (예: 360~480 사이) */
+    margin: 0 auto;
+  }
+
+  /* btn-group 자체를 flex 컨테이너로 */
+  .metric-filter.btn-group {
+    display: flex;
+    width: 100%;
+  }
+
+  /* 버튼들을 같은 폭으로 나누되, 높이/폰트는 슬림하게 */
+  .metric-filter.btn-group .btn {
+    flex: 1 1 auto;
+    padding: 0.2rem 0.4rem;  /* 기본 btn-sm 보다 조금 더 작게 */
+    font-size: 0.8rem;       /* 글자 크기도 살짝 줄이기 */
+  }
+
+  /* 색상: #02b3bb로 통일 */
+  .metric-filter .btn-primary {
+    background-color: #02b3bb;
+    border-color: #02b3bb;
+  }
+
+  .metric-filter .btn-primary:hover,
+  .metric-filter .btn-primary:focus,
+  .metric-filter .btn-primary:active {
+    background-color: #02a2a9; /* 약간 어둡게 (원하면 #02b3bb로 유지해도 됨) */
+    border-color: #02a2a9;
+  }
+
+  .metric-filter .btn-outline-primary {
+    color: #02b3bb;
+    border-color: #02b3bb;
+  }
+
+  .metric-filter .btn-outline-primary:hover,
+  .metric-filter .btn-outline-primary:focus,
+  .metric-filter .btn-outline-primary:active {
+    background-color: #02b3bb;
+    border-color: #02b3bb;
+    color: #ffffff;
+  }
 
 /****************************************************************/
 /* 직원관리

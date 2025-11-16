@@ -2,97 +2,131 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-  <!-- 상단 필터 버튼 -->
-  <div class="btn-group mb-3" role="group" aria-label="근태 지표 필터">
-    <a href="{% url 'wtm:work_status' stand_ym %}"
-       class="btn btn-sm {% if active_metric == 'ALL' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-      전체
-    </a>
-    <a href="{% url 'wtm:work_metric' 'LATE' stand_ym %}"
-       class="btn btn-sm {% if active_metric == 'LATE' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-      지각
-    </a>
-    <a href="{% url 'wtm:work_metric' 'EARLY' stand_ym %}"
-       class="btn btn-sm {% if active_metric == 'EARLY' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-      조퇴
-    </a>
-    <a href="{% url 'wtm:work_metric' 'OVERTIME' stand_ym %}"
-       class="btn btn-sm {% if active_metric == 'OVERTIME' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-      연장근무
-    </a>
-    <a href="{% url 'wtm:work_metric' 'HOLIDAY' stand_ym %}"
-       class="btn btn-sm {% if active_metric == 'HOLIDAY' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-      휴일근무
-    </a>
-  </div>
-
-  <div class="row align-items-center mb-3">
-    <div class="col fs-4 fw-semibold">근태현황 (월간)</div>
-    <div class="col text-end">
-      <a class="btn btn-light me-2" href="{% url 'wtm:work_status' prev_ym %}">◀</a>
-      <input type="month" id="ym" class="form-control d-inline-block w-auto"
-             value="{{ stand_ym|slice:'0:4' }}-{{ stand_ym|slice:'4:6' }}" onkeydown="return false">
-      <a class="btn btn-light ms-2" href="{% url 'wtm:work_status' next_ym %}">▶</a>
+    <!-- 상단 필터 버튼 -->
+    <div class="btn-group metric-filter d-flex mb-3" role="group" aria-label="근태 지표 필터">
+        <a href="{% url 'wtm:work_status' stand_ym %}"
+        class="btn btn-sm {% if active_metric == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        전체
+        </a>
+        <a href="{% url 'wtm:work_metric' 'late' stand_ym %}"
+        class="btn btn-sm {% if active_metric == 'late' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        지각
+        </a>
+        <a href="{% url 'wtm:work_metric' 'early' stand_ym %}"
+        class="btn btn-sm {% if active_metric == 'early' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        조퇴
+        </a>
+        <a href="{% url 'wtm:work_metric' 'overtime' stand_ym %}"
+        class="btn btn-sm {% if active_metric == 'overtime' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        연장근무
+        </a>
+        <a href="{% url 'wtm:work_metric' 'holiday' stand_ym %}"
+        class="btn btn-sm {% if active_metric == 'holiday' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        휴일근무
+        </a>
     </div>
-  </div>
+
+<!--    <div class="row align-items-center mb-3">-->
+<!--        <div class="col fs-4 fw-semibold">근태현황 (월간)</div>-->
+<!--        <div class="col text-end">-->
+<!--            <a class="btn btn-light me-2" href="{% url 'wtm:work_status' stand_ym|get_month:-1 %}">◀</a>-->
+<!--            <input type="month" id="ym" class="form-control d-inline-block w-auto"-->
+<!--             value="{{ stand_ym|slice:'0:4' }}-{{ stand_ym|slice:'4:6' }}" onkeydown="return false">-->
+<!--            <a class="btn btn-light ms-2" href="{% url 'wtm:work_status' stand_ym|get_month:1 %}">▶</a>-->
+<!--        </div>-->
+<!--    </div>-->
 
 <!--  <div class="alert alert-secondary py-2 small">-->
 <!--    • 개인 속성의 “근태확인 제외”는 집계 제외 • 시간단위: hh:mm:ss-->
 <!--  </div>-->
 
-  <div class="table-responsive">
-    <table class="table table-sm table-bordered align-middle text-center">
-      <thead class="table-light">
-        <tr>
-          <th rowspan="2">부서</th>
-          <th rowspan="2">직위</th>
-          <th rowspan="2">성명</th>
-          <th rowspan="2">오류<br>(일수)</th>
-          <th colspan="2">지각</th>
-          <th colspan="2">조퇴</th>
-          <th colspan="2">초과근무</th>
-          <th colspan="2">휴일근무</th>
-        </tr>
-        <tr>
-          <th>횟수</th><th>시간</th>
-          <th>횟수</th><th>시간</th>
-          <th>횟수</th><th>시간</th>
-          <th>횟수</th><th>시간</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in rows %}
-        <tr>
-          <td class="text-nowrap">{{ r.dept }}</td>
-          <td class="text-nowrap">{{ r.position }}</td>
-          <td class="text-nowrap">{{ r.emp_name }}</td>
-          <td>{{ r.error_cnt|default:"" }}</td>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle text-center">
+            <thead>
+                <tr>
+                    <th colspan="100%">
+                        <div class="row my-3 text-start">
+                            <div class="col-10 fs-3">
+                                <a href="{% url 'wtm:work_status' stand_ym|get_month:-1 %}">
+                                <button type="button" class="btn-hover">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                                    </svg>
+                                </button></a>
+                                <a href="{% url 'wtm:work_status' stand_ym|get_month:1 %}">
+                                <button type="button" class="btn-hover">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                                    </svg>
+                                </button></a>
+                                <span class="nativeDatePicker">
+                                    <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
+                                    value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
+                                </span>
+                            </div>
+                            <div class="col-2 text-end">
+                                {% if user.is_authenticated %}
+                                <a href="{% url 'wtm:work_status' stand_ym %}" class="btn btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-download-fill" viewBox="0 0 16 16">
+                                      <path fill-rule="evenodd" d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.5a.5.5 0 0 1 1 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0m-.354 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V11h-1v3.293l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
+                                    </svg>
+                                Excel
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+                <tr class="table-light">
+                    <th rowspan="2">부서</th>
+<!--                    <th rowspan="2">직위</th>-->
+                    <th rowspan="2">성명</th>
+                    <th rowspan="2">오류<br>(일수)</th>
+                    <th colspan="2">지각</th>
+                    <th colspan="2">조퇴</th>
+                    <th colspan="2">초과근무</th>
+                    <th colspan="2">휴일근무</th>
+                </tr>
+                <tr class="table-light">
+                    <th>횟수</th><th>시간</th>
+                    <th>횟수</th><th>시간</th>
+                    <th>횟수</th><th>시간</th>
+                    <th>횟수</th><th>시간</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="text-nowrap">{{ r.dept }}</td>
+<!--                    <td class="text-nowrap">{{ r.position }}</td>-->
+                    <td class="text-nowrap">{{ r.emp_name }}</td>
+                    <td>{{ r.error_cnt|default:"" }}</td>
 
-          <td>{{ r.late_cnt|default:"" }}</td>
-          <td class="text-end">{{ r.late_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.late_cnt|default:"" }}</td>
+                    <td class="text-end">{{ r.late_sec|ss_to_hhmmss }}</td>
 
-          <td>{{ r.early_cnt|default:"" }}</td>
-          <td class="text-end">{{ r.early_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.early_cnt|default:"" }}</td>
+                    <td class="text-end">{{ r.early_sec|ss_to_hhmmss }}</td>
 
-          <td>{{ r.overtime_cnt|default:"" }}</td>
-          <td class="text-end">{{ r.overtime_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.overtime_cnt|default:"" }}</td>
+                    <td class="text-end">{{ r.overtime_sec|ss_to_hhmmss }}</td>
 
-          <td>{{ r.holiday_cnt|default:"" }}</td>
-          <td class="text-end">{{ r.holiday_sec|ss_to_hhmmss }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="12" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+                    <td>{{ r.holiday_cnt|default:"" }}</td>
+                    <td class="text-end">{{ r.holiday_sec|ss_to_hhmmss }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="12" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<script>
-  const ym = document.getElementById('ym');
-  ym?.addEventListener('change', () => {
-    const v = ym.value.replace('-', '');
-    window.location.href = `/wtm/status/${v}/`;
-  });
+<script type="text/javascript">
+const selectYM = document.getElementById("selectYM");
+selectYM.addEventListener('change', function() {
+  target = selectYM.value.replace('-', '');
+  location.href = target;
+});
 </script>
 {% endblock %}
