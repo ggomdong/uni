@@ -1,5 +1,5 @@
 from django import forms
-from .models import Module, Contract, Schedule
+from .models import Module, Contract, Work
 
 
 class ModuleForm(forms.ModelForm):
@@ -38,3 +38,15 @@ class ContractForm(forms.ModelForm):
             'sat': '토요일',
             'sun': '일요일',
         }
+
+
+class WorkForm(forms.ModelForm):
+    record_time = forms.TimeField(
+        label="시간",
+        input_formats=["%H:%M", "%H:%M:%S"],
+        widget=forms.TimeInput(format="%H:%M:%S", attrs={"step": 1}),
+    )
+
+    class Meta:
+        model = Work
+        fields = ["work_code", "record_time"]

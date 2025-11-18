@@ -12,7 +12,7 @@
     {% endif %}
 
     <div>
-    <table class="table text-center table-borderless table-sm sticky-top">
+    <table class="table table-borderless table-sm text-center sticky-top">
         <thead>
         <tr>
             <th colspan="100%">
@@ -36,93 +36,202 @@
                         <input type="date" class="uniTodayDatePicker" id="selectDay" name="selectDay" onkeydown="return false" onfocus="this.showPicker()"/>
                     </span>
                 </div>
+                <div class="col-2 text-end">
+                    <button type="button"
+                            class="btn btn-sm btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#logModal"
+                            data-mode="create">
+                        등록
+                    </button>
+                </div>
             </div>
             </th>
         </tr>
-        <tr class="table-dark">
-            <th>번호</th>
-            <th>구분</th>
-            <th>시간</th>
-            <th>부서</th>
-            <th>직위</th>
-            <th>성명</th>
-            <th></th>
-            <th></th>
-        </tr>
         </thead>
-        <tbody>
-        {% if log_list %}
-        {% for log in log_list %}
-        <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ log.get_work_code_display }}</td>
-            <td>{{ log.record_date|date:'H:i:s' }}</td>
-            <td>{{ log.user.dept }}</td>
-            <td>{{ log.user.position }}</td>
-            <td>{{ log.user.emp_name }}</td>
-            <td>
-                <a href="javascript:void(0)" class="modify btn btn-sm btn-primary"
-                   data-uri="{% url 'wtm:work_log_modify' log.id %}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill" viewBox="0 0 16 16">
-                     <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
-                    </svg>
-                    수정
-                </a>
-            </td>
-            <td>
-                <a href="javascript:void(0)" class="delete btn btn-sm btn-danger"
-                   data-uri="{% url 'wtm:work_log_delete' log.id %}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
-                      <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
-                    </svg>
-                    삭제
-                </a>
-            </td>
-        </tr>
-        {% endfor %}
-        {% else %}
-        <tr class="text-center">
-            <td colspan="100%">근무로그가 없습니다.</td>
-        </tr>
-        {% endif %}
-        </tbody>
     </table>
     </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle text-center">
+            <thead class="table-dark">
+            <tr>
+                <th style="width: 60px;">번호</th>
+                <th style="width: 80px;">구분</th>
+                <th style="width: 120px;">시간</th>
+                <th>부서</th>
+                <th>직위</th>
+                <th>성명</th>
+                <th style="width: 90px;"></th>
+                <th style="width: 90px;"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% if log_list %}
+                {% for log in log_list %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ log.get_work_code_display }}</td>
+                    <td>{{ log.record_date|date:"H:i:s" }}</td>
+                    <td>{{ log.user.dept }}</td>
+                    <td>{{ log.user.position }}</td>
+                    <td>{{ log.user.emp_name }}</td>
+
+                    {# 수정 버튼: 모달 오픈용 data-* #}
+                    <td>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#logModal"
+                                data-mode="edit"
+                                data-id="{{ log.id }}"
+                                data-user-id="{{ log.user.id }}"
+                                data-work-code="{{ log.work_code }}"
+                                data-record-time="{{ log.record_date|date:'H:i:s' }}">
+                            수정
+                        </button>
+                    </td>
+
+                    {# 삭제 버튼: POST form + confirm #}
+                    <td>
+                        <form method="post"
+                              action="{% url 'wtm:work_log_delete' log.id %}"
+                              class="d-inline delete-form">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-danger">
+                                삭제
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        근무 로그가 없습니다.
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{% url 'wtm:work_log_save' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logModalLabel">근무 로그 등록</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="log_id" id="logIdInput">
+                    <input type="hidden" name="stand_day" id="logStandDayInput" value="{{ stand_day }}">
+
+                    <div class="mb-3">
+                        <label for="logUserSelect" class="form-label">직원</label>
+                        <select id="logUserSelect" name="user_id" class="form-select form-select-sm" required>
+                            <option value="">선택하세요</option>
+                            {% for u in user_list %}
+                                <option value="{{ u.id }}">
+                                    {{ u.dept }} / {{ u.position }} / {{ u.emp_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="logWorkCodeSelect" class="form-label">구분</label>
+                        <select id="logWorkCodeSelect" name="work_code" class="form-select form-select-sm" required>
+                            <option value="">선택하세요</option>
+                            <option value="I">출근</option>
+                            <option value="O">퇴근</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-0">
+                        <label for="logRecordTimeInput" class="form-label">시간</label>
+                        <input type="time"
+                               id="logRecordTimeInput"
+                               name="record_time"
+                               step="1"
+                               class="form-control form-control-sm"
+                               required>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-sm btn-secondary"
+                            data-bs-dismiss="modal">닫기</button>
+                    <button type="submit"
+                            class="btn btn-sm btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
-const modify_elements = document.getElementsByClassName("modify");
-Array.from(modify_elements).forEach(function(element) {
-  element.addEventListener('click', function() {
-    const oldModuleId = document.querySelector("input[type='hidden'][name='module_id']");
-    const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked");
+document.addEventListener('DOMContentLoaded', function () {
+    // 로그 기준 URL (예: /wtm/log/20250101 → /wtm/log/ 로 prefix 추출)
+    const baseLogUrl = "{% url 'wtm:work_log' '20250101' %}".replace('20250101', '');
 
-    if (moduleIdSelected === null) {
-      alert("모듈 선택 후 수정하기 버튼을 누르세요.");
-    } else if(oldModuleId.value == moduleIdSelected.value) {
-      alert("변경사항이 없습니다.");
-    } else if(confirm("수정하시겠습니까?")) {
-      document.querySelector("input[type='hidden'][name='module_id']").value = moduleIdSelected.value;
-      document.getElementById('form').submit();
-    };
-  });
-});
+    // 날짜 선택하면 해당 일자로 이동
+    const selectDay = document.getElementById('selectDay');
+    if (selectDay) {
+        selectDay.addEventListener('change', function () {
+            if (!this.value) return;
+            const target = this.value.replace(/-/g, '');
+            window.location.href = baseLogUrl + target;
+        });
+    }
 
-const delete_elements = document.getElementsByClassName("delete");
-Array.from(delete_elements).forEach(function(element) {
-    element.addEventListener('click', function() {
-        if(confirm("정말 삭제하시겠습니까?")) {
-            location.href = this.dataset.uri;
-        };
+    // 모달: 등록/수정 모드에 따라 필드 초기화
+    const logModal = document.getElementById('logModal');
+    if (logModal) {
+        logModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            if (!button) return;
+
+            const mode = button.getAttribute('data-mode') || 'create';
+
+            const modalTitle   = logModal.querySelector('.modal-title');
+            const logIdInput   = document.getElementById('logIdInput');
+            const userSelect   = document.getElementById('logUserSelect');
+            const workCodeSel  = document.getElementById('logWorkCodeSelect');
+            const recordTimeEl = document.getElementById('logRecordTimeInput');
+
+            if (mode === 'create') {
+                modalTitle.textContent = '근무 로그 등록';
+                if (logIdInput)   logIdInput.value   = '';
+                if (userSelect)   userSelect.value   = '';
+                if (workCodeSel)  workCodeSel.value  = '';
+                if (recordTimeEl) recordTimeEl.value = '';
+            } else {
+                modalTitle.textContent = '근무 로그 수정';
+                if (logIdInput)   logIdInput.value   = button.getAttribute('data-id') || '';
+                if (userSelect)   userSelect.value   = button.getAttribute('data-user-id') || '';
+                if (workCodeSel)  workCodeSel.value  = button.getAttribute('data-work-code') || '';
+                if (recordTimeEl) recordTimeEl.value = (button.getAttribute('data-record-time') || '').substring(0, 8);
+            }
+        });
+    }
+
+    // 삭제 버튼: confirm 후 POST 전송
+    const deleteForms = document.querySelectorAll('form.delete-form');
+    deleteForms.forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            if (!confirm('정말 삭제하시겠습니까?')) {
+                e.preventDefault();
+            }
+        });
     });
-});
-
-const selectDay = document.getElementById("selectDay");
-selectDay.addEventListener('change', function() {
-    // g: 전역검색, i: 대소문자 구분안함
-    target = selectDay.value.replace(/-/gi, '');
-    location.href = target;
 });
 </script>
 {% endblock %}

@@ -92,12 +92,14 @@ class Work(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     work_code = models.CharField(max_length=1, choices=WorkCode.choices, verbose_name="근무코드")
-    record_date = models.DateTimeField(auto_now_add=True)
+    record_date = models.DateTimeField()
     record_day = models.DateField(editable=False, null=False, blank=False, db_index=True)
 
-
+# Work 저장시 항상 record_day를 record_date에 맞춰 설정해줌
 @receiver(pre_save, sender=Work)
-def set_record_day(sender, instance, **kwargs):
+def set_record_day(sender, instance: Work, **kwargs):
+    # record_date 안 채웠으면 now() 사용 (앱에서 즉시 입력시) cf) 웹에서는 근태시간을 자유롭게 명시해서 입력 가능
     if not instance.record_date:
         instance.record_date = timezone.now()
+    # 항상 record_day 동기화
     instance.record_day = instance.record_date.date()

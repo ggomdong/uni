@@ -26,8 +26,8 @@ urlpatterns = [
     path("status/<str:metric>/<str:stand_ym>", views.work_metric, name="work_metric"),
     path('log/', views.work_log, name='work_log'),
     path('log/<str:stand_day>', views.work_log, name='work_log'),
-    path('log_modify/<int:log_id>', views.work_log_modify, name='work_log_modify'),
-    path('log_delete/<int:log_id>', views.work_log_delete, name='work_log_delete'),
+    path('log/save/', views.work_log_save, name='work_log_save'),
+    path('log/<int:log_id>/delete/', views.work_log_delete, name='work_log_delete'),
     path('meal/', views.work_meal, name='work_meal'),
     path('meal/<str:stand_year>', views.work_meal, name='work_meal'),
 ]

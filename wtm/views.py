@@ -10,10 +10,156 @@ from datetime import datetime, date
 from calendar import monthrange
 
 from .models import Work, Module, Contract, Schedule
-from .forms import ModuleForm, ContractForm
+from .forms import ModuleForm, ContractForm, WorkForm
 from common.models import User, Holiday
 from common import context_processors
 from wtm.services.attendance import build_daily_attendance_for_users, build_monthly_attendance_summary_for_users, build_monthly_metric_details_for_users
+
+
+# 공통: cursor → dict 리스트 변환
+def _dictfetchall(cur):
+    cols = [col[0] for col in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+def _fetch_base_users_for_month(stand_ym: str) -> list[dict]:
+    """
+    근태현황/지표 화면 공통: 월 단위 대상 직원 리스트 조회
+    - 계약(check_yn='Y') 있는 사람만
+    - 스케줄 존재하는 사람만
+    - 부서/직위 order + 입사일 순으로 정렬
+    """
+    year, month = int(stand_ym[:4]), int(stand_ym[4:6])
+    first_day = f"{year:04d}{month:02d}01"
+    last_day  = f"{year:04d}{month:02d}{monthrange(year, month)[1]:02d}"
+
+    sql = """
+        SELECT u.id, u.dept, u.position, u.emp_name
+          FROM common_user u
+          LEFT JOIN wtm_schedule s ON s.user_id = u.id
+         WHERE u.is_superuser = FALSE
+           AND s.year  = %s
+           AND s.month = %s
+           AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+           AND (DATE_FORMAT(u.out_date, '%%Y%%m%%d') IS NULL OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
+           AND EXISTS (
+                 SELECT 1
+                   FROM wtm_contract c
+                  WHERE c.user_id = u.id
+                    AND c.check_yn = 'Y'
+                    AND (c.user_id, c.stand_date) IN (
+                        SELECT a.user_id, MIN(a.stand_date)
+                          FROM (
+                                SELECT user_id, MAX(stand_date) stand_date FROM wtm_contract WHERE stand_date <= %s GROUP BY user_id
+                                UNION
+                                SELECT user_id, MIN(stand_date) stand_date FROM wtm_contract WHERE stand_date > %s GROUP BY user_id
+                               ) a
+                        GROUP BY a.user_id
+                    )
+               )
+        GROUP BY u.id, u.dept, u.position, u.emp_name
+        ORDER BY (SELECT `order` FROM common_dept     d WHERE d.dept_name     = u.dept),
+                 (SELECT `order` FROM common_position p WHERE p.position_name = u.position),
+                 u.join_date
+    """
+    with connection.cursor() as cur:
+        cur.execute(
+            sql,
+            [
+                str(year),
+                f"{month:02d}",
+                last_day,   # join_date <= last_day
+                first_day,  # out_date >= first_day
+                last_day,   # contract stand_date <= last_day
+                last_day,   # contract stand_date >  last_day
+            ],
+        )
+        return [
+            {
+                "user_id":  r[0],
+                "dept":     r[1] or "",
+                "position": r[2] or "",
+                "emp_name": r[3] or "",
+            }
+            for r in cur.fetchall()
+        ]
+
+
+def _fetch_log_users_for_day(stand_day: str):
+    """
+    근무로그 화면에서 사용할 '대상 직원 목록'을 RAW SQL로 조회.
+    - contract.check_yn = 'Y'
+    - 해당 연월에 스케줄 존재 + 그 날(dN)에 모듈 지정(s.dN_id IS NOT NULL)
+    - 재직자(입사/퇴사일 기준)
+    - 부서/직위 order 순으로 정렬
+    """
+    # stand_day: 'YYYYMMDD'
+    day_no = int(stand_day[6:8])  # 1~31 → s.d{day_no}_id
+
+    query = f"""
+        SELECT
+            u.id AS user_id,
+            u.emp_name,
+            u.dept,
+            u.position,
+            DATE_FORMAT(u.join_date, '%%Y%%m%%d') AS join_date,
+            d.`order` AS dept_order,
+            p.`order` AS position_order
+        FROM common_user u
+            LEFT OUTER JOIN wtm_schedule s
+                ON u.id = s.user_id
+            LEFT OUTER JOIN (
+                SELECT *
+                  FROM wtm_contract
+                 WHERE (user_id, stand_date) IN
+                 (
+                    SELECT a.user_id, MIN(a.stand_date)
+                      FROM (
+                            SELECT user_id, MAX(stand_date) AS stand_date
+                              FROM wtm_contract
+                             WHERE stand_date <= '{stand_day}'
+                             GROUP BY user_id
+                            UNION
+                            SELECT user_id, MIN(stand_date) AS stand_date
+                              FROM wtm_contract
+                             WHERE stand_date > '{stand_day}'
+                             GROUP BY user_id
+                           ) a
+                     GROUP BY a.user_id
+                 )
+            ) c
+                ON u.id = c.user_id
+            LEFT OUTER JOIN common_dept d
+                ON u.dept = d.dept_name
+            LEFT OUTER JOIN common_position p
+                ON u.position = p.position_name
+        WHERE u.is_superuser = FALSE
+          AND c.check_yn = 'Y'
+          AND s.year  = '{stand_day[0:4]}'
+          AND s.month = '{stand_day[4:6]}'
+          AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= '{stand_day}'
+          AND (
+                DATE_FORMAT(u.out_date, '%%Y%%m%%d') IS NULL
+             OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= '{stand_day}'
+          )
+          AND s.d{day_no}_id IS NOT NULL
+        ORDER BY dept_order, position_order, u.join_date
+    """
+
+    with connection.cursor() as cur:
+        cur.execute(query)
+        rows = _dictfetchall(cur)
+
+    # 템플릿에서 쓰기 좋게 살짝 정리
+    return [
+        {
+            "id": row["user_id"],
+            "emp_name": row["emp_name"],
+            "dept": row["dept"],
+            "position": row["position"],
+        }
+        for row in rows
+    ]
 
 
 def index(request, stand_day=None):
@@ -94,9 +240,7 @@ def index(request, stand_day=None):
         messages.warning(request, f'오류가 발생했습니다. {e}')
 
     ###### 2. 근무 현황 (화면 하단) ######
-    def dictfetchall(cur):
-        cols = [col[0] for col in cur.description]
-        return [dict(zip(cols, row)) for row in cur.fetchall()]
+
 
     ymd = stand_day if stand_day else timezone.now().strftime("%Y%m%d")
     day = date(int(ymd[:4]), int(ymd[4:6]), int(ymd[6:8]))
@@ -140,7 +284,7 @@ def index(request, stand_day=None):
     try:
         with connection.cursor() as cur:
             cur.execute(query)
-            base_rows = dictfetchall(cur)
+            base_rows = _dictfetchall(cur)
 
         # 계산은 attendance 모듈에 위임
         work_list = build_daily_attendance_for_users(base_rows, day)
@@ -1241,51 +1385,12 @@ def work_status(request, stand_ym: str | None = None):
     stand_ym = stand_ym or timezone.now().strftime("%Y%m")
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
-    first_day = f"{year:04d}{month:02d}01"
-    last_day  = f"{year:04d}{month:02d}{monthrange(year, month)[1]:02d}"
-
-    # 1) 대상자 RAW SQL (index() 기준)
-    sql = """
-        SELECT u.id, u.dept, u.position, u.emp_name
-          FROM common_user u
-          LEFT JOIN wtm_schedule s ON s.user_id = u.id
-         WHERE u.is_superuser = false
-           AND s.year  = %s
-           AND s.month = %s
-           AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
-           AND (DATE_FORMAT(u.out_date, '%%Y%%m%%d') IS NULL OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
-           AND EXISTS (
-                 SELECT 1
-                   FROM wtm_contract c
-                  WHERE c.user_id = u.id
-                    AND c.check_yn = 'Y'
-                    AND (c.user_id, c.stand_date) IN (
-                        SELECT a.user_id, MIN(a.stand_date)
-                          FROM (
-                                SELECT user_id, MAX(stand_date) stand_date FROM wtm_contract WHERE stand_date <= %s GROUP BY user_id
-                                UNION
-                                SELECT user_id, MIN(stand_date) stand_date FROM wtm_contract WHERE stand_date > %s GROUP BY user_id
-                              ) a
-                      GROUP BY a.user_id
-                    )
-               )
-      GROUP BY u.id, u.dept, u.position, u.emp_name
-      ORDER BY (SELECT `order` FROM common_dept     d WHERE d.dept_name     = u.dept),
-               (SELECT `order` FROM common_position p WHERE p.position_name = u.position),
-               u.join_date
-    """
-    with connection.cursor() as cur:
-        cur.execute(sql, [str(year), f"{month:02d}", last_day, first_day, last_day, last_day])
-        base_users = [{
-            "user_id":  r[0],
-            "dept":     r[1] or "",
-            "position": r[2] or "",
-            "emp_name": r[3] or "",
-        } for r in cur.fetchall()]
+    # 1) 대상자 추출
+    base_users = _fetch_base_users_for_month(stand_ym)
 
     if not base_users:
         return render(request, "wtm/work_status.html", {
-            "stand_ym": stand_ym, "rows": [],
+            "stand_ym": stand_ym, "rows": [], "active_metric": "all",
         })
 
     # 2) 월 요약 계산(초 단위)
@@ -1335,47 +1440,8 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
     stand_ym = stand_ym or timezone.now().strftime("%Y%m")
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
-    first_day = f"{year:04d}{month:02d}01"
-    last_day  = f"{year:04d}{month:02d}{monthrange(year, month)[1]:02d}"
-
-    # 1) 대상자 (index() 기준 RAW SQL)
-    sql = """
-        SELECT u.id, u.dept, u.position, u.emp_name
-          FROM common_user u
-          LEFT JOIN wtm_schedule s ON s.user_id = u.id
-         WHERE u.is_superuser = FALSE
-           AND s.year  = %s
-           AND s.month = %s
-           AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
-           AND (DATE_FORMAT(u.out_date, '%%Y%%m%%d') IS NULL OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
-           AND EXISTS (
-                 SELECT 1
-                   FROM wtm_contract c
-                  WHERE c.user_id = u.id
-                    AND c.check_yn = 'Y'
-                    AND (c.user_id, c.stand_date) IN (
-                        SELECT a.user_id, MIN(a.stand_date)
-                          FROM (
-                                SELECT user_id, MAX(stand_date) stand_date FROM wtm_contract WHERE stand_date <= %s GROUP BY user_id
-                                UNION
-                                SELECT user_id, MIN(stand_date) stand_date FROM wtm_contract WHERE stand_date > %s GROUP BY user_id
-                              ) a
-                      GROUP BY a.user_id
-                    )
-               )
-      GROUP BY u.id, u.dept, u.position, u.emp_name
-      ORDER BY (SELECT `order` FROM common_dept     d WHERE d.dept_name     = u.dept),
-               (SELECT `order` FROM common_position p WHERE p.position_name = u.position),
-               u.join_date
-    """
-    with connection.cursor() as cur:
-        cur.execute(sql, [str(year), f"{month:02d}", last_day, first_day, last_day, last_day])
-        base_users = [{
-            "user_id":  r[0],
-            "dept":     r[1] or "",
-            "position": r[2] or "",
-            "emp_name": r[3] or "",
-        } for r in cur.fetchall()]
+    # 1) 대상자 공통 헬퍼
+    base_users = _fetch_base_users_for_month(stand_ym)
 
     if not base_users:
         return render(request, "wtm/work_metric.html", {
@@ -1424,57 +1490,110 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
 
 @login_required(login_url='common:login')
 def work_log(request, stand_day=None):
-    # 기준일 값이 없으면 현재로 세팅
+    # 1) 기준일 값이 없으면 현재로 세팅
     if stand_day is None:
+        target_date = datetime.today()
         stand_day = datetime.today().strftime('%Y%m%d')
+    else:
+        # 'YYYYMMDD' → date 로 변환 및 유효성 검사
+        try:
+            target_date = datetime.strptime(stand_day, '%Y%m%d').date()
+        except ValueError:
+            messages.error(request, "잘못된 날짜 형식입니다.")
+            return redirect('wtm:work_log')
 
     days = context_processors.get_days_korean(stand_day)
 
-    obj = Work.objects.filter(record_day=datetime.strptime(stand_day, '%Y%m%d').date()).order_by('-record_date')
+    # 2) 해당 날짜 근무로그
+    log_list = (
+        Work.objects
+        .filter(record_day=target_date)
+        .select_related('user')
+        .order_by('-record_date')  # 기존대로 최신시간이 위로
+    )
 
-    context = {'stand_day': stand_day, 'days': days, 'log_list': obj}
+    # 3) 모달에서 쓸 '대상 직원 목록' (RAW SQL)
+    try:
+        user_list = _fetch_log_users_for_day(stand_day)
+    except Exception as e:
+        messages.warning(request, f"대상 직원 조회 중 오류가 발생했습니다. ({e})")
+        user_list = []
+
+    context = {
+        'stand_day': stand_day,
+        'days': days,
+        'target_date': target_date,
+        'log_list': log_list,
+        'user_list': user_list,
+    }
     return render(request, 'wtm/work_log.html', context)
 
 
 @login_required(login_url='common:login')
-def work_log_modify(request, log_id):
-    log = get_object_or_404(Work, pk=log_id)
+def work_log_save(request):
+    if request.method != 'POST':
+        messages.error(request, "잘못된 요청입니다.")
+        return redirect('wtm:work_log')
 
-    # if request.user != question.author:
-    #     messages.error(request, '수정권한이 없습니다.')
-    #     return redirect('pybo:detail', question_id=question_id)
-    # 수정화면에서 저장하기 버튼 클릭시 POST 방식으로 데이터 수정
-    if request.method == 'POST':
-        # 수정된 내용을 반영하기 위해, request에서 넘어온 값으로 덮어쓰라는 의미
-        form = ModuleForm(request.POST, instance=log)
+    log_id = request.POST.get("log_id")
+    stand_day = request.POST.get("stand_day")
+    user_id = request.POST.get("user_id")
 
-        if not form.has_changed():
-            messages.error(request, '수정된 사항이 없습니다.')
-            return redirect('wtm:work_log_modify', module_id=log)
-        if form.is_valid():
-            log = form.save(commit=False)
-            log.mod_id = request.user
-            log.mod_date = timezone.now()
-            log.save()
-            return redirect('wtm:work_log')
-    # GET 방식으로 수정화면 호출
+    if not stand_day or not user_id:
+        messages.error(request, "일자와 사용자를 확인해 주세요.")
+        return redirect(
+            'wtm:work_log',
+            stand_day=stand_day or timezone.now().strftime('%Y%m%d'),
+        )
+
+    # 기준일 검증
+    try:
+        datetime.strptime(stand_day, "%Y%m%d")
+    except ValueError:
+        messages.error(request, "잘못된 날짜 형식입니다.")
+        return redirect('wtm:work_log')
+
+    target_user = get_object_or_404(User, pk=user_id)
+
+    # 수정 / 등록 분기
+    if log_id:
+        obj = get_object_or_404(Work, pk=log_id)
+        form = WorkForm(request.POST, instance=obj)
     else:
-        # 대상이 유지되어야 하므로, instance=module 과 같이 생성
-        form = ModuleForm(instance=log)
+        obj = Work(user=target_user)
+        form = WorkForm(request.POST, instance=obj)
 
-    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    context = {'form': form}
-    return render(request, 'wtm/work_module_reg.html', context)
+    if not form.is_valid():
+        messages.error(request, "입력값을 확인해 주세요.")
+        return redirect('wtm:work_log', stand_day=stand_day)
+
+    obj = form.save(commit=False)
+
+    # record_date = stand_day + record_time
+    record_time = form.cleaned_data["record_time"]  # datetime.time
+    dt_str = f"{stand_day} {record_time.strftime('%H:%M:%S')}"
+    obj.record_date = datetime.strptime(dt_str, "%Y%m%d %H:%M:%S")
+
+    # Work 모델의 pre_save 시그널에서 record_day = record_date.date() 자동 세팅
+    obj.user = target_user  # 수정 시에도 유저를 바꿀 수 있게 하려면 유지
+    obj.save()
+
+    messages.success(request, "근태 로그가 저장되었습니다.")
+    return redirect('wtm:work_log', stand_day=stand_day)
 
 
 @login_required(login_url='common:login')
-def work_log_delete(request, log_id):
+def work_log_delete(request, log_id: int):
     log = get_object_or_404(Work, pk=log_id)
-    # if request.user != question.author:
-    #     messages.error(request, '삭제 권한이 없습니다.')
-    #     return redirect('pybo:detail', question_id=question.id)
-    log.delete()
-    return redirect('wtm:work_log log.record_day')
+    stand_day = log.record_day.strftime('%Y%m%d')
+
+    if request.method == "POST":
+        log.delete()
+        messages.success(request, "근태 로그가 삭제되었습니다.")
+    else:
+        messages.error(request, "잘못된 요청입니다.")
+
+    return redirect('wtm:work_log', stand_day=stand_day)
 
 
 def work_meal(request, stand_year=None):
