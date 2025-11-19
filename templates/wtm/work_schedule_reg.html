@@ -4,14 +4,6 @@
 <form id="form" method="post">
 {% csrf_token %}
 <div class="container my-3">
-    <!-- message 표시 -->
-    {% if messages %}
-    <div class="alert alert-danger my-3" role="alert">
-        {% for message in messages %}
-        <ul class="m-0"><li>{{ message.message }}</li></ul>
-        {% endfor %}
-    </div>
-    {% endif %}
 
     <table class="table text-center table-borderless table-sm sticky-top table-hover">
         {% if user_list %}

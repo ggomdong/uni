@@ -2,18 +2,8 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <!-- message 표시 -->
-    {% if messages %}
-    <div class="alert alert-danger my-3" role="alert">
-        {% for message in messages %}
-        <strong>{{ message.tags }}</strong>
-        <ul><li>{{ message.message }}</li></ul>
-        {% endfor %}
-    </div>
-    {% endif %}
-
     <h4 class="my-3 border-bottom pb-2">직원정보 수정</h4>
-    <form method="post">
+    <form method="post" action="" id="userModifyForm">
         {% csrf_token %}
         {% include 'form_errors.html' %}
         <div class="mb-3 col-md-4">
@@ -59,19 +49,46 @@
             <input type="date" class="form-control" name="out_date" id="out_date" max="9999-12-31"
                    value="{{ form.out_date.value|date:'Y-m-d'|default_if_none:'' }}">
         </div>
-        <button type="submit" class="btn btn-primary">
+    </form>
+
+    <div class="d-flex justify-content-start gap-2 mt-3">
+        <button type="submit" form="userModifyForm" class="btn btn-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill" viewBox="0 0 16 16">
               <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
             </svg>
             수정하기
         </button>
-        <a href="{% url 'common:password_change' user_id %}" class="btn btn-warning ms-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4m0 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/>
-            </svg>
-          비밀번호 변경
-        </a>
-    </form>
+
+        <button type="button"
+            class="btn btn-warning ms-2"
+            data-bs-toggle="modal"
+            data-bs-target="#passwordChangeModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4m0 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/>
+                </svg>
+              비밀번호 변경
+        </button>
+
+        <!-- 기기 정보 초기화: 별도 POST 폼 (같은 줄에 배치) -->
+        <form method="post"
+            action="{% url 'common:reset_device' user_id %}"
+            class="m-0">
+        {% csrf_token %}
+            <button type="submit"
+            class="btn btn-secondary"
+            onclick="return confirm('이 사용자의 기기 정보를 초기화하시겠습니까?');">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                <path fill-rule="evenodd"
+                d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966
+                c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                </svg>
+                기기 정보 초기화
+            </button>
+        </form>
+    </div>
+
     <div class="mb-5"></div>
     <table class="table">
         <thead>
@@ -140,10 +157,108 @@
             근로계약 등록
         </a>
     </div>
+
+    <div class="modal fade" id="passwordChangeModal" tabindex="-1" aria-labelledby="passwordChangeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <!-- 이 폼은 password_change 뷰로 POST 보냄 -->
+                <form id="passwordChangeForm" method="post" action="{% url 'common:password_change' user_id %}">
+                {% csrf_token %}
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passwordChangeModalLabel">비밀번호 변경</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div id="passwordModalError"
+                       class="alert alert-danger py-2 px-3 mb-3 d-none"
+                       style="font-size:0.875rem;">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="modal_new_password">새 비밀번호</label>
+                        <input type="password"
+                            class="form-control"
+                            name="new_password"
+                            id="modal_new_password"
+                            autocomplete="new-password">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="modal_confirm_password">비밀번호 확인</label>
+                        <input type="password"
+                            class="form-control"
+                            name="confirm_password"
+                            id="modal_confirm_password"
+                            autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-success">변경하기</button>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('passwordChangeForm');
+    if (!form) return;
+
+    const pw1 = document.getElementById('modal_new_password');
+    const pw2 = document.getElementById('modal_confirm_password');
+    const errorBox = document.getElementById('passwordModalError');
+
+    function showError(msg) {
+      if (!errorBox) return;
+      errorBox.textContent = msg;
+      errorBox.classList.remove('d-none');
+    }
+
+    function clearError() {
+      if (!errorBox) return;
+      errorBox.textContent = '';
+      errorBox.classList.add('d-none');
+    }
+
+    form.addEventListener('submit', function (e) {
+        clearError();
+        pw1.classList.remove('is-invalid');
+        pw2.classList.remove('is-invalid');
+
+        if (!pw1.value || !pw2.value) {
+            e.preventDefault();
+            showError('비밀번호를 모두 입력해 주세요.');
+            if (!pw1.value) pw1.classList.add('is-invalid');
+            if (!pw2.value) pw2.classList.add('is-invalid');
+            return;
+        }
+
+        if (pw1.value.length < 8) {
+            e.preventDefault();
+            showError('비밀번호는 최소 8자 이상이어야 합니다.');
+            pw1.classList.add('is-invalid');
+            return;
+        }
+
+        if (pw1.value !== pw2.value) {
+            e.preventDefault();
+            showError('비밀번호가 일치하지 않습니다.');
+            pw1.classList.add('is-invalid');
+            pw2.classList.add('is-invalid');
+            return;
+        }
+    });
+});
+
 const delete_elements = document.getElementsByClassName("delete");
 Array.from(delete_elements).forEach(function(element) {
     element.addEventListener('click', function() {

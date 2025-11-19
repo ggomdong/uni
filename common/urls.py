@@ -12,6 +12,7 @@ urlpatterns = [
     path('nametag/<str:emp_name>/<str:position>', views.nametag, name='nametag'),
     path('user_modify/<int:user_id>/', views.user_modify, name='user_modify'),
     path('user_modify/<int:user_id>/change-password/', views.password_change, name='password_change'),
+    path('user_modify/<int:user_id>/reset-device/', views.reset_device, name='reset_device'),
     path('dept/', views.dept, name='dept'),
     path('position/', views.position, name='position'),
     path('holiday/', views.holiday, name='holiday'),

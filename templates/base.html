@@ -20,9 +20,49 @@
 {% block content %}
 {% endblock %}
 <!-- 개별 html End -->
+{# 🔹 Django messages → Bootstrap Toasts #}
+{% if messages %}
+<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3"
+     style="z-index: 1100; margin-top: 60px;">
+    {% for message in messages %}
+        <div class="toast align-items-center border-0
+            {% if 'error' in message.tags %} text-bg-danger
+            {% elif 'warning' in message.tags %} text-bg-warning
+            {% elif 'success' in message.tags %} text-bg-success
+            {% else %} text-bg-info{% endif %}"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            data-bs-delay="3000"
+            data-bs-autohide="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                {{ message }}
+                </div>
+                <button type="button"
+                class="btn-close btn-close-white me-2 m-auto"
+                data-bs-dismiss="toast"
+                aria-label="Close">
+                </button>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
 <!-- Bootstrap JS -->
 <!--script src="{% static 'bootstrap.min.js' %}"></script-->
 <script src="{% static 'bootstrap.bundle.min.js' %}"></script>
+
+{# 🔹 Toast 초기화 스크립트 #}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+    toastElList.forEach(function (toastEl) {
+      var toast = new bootstrap.Toast(toastEl);
+      toast.show();
+    });
+  });
+</script>
 <!-- 자바스크립트 Start -->
 {% block script %}
 {% endblock %}

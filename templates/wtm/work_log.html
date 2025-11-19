@@ -2,15 +2,6 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <!-- message 표시 -->
-    {% if messages %}
-    <div class="alert alert-danger my-3" role="alert">
-        {% for message in messages %}
-        <ul class="m-0"><li>{{ message.message }}</li></ul>
-        {% endfor %}
-    </div>
-    {% endif %}
-
     <div>
     <table class="table table-borderless table-sm text-center sticky-top">
         <thead>
@@ -123,7 +114,7 @@
             <form method="post" action="{% url 'wtm:work_log_save' %}">
                 {% csrf_token %}
                 <div class="modal-header">
-                    <h5 class="modal-title" id="logModalLabel">근무 로그 등록</h5>
+                    <h5 class="modal-title" id="logModalLabel">근무로그 등록</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
                 </div>
 
@@ -208,15 +199,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const recordTimeEl = document.getElementById('logRecordTimeInput');
 
             if (mode === 'create') {
-                modalTitle.textContent = '근무 로그 등록';
+                modalTitle.textContent = '근무로그 등록';
                 if (logIdInput)   logIdInput.value   = '';
-                if (userSelect)   userSelect.value   = '';
+                if (userSelect) {
+                    userSelect.value   = '';
+                    userSelect.disabled = false;   // 등록 모드에서는 선택 가능
+                }
                 if (workCodeSel)  workCodeSel.value  = '';
                 if (recordTimeEl) recordTimeEl.value = '';
             } else {
-                modalTitle.textContent = '근무 로그 수정';
+                modalTitle.textContent = '근무로그 수정';
                 if (logIdInput)   logIdInput.value   = button.getAttribute('data-id') || '';
-                if (userSelect)   userSelect.value   = button.getAttribute('data-user-id') || '';
+                if (userSelect) {
+                    userSelect.value    = button.getAttribute('data-user-id') || '';
+                    userSelect.disabled = true;    // 수정 모드에서는 직원 변경 불가
+                }
                 if (workCodeSel)  workCodeSel.value  = button.getAttribute('data-work-code') || '';
                 if (recordTimeEl) recordTimeEl.value = (button.getAttribute('data-record-time') || '').substring(0, 8);
             }

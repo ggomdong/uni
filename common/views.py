@@ -32,6 +32,10 @@ def signup(request):
             # 직원 등록 후 바로 근로계약을 입력할 수 있도록 수정화면으로 이동.
             # 이를 위해 지금 등록한 user의 id를 얻어야 하므로, 가장 최근 유저의 id를 가져옴.
             user = User.objects.last()
+            messages.success(
+                request,
+                "직원 정보를 등록했습니다. 근로계약을 입력해 주세요."
+            )
             return redirect('wtm:work_contract_reg', user_id=user.id)
     else:
         form = UserForm()
@@ -167,6 +171,7 @@ def user_modify(request, user_id):
 
         if form.is_valid():
             user.save()
+            messages.success(request, '직원 정보를 수정했습니다.')
             return redirect('common:user_list')
     # 수정 버튼 클릭시 GET 방식으로 수정화면 호출
     else:
@@ -183,6 +188,7 @@ def user_modify(request, user_id):
     return render(request, 'common/user_modify.html', context)
 
 
+@login_required(login_url='common:login')
 def password_change(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
@@ -195,6 +201,17 @@ def password_change(request, user_id):
     else:
         form = PasswordChangeForm()
     return render(request, 'common/password_change.html', {'form': form, 'user': user})
+
+
+@login_required(login_url='common:login')
+def reset_device(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+
+    if request.method == "POST":
+        user.device_id = None
+        user.save(update_fields=["device_id"])
+        messages.success(request, "기기 정보를 초기화했습니다.")
+    return redirect("common:user_modify", user_id=user_id)
 
 
 @login_required(login_url='common:login')
@@ -220,6 +237,7 @@ def dept(request):
                 dept.mod_date = timezone.now()
                 dept.save()
 
+            messages.success(request, "부서 정보를 저장했습니다.")
             return redirect('common:dept')
     else:
         formset = DeptFormSet(queryset=Dept.objects.order_by('order'))
@@ -252,6 +270,7 @@ def position(request):
                 position.mod_date = timezone.now()
                 position.save()
 
+            messages.success(request, "직위 정보를 저장했습니다.")
             return redirect('common:position')
     else:
         formset = PositionFormSet(queryset=Position.objects.order_by('order'))
@@ -287,6 +306,7 @@ def holiday(request):
                 holiday.mod_date = timezone.now()
                 holiday.save()
 
+            messages.success(request, "공휴일 정보를 저장했습니다.")
             return redirect('common:holiday')
     else:
         if search_year == '전체':
@@ -325,6 +345,7 @@ def business(request):
                 business.mod_date = timezone.now()
                 business.save()
 
+            messages.success(request, "영업일 정보를 저장했습니다.")
             return redirect('common:business')
     else:
         formset = BusinessFormSet()
@@ -359,6 +380,7 @@ def code(request):
                 code.mod_date = timezone.now()
                 code.save()
 
+            messages.success(request, "코드 정보를 저장했습니다.")
             return redirect('common:code')
     else:
         if search == '전체':

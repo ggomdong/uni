@@ -2,15 +2,6 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <!-- message 표시 -->
-    {% if messages %}
-    <div class="alert alert-danger my-3" role="alert">
-        {% for message in messages %}
-        <strong>{{ message.tags }}</strong>
-        <ul><li>{{ message.message }}</li></ul>
-        {% endfor %}
-    </div>
-    {% endif %}
 
     <h4 class="my-3 border-bottom pb-2">근로계약 등록</h4>
         <div class="mb-3 col-md-4">
@@ -47,101 +38,87 @@
         </div>
         <div class="mb-3">
             <label class="form-label">근무요일 입력</label>
-            <table class="text-center">
-                <tr>
-                    <td rowspan="2" style="width: 80px; text-align: left;">①선택</td>
-                    {% for module in module_list %}
-                    {% if module.cat == '정규근무' or module.cat == 'OFF' %}
-                    <td style="width: 60px;">
-                        <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
-<!--                    </td>-->
-<!--                    <td>-->
-                        <label class="form-label" for="{{module.id}}">
-                            <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
-                            {% if module.cat == 'OFF' %}
-                                -
-                            {% else %}
-                                {{ module.start_time }}
-                                {{ module.end_time }}
-                            {% endif %}
-                            </div>
-                        </label>
-                    </td>
-                    {% endif %}
-                    {% endfor %}
-                </tr>
-                <tr style="font-size: 10px">
-                    {% for module in module_list %}
-                    {% if module.cat == '정규근무' or module.cat == 'OFF' %}
-<!--                    <td></td>-->
-                    <td>
-                        {{ module.name }}
-                    </td>
-                    {% endif %}
-                    {% endfor %}
-                </tr>
-            </table>
-            <div class="mb-4"></div>
-            <table class="text-center">
-                <tr>
-                    <td rowspan="2" style="width: 80px; text-align: left;">②입력</td>
-                    <!-- 요일 dictionary에서 영문 요일을 가져와서 반복한다 -->
-                    {% for key, value in day_of_the_week.items %}
-                    <td style="width: 50px;">
-                        <!-- 수정시, form의 필드를 가져오는 filter를 활용해서 key에 맞는 값을 세팅한다. -->
-                        {% with form|get_index:key as day %}
-                        <input type="hidden" class="form-control" name="{{key}}" id="{{key}}"
-                               value="{{ day.value|default_if_none:'' }}">
-                        <!-- form error 발생시 int가 string으로 변경되므로, add 필터로 숫자 변환해서 비교 -->
-                        <div class="module_box" id="insert_{{key}}" onclick="insert('{{key}}')" style="cursor: pointer;
+            <br>
+            <div class="contract-workday-wrapper">
+                {# ①선택 #}
+                <div class="contract-workday-section">
+                    <table class="text-center mb-0">
+                        <tr>
+                            <td rowspan="2" style="width: 80px; text-align: left;">①선택</td>
                             {% for module in module_list %}
-                            {% if module.id == day.value|add:"0" %}
-                            background-color: {{ module_colors|get_index:module.color }};"
-                            {% endif %}
-                            {% endfor %}">
-                            {% for module in module_list %}
-                            {% if module.id == day.value|add:"0" %}
-                                {% if module.cat == 'OFF' %}
-                                    -<br>
-                                    &nbsp;
-                                {% else %}
-                                    {{ module.start_time }}
-                                    {{ module.end_time }}
-                                {% endif %}
+                            {% if module.cat == '정규근무' or module.cat == 'OFF' %}
+                            <td style="width: 60px;">
+                                <input type="radio" class="invisible-radio"
+                                       name="module" id="{{ module.id }}" value="{{ module.id }}">
+                                <label class="form-label" for="{{ module.id }}">
+                                    <div class="module_box"
+                                         id="select{{ module.id }}"
+                                         style="background-color: {{ module_colors|get_index:module.color }};">
+                                        {% if module.cat == 'OFF' %}
+                                            -
+                                        {% else %}
+                                            {{ module.start_time }}<br>
+                                            {{ module.end_time }}
+                                        {% endif %}
+                                    </div>
+                                </label>
+                            </td>
                             {% endif %}
                             {% endfor %}
-                        </div>
-                        {% endwith %}
-                    </td>
-                    <!-- 자바스크립트를 이용하는 방법. 참고로 놔둠 -->
-<!--                    <td>-->
-<!--                        &lt;!&ndash; 수정시, form의 필드를 가져오는 filter를 활용해서 key에 맞는 값을 세팅한다. &ndash;&gt;-->
-<!--                        {% with form|get_index:key as day %}-->
-<!--                        <input type="hidden" class="form-control" name="{{key}}" id="{{key}}"-->
-<!--                               value="{{ day.value|default_if_none:'' }}">-->
-<!--                        <div class="module_box" id="insert_{{key}}" onclick="insert('{{key}}')">-->
-<!--                            <script type="text/javascript">-->
-<!--                            // ①선택 근무요일의 module.id를 가져온다.-->
-<!--                            const formDay{{key}} = document.querySelector("input[id={{key}}]").value;-->
+                        </tr>
+                        <tr style="font-size: 10px">
+                            {% for module in module_list %}
+                            {% if module.cat == '정규근무' or module.cat == 'OFF' %}
+                            <td>{{ module.name }}</td>
+                            {% endif %}
+                            {% endfor %}
+                        </tr>
+                    </table>
+                </div>
 
-<!--                            const moduleBox{{key}} = document.getElementById("select"+formDay{{key}});-->
-
-<!--                            // ②입력 모듈박스를 가져와서, 내용 및 색상을 모듈박스의 것으로 세팅한다.-->
-<!--                            const moduleBoxInsert{{key}} = document.getElementById("insert_{{key}}");-->
-<!--                            moduleBoxInsert{{key}}.innerHTML = moduleBox{{key}}.innerHTML;-->
-<!--                            moduleBoxInsert{{key}}.style.backgroundColor = moduleBox{{key}}.style.backgroundColor;-->
-<!--                            </script>-->
-<!--                        </div>-->
-<!--                        {% endwith %}-->
-<!--                    </td>-->
-                    {% endfor %}
-                </tr>
-                <tr style="font-size: 10px">
-                    {% for key, value in day_of_the_week.items %}
-                    <td>{{ value }}</td>
-                    {% endfor %}
-                </tr>
-            </table>
+                {# ②입력 #}
+                <div class="contract-workday-section">
+                    <table class="text-center mb-0">
+                        <tr>
+                            <td rowspan="2" style="width: 80px; text-align: left;">②입력</td>
+                            {% for key, value in day_of_the_week.items %}
+                            <td style="width: 50px;">
+                                {% with form|get_index:key as day %}
+                                <input type="hidden" class="form-control"
+                                       name="{{ key }}" id="{{ key }}"
+                                       value="{{ day.value|default_if_none:'' }}">
+                                <div class="module_box"
+                                     id="insert_{{ key }}"
+                                     onclick="insert('{{ key }}')"
+                                     style="cursor: pointer;
+                                         {% for module in module_list %}
+                                         {% if module.id == day.value|add:"0" %}
+                                         background-color: {{ module_colors|get_index:module.color }};
+                                         {% endif %}
+                                         {% endfor %}">
+                                    {% for module in module_list %}
+                                    {% if module.id == day.value|add:"0" %}
+                                        {% if module.cat == 'OFF' %}
+                                            -<br>&nbsp;
+                                        {% else %}
+                                            {{ module.start_time }}<br>
+                                            {{ module.end_time }}
+                                        {% endif %}
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endwith %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        <tr style="font-size: 10px">
+                            {% for key, value in day_of_the_week.items %}
+                            <td>{{ value }}</td>
+                            {% endfor %}
+                        </tr>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <button type="submit" class="btn btn-primary">

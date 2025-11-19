@@ -316,6 +316,7 @@ def work_module_reg(request):
             module.mod_id = request.user
             module.mod_date = timezone.now()
             module.save()
+            messages.success(request, "근무모듈을 등록했습니다.")
             return redirect('wtm:work_module')
     else:
         form = ModuleForm()
@@ -344,6 +345,7 @@ def work_module_modify(request, module_id):
             module.mod_id = request.user
             module.mod_date = timezone.now()
             module.save()
+            messages.success(request, "근무모듈을 수정했습니다.")
             return redirect('wtm:work_module')
     # GET 방식으로 수정화면 호출
     else:
@@ -362,6 +364,7 @@ def work_module_delete(request, module_id):
     #     messages.error(request, '삭제 권한이 없습니다.')
     #     return redirect('pybo:detail', question_id=question.id)
     module.delete()
+    messages.success(request, "근무모듈을 삭제했습니다.")
     return redirect('wtm:work_module')
 
 
@@ -377,6 +380,7 @@ def work_contract_reg(request, user_id):
             contract.mod_id = request.user
             contract.mod_date = timezone.now()
             contract.save()
+            messages.success(request, "근로계약을 등록했습니다.")
             return redirect('common:user_modify', user_id=user_id)
     else:
         form = ContractForm()
@@ -411,6 +415,7 @@ def work_contract_modify(request, contract_id):
             contract.mod_id = request.user
             contract.mod_date = timezone.now()
             contract.save()
+            messages.success(request, "근로계약을 수정했습니다.")
             return redirect('common:user_modify', user_id=user_id)
     # GET 방식으로 수정화면 호출
     else:
@@ -433,6 +438,7 @@ def work_contract_delete(request, contract_id):
     #     messages.error(request, '삭제 권한이 없습니다.')
     #     return redirect('pybo:detail', question_id=question.id)
     contract.delete()
+    messages.success(request, "근로계약을 삭제했습니다.")
     return redirect('common:user_modify', user_id=user_id)
 
 
@@ -1537,10 +1543,9 @@ def work_log_save(request):
 
     log_id = request.POST.get("log_id")
     stand_day = request.POST.get("stand_day")
-    user_id = request.POST.get("user_id")
 
-    if not stand_day or not user_id:
-        messages.error(request, "일자와 사용자를 확인해 주세요.")
+    if not stand_day:
+        messages.error(request, "일자를 확인해 주세요.")
         return redirect(
             'wtm:work_log',
             stand_day=stand_day or timezone.now().strftime('%Y%m%d'),
@@ -1553,13 +1558,23 @@ def work_log_save(request):
         messages.error(request, "잘못된 날짜 형식입니다.")
         return redirect('wtm:work_log')
 
-    target_user = get_object_or_404(User, pk=user_id)
+    # ─────────────────────────────────────
+    # 1) 수정 / 등록 분기
+    #    - 수정: user_id는 무시, 기존 obj.user 유지
+    #    - 등록: user_id 필수
+    # ─────────────────────────────────────
 
-    # 수정 / 등록 분기
+    # 수정모드
     if log_id:
         obj = get_object_or_404(Work, pk=log_id)
         form = WorkForm(request.POST, instance=obj)
     else:
+        user_id = request.POST.get("user_id")
+        if not user_id:
+            messages.error(request, "직원을 선택해 주세요.")
+            return redirect('wtm:work_log', stand_day=stand_day)
+
+        target_user = get_object_or_404(User, pk=user_id)
         obj = Work(user=target_user)
         form = WorkForm(request.POST, instance=obj)
 
@@ -1575,10 +1590,11 @@ def work_log_save(request):
     obj.record_date = datetime.strptime(dt_str, "%Y%m%d %H:%M:%S")
 
     # Work 모델의 pre_save 시그널에서 record_day = record_date.date() 자동 세팅
-    obj.user = target_user  # 수정 시에도 유저를 바꿀 수 있게 하려면 유지
+    if not log_id:
+        obj.user = target_user
     obj.save()
 
-    messages.success(request, "근태 로그가 저장되었습니다.")
+    messages.success(request, "근무로그가 저장되었습니다.")
     return redirect('wtm:work_log', stand_day=stand_day)
 
 
@@ -1589,13 +1605,14 @@ def work_log_delete(request, log_id: int):
 
     if request.method == "POST":
         log.delete()
-        messages.success(request, "근태 로그가 삭제되었습니다.")
+        messages.success(request, "근무로그가 삭제되었습니다.")
     else:
         messages.error(request, "잘못된 요청입니다.")
 
     return redirect('wtm:work_log', stand_day=stand_day)
 
 
+@login_required(login_url='common:login')
 def work_meal(request, stand_year=None):
     if stand_year is None:
         stand_year = datetime.today().year

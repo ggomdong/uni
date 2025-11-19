@@ -84,7 +84,7 @@ class Schedule(models.Model):
     mod_date = models.DateTimeField()
 
 
-# 근태로그
+# 근무로그
 class Work(models.Model):
     class WorkCode(models.TextChoices):
         IN = 'I', '출근'

@@ -201,12 +201,6 @@ select[readonly] {
   position: sticky;
   top: 0;
   z-index: 3;
-  background-color: white;
-}
-
-/* 헤더의 th도 배경색 추가 */
-.sticky-top thead th {
-  background-color: white;
 }
 
 /* 첫 번째 열(부서) 고정 */
@@ -248,7 +242,7 @@ select[readonly] {
   height: 30px;
 }
 
-.today-2 th, td {
+.today-2 th {
   background-color: #595959;
   font-size: 13px;
   color: white;
@@ -407,4 +401,33 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   cursor: pointer;
 }
 
+.contract-workday-wrapper {
+  display: inline-block;
+  flex-direction: column;  /* 🔹 위→아래로 ①선택, ②입력 */
+  gap: 4px;                /* 두 박스 사이 간격 */
+  align-items: flex-start; /* 내용 폭만큼만 사용 */
+}
 
+/* 선택/입력 각각의 외곽 박스 */
+.contract-workday-section {
+  display: block;
+  width: 100%;               /* 두 박스 폭을 동일하게 */
+  box-sizing: border-box;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 4px 6px;
+  background-color: #ffffff;
+}
+
+/* 안쪽 테이블은 내용 폭만큼만 */
+.contract-workday-section table {
+  width: auto;                  /* Bootstrap .table 의 100% 덮어쓰기 */
+  border-collapse: collapse;
+  margin-bottom: 0;
+}
+
+/* 혹시 td 배경이 남아있을 경우 대비 */
+.contract-workday-section td,
+.contract-workday-section th {
+  background-color: #ffffff;
+}
