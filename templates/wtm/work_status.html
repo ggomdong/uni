@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
 {% block content %}
-<div class="container my-3">
+<div class="container-fluid my-3 px-4">
     <!-- 상단 필터 버튼 -->
     <div class="btn-group metric-filter d-flex mb-3" role="group" aria-label="근태 지표 필터">
         <a href="{% url 'wtm:work_status' stand_ym %}"
@@ -40,8 +40,22 @@
 <!--    • 개인 속성의 “근태확인 제외”는 집계 제외 • 시간단위: hh:mm:ss-->
 <!--  </div>-->
 
-    <div class="table-responsive">
-        <table class="table table-sm table-bordered align-middle text-center">
+    <div class="table-responsive status-table-wrapper">
+        <table class="table table-sm table-bordered align-middle text-center work-status-table">
+            <colgroup>
+              <col style="width:10%;">  <!-- 부서 -->
+              <col style="width:9%;">  <!-- 성명 -->
+              <col style="width:9%;">   <!-- 오류(일수) -->
+              <!-- 지각/조퇴/초과/휴일 × [횟수,시간] 8개 -->
+              <col style="width:9%;">
+              <col style="width:9%;">
+              <col style="width:9%;">
+              <col style="width:9%;">
+              <col style="width:9%;">
+              <col style="width:9%;">
+              <col style="width:9%;">
+              <col style="width:9%;">
+            </colgroup>
             <thead>
                 <tr>
                     <th colspan="100%">
@@ -103,16 +117,16 @@
                     <td>{{ r.error_cnt|default:"" }}</td>
 
                     <td>{{ r.late_cnt|default:"" }}</td>
-                    <td class="text-end">{{ r.late_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.late_sec|ss_to_hhmmss }}</td>
 
                     <td>{{ r.early_cnt|default:"" }}</td>
-                    <td class="text-end">{{ r.early_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.early_sec|ss_to_hhmmss }}</td>
 
                     <td>{{ r.overtime_cnt|default:"" }}</td>
-                    <td class="text-end">{{ r.overtime_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.overtime_sec|ss_to_hhmmss }}</td>
 
                     <td>{{ r.holiday_cnt|default:"" }}</td>
-                    <td class="text-end">{{ r.holiday_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.holiday_sec|ss_to_hhmmss }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="12" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>

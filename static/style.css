@@ -347,6 +347,61 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 /* 근태현황
 /****************************************************************/
 
+/********
+ * 근태현황 - 전체 요약 테이블
+ ********/
+
+.status-table-wrapper.table-responsive {
+  overflow-x: hidden;   /* Bootstrap의 overflow-x:auto 덮어쓰기 */
+}
+
+.work-status-table {
+  width: 100%;
+  table-layout: fixed;     /* colgroup 기준으로 고정 배치 */
+  font-size: 0.86rem;      /* 기본보다 살짝 작게 */
+}
+
+.work-status-table th,
+.work-status-table td {
+  padding: 0.25rem 0.4rem; /* 행 높이 줄이기 */
+  white-space: nowrap;     /* 줄바꿈 방지 → 글자가 세로로 쌓이는 현상 막기 */
+}
+
+/* 헤더는 중앙 정렬 */
+.work-status-table thead th {
+  text-align: center;
+  vertical-align: middle !important;
+}
+
+/********
+ * 근태현황 - 지각/조퇴/연장/휴일 상세 테이블
+ ********/
+.metric-table-wrapper {
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.metric-table-wrapper.table-responsive {
+  overflow-x: hidden;   /* Bootstrap의 overflow-x:auto 덮어쓰기 */
+}
+
+.work-metric-table {
+  width: 100%;
+  table-layout: fixed;     /* colgroup 기준으로 강제 배치 */
+  font-size: 0.86rem;      /* 전체 화면보다 한 단계 더 작게 */
+}
+
+.work-metric-table th,
+.work-metric-table td {
+  padding: 0.25rem 0.4rem; /* 행 높이 많이 줄이기 */
+  white-space: nowrap;      /* 줄바꿈 방지 */
+}
+
+/* 근태현황 - 지각/조퇴/연장/휴일 상세 테이블 세로 가운데 정렬 */
+.work-metric-table th {
+  vertical-align: middle !important;
+}
+
   /* 버튼 그룹 전체 폭 줄이고 가운데 정렬 */
   .metric-filter {
     max-width: 420px;   /* 원하는 만큼 조절 가능 (예: 360~480 사이) */

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
 {% block content %}
-<div class="container my-3">
+<div class="container-fluid my-3 px-4">
 <!--  <h4>{{ metric_label }} 현황 — {{ stand_ym|slice:":4" }}년 {{ stand_ym|slice:"4:" }}월</h4>-->
 
     <!-- 상단 필터 버튼 -->
@@ -31,8 +31,17 @@
     {% now "Ymd" as nowymd %}
     {% with nowym=nowymd|slice:":6" nowd=nowymd|slice:"6:" %}
 
-    <div class="table-responsive">
-        <table class="table table-sm table-bordered align-middle text-center">
+    <div class="table-responsive metric-table-wrapper">
+        <table class="table table-sm table-bordered align-middle text-center work-metric-table">
+            <colgroup>
+              <col style="width:5%;">  <!-- 부서 -->
+              <col style="width:5%;">  <!-- 성명 -->
+              <col style="width:3%;">   <!-- 횟수 -->
+              <col style="width:5%;">   <!-- 합계 -->
+              {% for key, dow in day_list.items %}
+                <col style="width:3%;">
+              {% endfor %}
+            </colgroup>
             <thead>
                 <tr>
                     <th colspan="100%">
@@ -124,4 +133,12 @@
 
     {% endwith %}
 </div>
+
+<script type="text/javascript">
+const selectYM = document.getElementById("selectYM");
+selectYM.addEventListener('change', function() {
+  target = selectYM.value.replace('-', '');
+  location.href = target;
+});
+</script>
 {% endblock %}
