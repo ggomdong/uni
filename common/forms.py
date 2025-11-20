@@ -25,7 +25,8 @@ class UserForm(UserCreationForm):
 
 
 class UserModifyForm(UserChangeForm):
-    username = forms.CharField(disabled=True)
+    # 전화번호 수정이 가능하도록 주석처리
+    # username = forms.CharField(disabled=True)
 
     class Meta:
         model = User
