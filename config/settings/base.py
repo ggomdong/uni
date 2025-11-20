@@ -187,8 +187,8 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # 로그인 관련 이동하는 URL
-LOGIN_REDIRECT_URL = '/index/'
-LOGOUT_REDIRECT_URL = '/index/'
+LOGIN_REDIRECT_URL = '/wtm/index/'
+LOGOUT_REDIRECT_URL = '/wtm/index/'
 
 AUTH_USER_MODEL = 'common.User'
 

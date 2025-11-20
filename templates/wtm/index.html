@@ -166,8 +166,8 @@
                               class="btn btn-sm btn-danger att-error-btn"
                               data-user-id="{{ work.user_id }}"
                               data-emp-name="{{ work.emp_name }}"
-                              data-emp-dept="{{ work.dept }}"
-                              data-emp-position="{{ work.position }}"
+                              data-dept="{{ work.dept }}"
+                              data-position="{{ work.position }}"
                               data-stand-day="{{ stand_day }}"
                               data-module-id="{{ work.module_id|default_if_none:'' }}">
                         오류
@@ -244,6 +244,8 @@
 {% block script %}
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function () {
+    const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+
     // === 날짜 변경: 기존 로직 보강 ===
     const selectDay = document.getElementById("selectDay");
     if (selectDay) {
@@ -358,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const y = err.standDay.substring(0,4);
             const m = err.standDay.substring(4,6);
             const d = err.standDay.substring(6,8);
-            infoDiv.textContent = err.dept + ' ' + err.empName + '(' + err.dept + '), ' + y + '-' + m + '-' + d;
+            infoDiv.textContent = err.position + ' ' + err.empName + '(' + err.dept + '), ' + y + '-' + m + '-' + d;
         }
 
         const bsModal = new bootstrap.Modal(modalEl);

@@ -13,10 +13,21 @@
         <tr>
             <th colspan="100%" style="font-weight: normal;">
             <div class="row my-3 text-start">
-                <div class="col-10 fs-3">
+                <div class="col-6 fs-3">
                     {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"4:6" }}월
                 </div>
-                <div class="col-2 text-end">
+                <div class="col-6 text-end">
+                    <!-- undo / redo 버튼 추가 -->
+                    <button type="button" id="undoBtn" class="btn btn-outline-secondary btn-sm me-1" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708z"/>
+                        </svg>
+                    </button>
+                    <button type="button" id="redoBtn" class="btn btn-outline-secondary btn-sm me-1" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-right" viewBox="0 0 16 16">
+                          <path fill-rule="evenodd" d="M14.854 4.854a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 4H3.5A2.5 2.5 0 0 0 1 6.5v8a.5.5 0 0 0 1 0v-8A1.5 1.5 0 0 1 3.5 5h9.793l-3.147 3.146a.5.5 0 0 0 .708.708z"/>
+                        </svg>
+                    </button>
                     <a href="{% url 'wtm:work_schedule' stand_ym %}" class="btn btn-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-backspace-fill" viewBox="0 0 16 16">
                           <path d="M15.683 3a2 2 0 0 0-2-2h-7.08a2 2 0 0 0-1.519.698L.241 7.35a1 1 0 0 0 0 1.302l4.843 5.65A2 2 0 0 0 6.603 15h7.08a2 2 0 0 0 2-2zM5.829 5.854a.5.5 0 1 1 .707-.708l2.147 2.147 2.146-2.147a.5.5 0 1 1 .707.708L9.39 8l2.146 2.146a.5.5 0 0 1-.707.708L8.683 8.707l-2.147 2.147a.5.5 0 0 1-.707-.708L7.976 8z"/>
@@ -229,6 +240,71 @@
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
+// ----- Undo / Redo 스택 -----
+const undoStack = [];
+const redoStack = [];
+
+// target(예: "3_15") 과 moduleId 로 셀 상태를 세팅하는 공통 함수
+function applyModuleToCell(target, moduleId) {
+    const moduleBoxInsert = document.getElementById("insert_" + target);
+    const moduleInput = document.getElementById("sch_" + target);
+
+    if (!moduleBoxInsert || !moduleInput) return;
+
+    moduleInput.value = moduleId || '';
+
+    if (moduleId) {
+        // 상단 모듈 박스에서 모양 복사
+        const moduleBoxSelected = document.getElementById("select" + moduleId);
+        if (moduleBoxSelected) {
+            moduleBoxInsert.innerHTML = moduleBoxSelected.innerHTML;
+            moduleBoxInsert.style.backgroundColor = moduleBoxSelected.style.backgroundColor;
+        }
+    } else {
+        // 모듈 없었던 상태로 되돌릴 때 (빈 칸)
+        moduleBoxInsert.innerHTML = "";
+        moduleBoxInsert.style.backgroundColor = "";
+    }
+}
+
+// 버튼 활성/비활성 관리
+function updateUndoRedoButtons() {
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
+
+    if (undoBtn) undoBtn.disabled = (undoStack.length === 0);
+    if (redoBtn) redoBtn.disabled = (redoStack.length === 0);
+}
+
+// Undo 실행
+function undo() {
+    const last = undoStack.pop();
+    if (!last) return;
+
+    // from 으로 되돌림
+    applyModuleToCell(last.target, last.from);
+
+    // redo 스택에 넣기
+    redoStack.push(last);
+
+    updateUndoRedoButtons();
+}
+
+// Redo 실행
+function redo() {
+    const last = redoStack.pop();
+    if (!last) return;
+
+    // to 로 다시 적용
+    applyModuleToCell(last.target, last.to);
+
+    // undo 스택에 다시 쌓기
+    undoStack.push(last);
+
+    updateUndoRedoButtons();
+}
+
+
 function insert(target) {
     // target은 "user.id"_"일" 값임 ex) 1_1, 1_31,
 
@@ -236,17 +312,29 @@ function insert(target) {
         // 선택모듈의 module.id를 가져온다.
         const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked").value;
 
-        // 선택모듈을 가져온다.
-        const moduleBoxSelected = document.getElementById("select"+moduleIdSelected);
+        // 변경 전 값(이전 모듈 id) 저장
+        const moduleInput = document.getElementById("sch_" + target);
+        const prevModuleId = moduleInput ? (moduleInput.value || null) : null;
 
-        // 입력모듈을 가져와서, 내용 및 색상을 선택한 선택모듈의 것으로 세팅한다.
-        const moduleBoxInsert = document.getElementById("insert_"+target);
-        moduleBoxInsert.innerHTML = moduleBoxSelected.innerHTML;
-        moduleBoxInsert.style.backgroundColor = moduleBoxSelected.style.backgroundColor;
+        // 이전 상태와 동일하면 스택에 쌓을 필요 없음
+        if (prevModuleId === moduleIdSelected) {
+            return;
+        }
 
-        // DB에 저장하기 위해 선택모듈의 module.id를 해당 form element(hidden)에 세팅한다.
-        const moduleInput = document.getElementById("sch_"+target);
-        moduleInput.value = moduleIdSelected;
+        // 실제 변경 적용
+        applyModuleToCell(target, moduleIdSelected);
+
+        // undo 스택에 기록 (target, from, to)
+        undoStack.push({
+            target: target,
+            from: prevModuleId,
+            to: moduleIdSelected,
+        });
+
+        // 새 작업이 생겼으니 redo 스택은 비운다
+        redoStack.length = 0;
+
+        updateUndoRedoButtons();
     } catch (e) {
         alert("근무표 변경을 원하시면, 상단 근무모듈을 먼저 선택하세요.");
         return;
@@ -262,6 +350,25 @@ Array.from(save_elements).forEach(function(element) {
     });
 });
 
+// Undo / Redo 버튼 이벤트
+document.addEventListener("DOMContentLoaded", function() {
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
+
+    if (undoBtn) {
+        undoBtn.addEventListener("click", function() {
+            undo();
+        });
+    }
+    if (redoBtn) {
+        redoBtn.addEventListener("click", function() {
+            redo();
+        });
+    }
+
+    updateUndoRedoButtons();
+});
+
 document.addEventListener('keydown', function(event) {
     function getIndex(o) {
       for (x = 0; x < o.length; x++)
@@ -273,6 +380,20 @@ document.addEventListener('keydown', function(event) {
     const module = document.getElementsByName('module');
     const len = module.length;
     const moduleSelectedIndex = getIndex(module);
+
+    // ----- Undo / Redo 단축키 -----
+    // Ctrl + Z : Undo
+    if (event.ctrlKey && !event.shiftKey && e === 90) {  // 90 = 'Z'
+        event.preventDefault();
+        undo();
+        return;
+    }
+    // Ctrl + Y 또는 Ctrl + Shift + Z : Redo
+    if (event.ctrlKey && (e === 89 || (event.shiftKey && e === 90))) { // 89 = 'Y'
+        event.preventDefault();
+        redo();
+        return;
+    }
 
     // 1~9 숫자키를 누를 경우. 참고로 기본적으로 좌우방향키로 radio버튼 선택이 가능하기 때문에 방향키에 대해서는 별도 구현하지 않았음
     if(e >= 49 && e <= 57) {
@@ -287,7 +408,7 @@ document.addEventListener('keydown', function(event) {
         if(len >= 11) {
             module[10].checked = true;
         }
-    } else if(e == 189) {       // = 키
+    } else if(e == 190) {       // = 키
         if(len >= 12) {
             module[11].checked = true;
         }
