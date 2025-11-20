@@ -1,0 +1,112 @@
+{% block content %}
+<div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{% url 'wtm:work_log_save' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logModalLabel">근무로그 등록</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="log_id" id="logIdInput">
+                    <input type="hidden" name="stand_day" id="logStandDayInput" value="{{ stand_day }}">
+                    <input type="hidden" name="from_index" id="logFromIndexInput" value="">
+
+                    <div class="mb-3">
+                        <label for="logUserSelect" class="form-label">직원</label>
+                        <select id="logUserSelect" name="user_id" class="form-select form-select-sm" required>
+                            <option value="">선택하세요</option>
+                            {% for u in user_list %}
+                                <option value="{{ u.id }}">
+                                    {{ u.dept }} / {{ u.position }} / {{ u.emp_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="logWorkCodeSelect" class="form-label">구분</label>
+                        <select id="logWorkCodeSelect" name="work_code" class="form-select form-select-sm" required>
+                            <option value="">선택하세요</option>
+                            <option value="I">출근</option>
+                            <option value="O">퇴근</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-0">
+                        <label for="logRecordTimeInput" class="form-label">시간</label>
+                        <input type="time"
+                               id="logRecordTimeInput"
+                               name="record_time"
+                               step="1"
+                               class="form-control form-control-sm"
+                               required>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-sm btn-secondary"
+                            data-bs-dismiss="modal">닫기</button>
+                    <button type="submit"
+                            class="btn btn-sm btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block script %}
+<script type="text/javascript">
+// 모달: 등록/수정 모드에 따라 필드 초기화
+const logModal = document.getElementById('logModal');
+if (logModal) {
+    logModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        if (!button) return;
+
+        const mode = button.getAttribute('data-mode') || 'create';
+
+        const modalTitle   = logModal.querySelector('.modal-title');
+        const logIdInput   = document.getElementById('logIdInput');
+        const userSelect   = document.getElementById('logUserSelect');
+        const workCodeSel  = document.getElementById('logWorkCodeSelect');
+        const recordTimeEl = document.getElementById('logRecordTimeInput');
+        const fromIndexInput  = document.getElementById('logFromIndexInput');
+
+        if (mode === 'create') {
+            modalTitle.textContent = '근무로그 등록';
+            if (logIdInput)   logIdInput.value   = '';
+            if (userSelect) {
+                userSelect.value   = '';
+                userSelect.disabled = false;   // 등록 모드에서는 선택 가능
+            }
+            if (workCodeSel)  workCodeSel.value  = '';
+            if (recordTimeEl) recordTimeEl.value = '';
+        } else {
+            modalTitle.textContent = '근무로그 수정';
+            if (logIdInput)   logIdInput.value   = button.getAttribute('data-id') || '';
+            if (userSelect) {
+                userSelect.value    = button.getAttribute('data-user-id') || '';
+                userSelect.disabled = true;    // 수정 모드에서는 직원 변경 불가
+            }
+            if (workCodeSel)  workCodeSel.value  = button.getAttribute('data-work-code') || '';
+            if (recordTimeEl) recordTimeEl.value = (button.getAttribute('data-record-time') || '').substring(0, 8);
+        }
+    });
+}
+
+// 삭제 버튼: confirm 후 POST 전송
+const deleteForms = document.querySelectorAll('form.delete-form');
+deleteForms.forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+        if (!confirm('정말 삭제하시겠습니까?')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

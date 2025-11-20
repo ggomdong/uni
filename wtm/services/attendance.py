@@ -234,10 +234,12 @@ def build_daily_attendance_for_users(base_rows: list[dict], day: date) -> list[d
         )
 
         work_list.append({
+            "user_id": uid,
             "dept": r["dept"],
             "position": r["position"],
             "emp_name": r["emp_name"],
             "cat": r.get("cat"),
+            "module_id": r.get("module_id"),
             "start_time": r.get("start_time"),
             "end_time": r.get("end_time"),
             "checkin_time": checkin_time,

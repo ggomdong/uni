@@ -18,72 +18,45 @@ body {
 
 /* CSS for Bootstrap 5 Fixed Left Sidebar Navigation */
 @media(max-width:1920px){
-body {
-  padding-top: 65px;
-  padding-left: 0px;
-}
+  body {
+    padding-top: 65px;
+    padding-left: 0px;
+  }
 }
 
 @media(min-width:1920px){
-body {
-  padding-left: 300px;
-  padding-right: 60px;
-  padding-top: 0px;
-}
+  body {
+    padding-left: 300px;
+    padding-right: 60px;
+    padding-top: 0px;
+  }
 
-nav.navbar {
-  position: fixed;
-  left: 0;
-  width: 200px;
-  bottom: 0;
-  top: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: block;
-  border-right: 1px solid #cecece;
-}
-nav.navbar >.container-fluid {
-  flex-direction: column;
-  padding: 0;
-}
-nav.navbar .navbar-nav {
-  flex-direction: column;
-}
-nav.navbar .navbar-collapse {
-  width: 100%;
-  padding-left: 50px;
-  padding-top: 30px;
-}
-nav.navbar .navbar-nav {
-  width: 100%;
-}/*
-nav.navbar .navbar-nav .dropdown-menu {
-  position: static;
-  display: block;
-}
-nav.navbar .dropdown {
-  margin-bottom: 5px;
-  font-size: 14px;
-}
-nav.navbar .dropdown-item {
-  white-space: normal;
-  font-size: 14px;
-  vertical-align: middle;
-}
-nav.navbar .dropdown-item img {
-  margin-right: 5px;
-}
-nav.navbar .dropdown-toggle {
-  cursor: default;
-}
-nav.navbar .dropdown-menu {
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
-}
-nav.navbar .dropdown-toggle::after {
-  display: none;
-}*/
+  nav.navbar {
+    position: fixed;
+    left: 0;
+    width: 200px;
+    bottom: 0;
+    top: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: block;
+    border-right: 1px solid #cecece;
+  }
+  nav.navbar >.container-fluid {
+    flex-direction: column;
+    padding: 0;
+  }
+  nav.navbar .navbar-nav {
+    flex-direction: column;
+  }
+  nav.navbar .navbar-collapse {
+    width: 100%;
+    padding-left: 50px;
+    padding-top: 30px;
+  }
+  nav.navbar .navbar-nav {
+    width: 100%;
+  }
 }
 
 /* 스크롤바 CSS */
@@ -101,8 +74,6 @@ nav.navbar .dropdown-toggle::after {
 
 ::-webkit-scrollbar-track {
   background-color: transparent;
-  /*border-radius: 10px;
-  box-shadow: inset 0px 0px 5px white;*/
 }
 
 /* 네비게이션바 hover 및 현재 메뉴 하이라이트 처리 */
@@ -126,7 +97,6 @@ nav.navbar .dropdown-toggle::after {
 
 /* 보이지 않는 radio의 스타일을 정의 */
 .invisible-radio {
-  /* per https://a11yproject.com/posts/how-to-hide-content/ */
   position: absolute;
   height: 1px;
   width: 1px;
@@ -402,50 +372,50 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   vertical-align: middle !important;
 }
 
-  /* 버튼 그룹 전체 폭 줄이고 가운데 정렬 */
-  .metric-filter {
-    max-width: 420px;   /* 원하는 만큼 조절 가능 (예: 360~480 사이) */
-    margin: 0 auto;
-  }
+/* 버튼 그룹 전체 폭 줄이고 가운데 정렬 */
+.metric-filter {
+  max-width: 420px;   /* 원하는 만큼 조절 가능 (예: 360~480 사이) */
+  margin: 0 auto;
+}
 
-  /* btn-group 자체를 flex 컨테이너로 */
-  .metric-filter.btn-group {
-    display: flex;
-    width: 100%;
-  }
+/* btn-group 자체를 flex 컨테이너로 */
+.metric-filter.btn-group {
+  display: flex;
+  width: 100%;
+}
 
-  /* 버튼들을 같은 폭으로 나누되, 높이/폰트는 슬림하게 */
-  .metric-filter.btn-group .btn {
-    flex: 1 1 auto;
-    padding: 0.2rem 0.4rem;  /* 기본 btn-sm 보다 조금 더 작게 */
-    font-size: 0.8rem;       /* 글자 크기도 살짝 줄이기 */
-  }
+/* 버튼들을 같은 폭으로 나누되, 높이/폰트는 슬림하게 */
+.metric-filter.btn-group .btn {
+  flex: 1 1 auto;
+  padding: 0.2rem 0.4rem;  /* 기본 btn-sm 보다 조금 더 작게 */
+  font-size: 0.8rem;       /* 글자 크기도 살짝 줄이기 */
+}
 
-  /* 색상: #02b3bb로 통일 */
-  .metric-filter .btn-primary {
-    background-color: #02b3bb;
-    border-color: #02b3bb;
-  }
+/* 색상: #02b3bb로 통일 */
+.metric-filter .btn-primary {
+  background-color: #02b3bb;
+  border-color: #02b3bb;
+}
 
-  .metric-filter .btn-primary:hover,
-  .metric-filter .btn-primary:focus,
-  .metric-filter .btn-primary:active {
-    background-color: #02a2a9; /* 약간 어둡게 (원하면 #02b3bb로 유지해도 됨) */
-    border-color: #02a2a9;
-  }
+.metric-filter .btn-primary:hover,
+.metric-filter .btn-primary:focus,
+.metric-filter .btn-primary:active {
+  background-color: #02a2a9; /* 약간 어둡게 (원하면 #02b3bb로 유지해도 됨) */
+  border-color: #02a2a9;
+}
 
-  .metric-filter .btn-outline-primary {
-    color: #02b3bb;
-    border-color: #02b3bb;
-  }
+.metric-filter .btn-outline-primary {
+  color: #02b3bb;
+  border-color: #02b3bb;
+}
 
-  .metric-filter .btn-outline-primary:hover,
-  .metric-filter .btn-outline-primary:focus,
-  .metric-filter .btn-outline-primary:active {
-    background-color: #02b3bb;
-    border-color: #02b3bb;
-    color: #ffffff;
-  }
+.metric-filter .btn-outline-primary:hover,
+.metric-filter .btn-outline-primary:focus,
+.metric-filter .btn-outline-primary:active {
+  background-color: #02b3bb;
+  border-color: #02b3bb;
+  color: #ffffff;
+}
 
 /****************************************************************/
 /* 직원관리

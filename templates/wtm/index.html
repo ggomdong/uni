@@ -3,212 +3,403 @@
 {% block content %}
 <div class="container my-3">
     <div>
-    <table class="main table text-center table-borderless table-sm sticky-top">
-        <thead>
-        <tr>
-            <th colspan="100%">
-            <div class="row my-3 text-start">
-                <div class="col-10 fs-3">
-                    <a href="{% url 'wtm:index' stand_day|get_day:-1 %}">
-                        <button type="button" class="btn-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
-                        </svg>
-                        </button></a>
-                    <a href="{% url 'wtm:index' stand_day|get_day:1 %}">
-                        <button type="button" class="btn-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
-                        </svg>
-                        </button></a>
-                    <input type="text" readonly class="uniTodayDate" onkeydown="return false" onfocus="this.showPicker()"
-                        value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}} ({{days}})"/>
-                    <span class="nativeDatePicker">
-                        <input type="date" class="uniTodayDatePicker" id="selectDay" name="selectDay" onfocus="this.showPicker()"
-                            value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}}"/>
-                    </span>
-                </div>
-            </div>
-            </th>
-        </tr>
-        </thead>
-    </table>
-
-    {% if user_list %}
-    <table class="main table text-center table-borderless table-sm">
-        <tbody>
-        <tr>
-            {% for users in user_list %}
-            {% if forloop.last %}
-            <td>
-            {% else %}
-            <td style="padding-right: 10px;">
-            {% endif %}
-                <table class="today table text-center table-sm table-bordered">
-                    <thead>
-                    <tr>
-                        <th colspan="2">{{users.1.dept}}</th>
-                        <th>오전</th>
-                        <th>오후</th>
-                    </tr>
-                    <tr>
-                        <th style="width: 80px;">직위</th>
-                        <th style="width: 75px;">성명</th>
-                        <th style="width: 45px;">{{users.0.sum_am}}</span></th>
-                        <th style="width: 45px;">{{users.0.sum_pm}}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for user in users %}
-                    {% if forloop.counter >= 2 %}
-                    <tr>
-                        <td>{{user.position}}</td>
-                        <td>{{user.emp_name}}</td>
-                        <td>
-                            {% if user.am == 1 %}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle-fill" viewBox="0 0 16 16">
-                              <circle fill="#02b3bb" cx="8" cy="8" r="6"/>
-                            </svg>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if user.pm == 1 %}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle-fill" viewBox="0 0 16 16">
-                              <circle fill="#02b3bb" cx="8" cy="8" r="6"/>
-                            </svg>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% if forloop.last %}
-                    {% with max_workers|get_range:forloop.counter as range %}
-                    {% for i in range %}
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    {% endfor %}
-                    {% endwith %}
-                    {% endif %}
-                    {% endif %}
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </td>
-            {% endfor %}
-        </tr>
-        </tbody>
-    </table>
-
-    <table class="main today-2 table text-center table-borderless table-sm">
-        <thead>
-        <tr>
-            <th>부서</th>
-            <th>직위</th>
-            <th>성명</th>
-            <th>근무구분</th>
-            <th>시업</th>
-            <th>종업</th>
-            <th class="mm-hdr-gray">출근</th>
-            <th class="mm-hdr-gray">퇴근</th>
-            <th class="mm-hdr-gray">상태</th>
-            <th class="mm-hdr-brown">지각</th>
-            <th class="mm-hdr-brown">조퇴</th>
-            <th class="mm-hdr-blue">연장</th>
-            <th class="mm-hdr-blue">휴일근무</th>
-        </tr>
-        </thead>
-        {% if work_list %}
-        <tbody>
-        {% for work in work_list %}
-        {% ifchanged work.dept %}
-            {% if not forloop.first %}
+        <table class="main table text-center table-borderless table-sm sticky-top">
+            <thead>
             <tr>
-                <td colspan="100%" style="border-top:1px solid #d3d3d3;"></td>
+                <th colspan="100%">
+                <div class="row my-3 text-start">
+                    <div class="col-10 fs-3">
+                        <a href="{% url 'wtm:index' stand_day|get_day:-1 %}">
+                            <button type="button" class="btn-hover">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
+                              <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                            </svg>
+                            </button></a>
+                        <a href="{% url 'wtm:index' stand_day|get_day:1 %}">
+                            <button type="button" class="btn-hover">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
+                              <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                            </svg>
+                            </button></a>
+                        <input type="text" readonly class="uniTodayDate" onkeydown="return false" onfocus="this.showPicker()"
+                            value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}} ({{days}})"/>
+                        <span class="nativeDatePicker">
+                            <input type="date" class="uniTodayDatePicker" id="selectDay" name="selectDay" onfocus="this.showPicker()"
+                                value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}}"/>
+                        </span>
+                    </div>
+                </div>
+                </th>
+            </tr>
+            </thead>
+        </table>
+
+        {% if user_list %}
+        <table class="main table text-center table-borderless table-sm">
+            <tbody>
+            <tr>
+                {% for users in user_list %}
+                {% if forloop.last %}
+                <td>
+                {% else %}
+                <td style="padding-right: 10px;">
+                {% endif %}
+                    <table class="today table text-center table-sm table-bordered">
+                        <thead>
+                        <tr>
+                            <th colspan="2">{{users.1.dept}}</th>
+                            <th>오전</th>
+                            <th>오후</th>
+                        </tr>
+                        <tr>
+                            <th style="width: 80px;">직위</th>
+                            <th style="width: 75px;">성명</th>
+                            <th style="width: 45px;">{{users.0.sum_am}}</span></th>
+                            <th style="width: 45px;">{{users.0.sum_pm}}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for user in users %}
+                        {% if forloop.counter >= 2 %}
+                        <tr>
+                            <td>{{user.position}}</td>
+                            <td>{{user.emp_name}}</td>
+                            <td>
+                                {% if user.am == 1 %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle-fill" viewBox="0 0 16 16">
+                                  <circle fill="#02b3bb" cx="8" cy="8" r="6"/>
+                                </svg>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.pm == 1 %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-circle-fill" viewBox="0 0 16 16">
+                                  <circle fill="#02b3bb" cx="8" cy="8" r="6"/>
+                                </svg>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if forloop.last %}
+                        {% with max_workers|get_range:forloop.counter as range %}
+                        {% for i in range %}
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                        {% endwith %}
+                        {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+
+        <table class="main today-2 table text-center table-borderless table-sm">
+            <thead>
+            <tr>
+                <th>부서</th>
+                <th>직위</th>
+                <th>성명</th>
+                <th>근무구분</th>
+                <th>시업</th>
+                <th>종업</th>
+                <th class="mm-hdr-gray">출근</th>
+                <th class="mm-hdr-gray">퇴근</th>
+                <th class="mm-hdr-gray">상태</th>
+                <th class="mm-hdr-brown">지각</th>
+                <th class="mm-hdr-brown">조퇴</th>
+                <th class="mm-hdr-blue">연장</th>
+                <th class="mm-hdr-blue">휴일근무</th>
+            </tr>
+            </thead>
+            {% if work_list %}
+            <tbody>
+            {% for work in work_list %}
+            {% ifchanged work.dept %}
+                {% if not forloop.first %}
+                <tr>
+                    <td colspan="100%" style="border-top:1px solid #d3d3d3;"></td>
+                </tr>
+                {% endif %}
+            {% endifchanged %}
+
+            <!--tr
+              class="
+                {% if work.status_codes %}
+                  {% if 'ERROR' in work.status_codes %} bg-danger-subtle border-start border-4 border-danger {% endif %}
+                {% else %}
+                  {% if work.status == '오류' or work.status|upper == 'ERROR' %} bg-danger-subtle border-start border-4 border-danger {% endif %}
+                {% endif %}
+              "
+              title="{% if work.status_codes and 'ERROR' in work.status_codes %}오류 상태(세부 사유는 칼럼에서 확인){% elif work.status == '오류' or work.status|upper == 'ERROR' %}오류 상태(세부 사유는 칼럼에서 확인){% endif %}"
+            -->
+            <tr>
+                <td>{{work.dept}}</td>
+                <td>{{work.position}}</td>
+                <td>{{work.emp_name}}</td>
+                <td>{{work.cat}}</td>
+                <td>{{work.start_time}}</td>
+                <td>{{work.end_time}}</td>
+                <td class="
+                    {% if work.cat == 'OFF' and work.checkin_time %} bg-warning-subtle{% endif %}
+                    {% if work.cat == '정규근무' and not work.checkin_time %} bg-warning-subtle{% endif %}
+                  ">
+                {{ work.checkin_time|default_if_none:"" }}
+                </td>
+
+                <td class="{% if work.cat == 'OFF' and work.checkout_time %}bg-warning-subtle{% endif %}">
+                {{ work.checkout_time|default_if_none:"" }}
+                </td>
+
+                {% if work.status %}
+                <td>
+                  {% if work.status_codes %}
+                    {% if 'ERROR' in work.status_codes %}
+                      <button type="button"
+                              class="btn btn-sm btn-danger att-error-btn"
+                              data-user-id="{{ work.user_id }}"
+                              data-emp-name="{{ work.emp_name }}"
+                              data-emp-dept="{{ work.dept }}"
+                              data-emp-position="{{ work.position }}"
+                              data-stand-day="{{ stand_day }}"
+                              data-module-id="{{ work.module_id|default_if_none:'' }}">
+                        오류
+                      </button>
+                    {% else %}
+                      {{ work.status }}
+                    {% endif %}
+                  {% else %}
+                    {% if work.status == '오류' or work.status|upper == 'ERROR' %}
+                      <button type="button"
+                              class="btn btn-sm btn-danger att-error-btn"
+                              data-user-id="{{ work.user_id }}"
+                              data-emp-name="{{ work.emp_name }}"
+                              data-dept="{{ work.dept }}"
+                              data-position="{{ work.position }}"
+                              data-stand-day="{{ stand_day }}"
+                              data-module-id="{{ work.module_id|default_if_none:'' }}">
+                        오류
+                      </button>
+                    {% else %}
+                      {{ work.status }}
+                    {% endif %}
+                  {% endif %}
+                </td>
+                {% endif %}
+                <td class="{% if work.late_seconds %}text-danger{% endif %}">
+                  {% if work.late_seconds %}{{ work.late_seconds|ss_to_hhmmss }}{% endif %}
+                </td>
+                <td class="{% if work.early_seconds %}text-danger{% endif %}">
+                  {% if work.early_seconds %}{{ work.early_seconds|ss_to_hhmmss }}{% endif %}
+                </td>
+                <td class="{% if work.overtime_seconds %}text-primary{% endif %}">
+                  {% if work.overtime_seconds %}{{ work.overtime_seconds|ss_to_hhmmss }}{% endif %}
+                </td>
+                <td class="{% if work.holiday_seconds %}text-primary{% endif %}">
+                  {% if work.holiday_seconds %}{{ work.holiday_seconds|ss_to_hhmmss }}{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            {% else %}
+            <tr>
+                <td colspan="100%">데이터가 없습니다.</td>
             </tr>
             {% endif %}
-        {% endifchanged %}
-
-        <!--tr
-          class="
-            {% if work.status_codes %}
-              {% if 'ERROR' in work.status_codes %} bg-danger-subtle border-start border-4 border-danger {% endif %}
-            {% else %}
-              {% if work.status == '오류' or work.status|upper == 'ERROR' %} bg-danger-subtle border-start border-4 border-danger {% endif %}
-            {% endif %}
-          "
-          title="{% if work.status_codes and 'ERROR' in work.status_codes %}오류 상태(세부 사유는 칼럼에서 확인){% elif work.status == '오류' or work.status|upper == 'ERROR' %}오류 상태(세부 사유는 칼럼에서 확인){% endif %}"
-        -->
-        <tr>
-            <td>{{work.dept}}</td>
-            <td>{{work.position}}</td>
-            <td>{{work.emp_name}}</td>
-            <td>{{work.cat}}</td>
-            <td>{{work.start_time}}</td>
-            <td>{{work.end_time}}</td>
-            <td class="
-                {% if work.cat == 'OFF' and work.checkin_time %} bg-warning-subtle{% endif %}
-                {% if work.cat == '정규근무' and not work.checkin_time %} bg-warning-subtle{% endif %}
-              ">
-            {{ work.checkin_time|default_if_none:"" }}
-            </td>
-
-            <td class="{% if work.cat == 'OFF' and work.checkout_time %}bg-warning-subtle{% endif %}">
-            {{ work.checkout_time|default_if_none:"" }}
-            </td>
-
-            {% if work.status %}
-            <td>
-              {% if work.status_codes %}
-                {% if 'ERROR' in work.status_codes %}
-                  <span class="badge text-bg-danger">오류</span>
-                {% else %}
-                  {{ work.status }}
-                {% endif %}
-              {% else %}
-                {% if work.status == '오류' or work.status|upper == 'ERROR' %}
-                  <span class="badge text-bg-danger">오류</span>
-                {% else %}
-                  {{ work.status }}
-                {% endif %}
-              {% endif %}
-            </td>
-            {% endif %}
-            <td class="{% if work.late_seconds %}text-danger{% endif %}">
-              {% if work.late_seconds %}{{ work.late_seconds|ss_to_hhmmss }}{% endif %}
-            </td>
-            <td class="{% if work.early_seconds %}text-danger{% endif %}">
-              {% if work.early_seconds %}{{ work.early_seconds|ss_to_hhmmss }}{% endif %}
-            </td>
-            <td class="{% if work.overtime_seconds %}text-primary{% endif %}">
-              {% if work.overtime_seconds %}{{ work.overtime_seconds|ss_to_hhmmss }}{% endif %}
-            </td>
-            <td class="{% if work.holiday_seconds %}text-primary{% endif %}">
-              {% if work.holiday_seconds %}{{ work.holiday_seconds|ss_to_hhmmss }}{% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
+        </table>
         {% else %}
-        <tr>
-            <td colspan="100%">데이터가 없습니다.</td>
-        </tr>
+        근무표 데이터가 없습니다.
         {% endif %}
-    </table>
-    {% else %}
-    근무표 데이터가 없습니다.
-    {% endif %}
+
+        {# 오류 버튼용 인라인 메뉴 #}
+        <div id="errorInlineMenu"
+             class="card shadow-sm position-absolute d-none"
+             style="z-index: 1080; min-width: 140px;">
+            <div class="list-group list-group-flush small">
+                <button type="button"
+                        class="list-group-item list-group-item-action"
+                        data-action="schedule">
+                    근무표 수정
+                </button>
+                <button type="button"
+                        class="list-group-item list-group-item-action"
+                        data-action="log">
+                    근무로그 수정
+                </button>
+            </div>
+        </div>
+
+        {# 근무표 / 근무로그 모달 재사용 #}
+        {% include 'wtm/modal_schedule.html' %}
     </div>
 </div>
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
-const selectDay = document.getElementById("selectDay");
-selectDay.addEventListener('change', function() {
-    // g: 전역검색, i: 대소문자 구분안함
-    target = selectDay.value.replace(/-/gi, '');
-    location.href = target;
+document.addEventListener('DOMContentLoaded', function () {
+    // === 날짜 변경: 기존 로직 보강 ===
+    const selectDay = document.getElementById("selectDay");
+    if (selectDay) {
+        selectDay.addEventListener('change', function() {
+            const target = this.value.replace(/-/gi, '');
+            if (target) {
+                location.href = target;
+            }
+        });
+    }
+
+    // === 오류 버튼 → 인라인 메뉴 ===
+    const errorButtons = document.querySelectorAll('.att-error-btn');
+    const menu         = document.getElementById('errorInlineMenu');
+
+    let currentError = null;   // 현재 클릭된 오류건 정보 저장
+
+    function hideMenu() {
+        if (!menu) return;
+        menu.classList.add('d-none');
+    }
+
+    function showMenuAt(x, y) {
+        if (!menu) return;
+        menu.style.left = x + 'px';
+        menu.style.top  = (y + 4) + 'px';  // 버튼 바로 아래에 보이게 약간 내림
+        menu.classList.remove('d-none');
+    }
+
+    // 각 오류 버튼에 클릭 이벤트 부여
+    errorButtons.forEach(function (btn) {
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation(); // document 클릭으로 바로 닫히는 것 방지
+
+            currentError = {
+                userId:    this.dataset.userId,
+                empName:   this.dataset.empName || '',
+                dept:      this.dataset.dept || '',
+                position:  this.dataset.position || '',
+                standDay:  this.dataset.standDay,
+                moduleId:  this.dataset.moduleId || ''
+            };
+
+            const rect = this.getBoundingClientRect();
+            const x = rect.left + window.scrollX;
+            const y = rect.bottom + window.scrollY;
+            showMenuAt(x, y);
+        });
+    });
+
+    // 화면 아무데나 클릭하면 메뉴 닫기
+    document.addEventListener('click', function () {
+        hideMenu();
+    });
+
+    if (menu) {
+        // 메뉴 자체 클릭 시에는 문서 클릭 이벤트로 닫히지 않게
+        menu.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+
+        const scheduleBtn = menu.querySelector('[data-action="schedule"]');
+        const logBtn      = menu.querySelector('[data-action="log"]');
+
+        if (scheduleBtn) {
+            scheduleBtn.addEventListener('click', function () {
+                if (!currentError) return;
+                hideMenu();
+                openScheduleModal(currentError);
+            });
+        }
+
+        if (logBtn) {
+            logBtn.addEventListener('click', function () {
+                if (!currentError) return;
+                hideMenu();
+                openLogModal(currentError);
+            });
+        }
+    }
+
+    // === 근무표 수정 모달 열기 ===
+    function openScheduleModal(err) {
+        const modalEl = document.getElementById('scheduleModal');
+        if (!modalEl) {
+            alert('근무표 수정 모달(scheduleModal)이 이 화면에 포함되어 있지 않습니다.');
+            return;
+        }
+
+        const userInput   = modalEl.querySelector("input[name='user_id']");
+        const dateInput   = modalEl.querySelector("input[name='stand_date']");
+        const moduleInput = modalEl.querySelector("input[name='module_id']");
+        const fromIndexInput = modalEl.querySelector("input[name='from_index']");
+        const infoDiv     = modalEl.querySelector('#module_info');
+
+        if (userInput)   userInput.value   = err.userId || '';
+        if (dateInput)   dateInput.value   = err.standDay || '';
+        if (moduleInput) moduleInput.value = err.moduleId || '';
+        if (fromIndexInput) fromIndexInput.value = "1";
+
+        // 기존 모듈 radio 중 해당 moduleId가 있다면 체크
+        if (err.moduleId) {
+            const radio = modalEl.querySelector(
+                "input[type='radio'][name='module'][value='" + err.moduleId + "']"
+            );
+            if (radio) radio.checked = true;
+        }
+
+        // module_info 영역에 간단하게 정보 표시
+        if (infoDiv) {
+            const y = err.standDay.substring(0,4);
+            const m = err.standDay.substring(4,6);
+            const d = err.standDay.substring(6,8);
+            infoDiv.textContent = err.dept + ' ' + err.empName + '(' + err.dept + '), ' + y + '-' + m + '-' + d;
+        }
+
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+    }
+
+    // === 근무로그 수정 모달 열기 ===
+    function openLogModal(err) {
+        const modalEl = document.getElementById('logModal');
+        if (!modalEl) {
+            alert('근무로그 모달(logModal)이 이 화면에 포함되어 있지 않습니다.');
+            return;
+        }
+
+        const modalTitle   = modalEl.querySelector('.modal-title');
+        const logIdInput   = document.getElementById('logIdInput');
+        const userSelect   = document.getElementById('logUserSelect');
+        const workCodeSel  = document.getElementById('logWorkCodeSelect');
+        const recordTimeEl = document.getElementById('logRecordTimeInput');
+        const standDayEl   = document.getElementById('logStandDayInput');
+
+        // 항상 새로 추가하는 느낌으로 열기 (등록 모드)
+        if (modalTitle)  modalTitle.textContent = '근무로그 등록';
+        if (logIdInput)  logIdInput.value = '';
+
+        if (userSelect) {
+            userSelect.disabled = false;         // Today에서는 직원도 바꿀 수 있게 둘지, 잠그고 싶으면 true로
+            userSelect.value = err.userId || '';
+        }
+
+        if (workCodeSel)  workCodeSel.value  = '';   // 출근/퇴근은 사용자가 선택
+        if (recordTimeEl) recordTimeEl.value = '';   // 시간도 직접 입력
+
+        // stand_day는 오류가 난 날짜로 덮어쓰기
+        if (standDayEl && err.standDay) {
+            standDayEl.value = err.standDay;
+        }
+
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+    }
 });
 </script>
 {% endblock %}

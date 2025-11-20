@@ -251,12 +251,16 @@ def index(request, stand_day=None):
     # SQL에 조건을 넣기가 애매해서, 1,2를 union한 후 min 값을 얻는 걸로 구현함
     query = f'''
             SELECT u.id as user_id, u.dept, u.position, u.emp_name,
-                s.d{int(stand_day[6:8])}_id,
+                s.d{int(stand_day[6:8])}_id as module_id,
                 m.cat, m.name, m.start_time, m.end_time, m.rest1_start_time, m.rest1_end_time, m.rest2_start_time, m.rest2_end_time,
                 d.order as do, p.order as po
             FROM common_user u
-                LEFT OUTER JOIN wtm_schedule s on (u.id = s.user_id)
-                LEFT OUTER JOIN wtm_module m on (s.d{int(stand_day[6:8])}_id = m.id)
+                LEFT OUTER JOIN wtm_schedule s
+                             ON u.id = s.user_id
+                            AND s.year = '{stand_day[0:4]}'
+                            AND s.month = '{stand_day[4:6]}'
+                LEFT OUTER JOIN wtm_module m
+                             ON s.d{int(stand_day[6:8])}_id = m.id
                 LEFT OUTER JOIN (
                     SELECT * FROM wtm_contract WHERE (user_id, stand_date) IN
                     (
@@ -269,15 +273,15 @@ def index(request, stand_day=None):
                             ) a
                             group by a.user_id
                         )
-                ) c on (u.id = c.user_id)
-                LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
-                LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+                ) c ON u.id = c.user_id
+                LEFT OUTER JOIN common_dept d
+                             ON u.dept = d.dept_name
+                LEFT OUTER JOIN common_position p
+                             ON u.position = p.position_name
             WHERE is_superuser = false
               and c.check_yn = 'Y'
-              and s.year = '{stand_day[0:4]}'
-              and s.month = '{stand_day[4:6]}'
               and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
-              and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
+              and (DATE_FORMAT(u.out_date, '%Y%m%d') is null OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
             ORDER BY do, po, join_date
             '''
 
@@ -292,8 +296,10 @@ def index(request, stand_day=None):
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')
 
+    module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
+
     context = {'stand_day': stand_day, 'days': days, 'user_list': user_list, 'work_list': work_list,
-               'max_workers': max_workers}
+               'max_workers': max_workers, 'module_list': module_list}
     return render(request, 'wtm/index.html', context)
 
 
@@ -1380,7 +1386,15 @@ def work_schedule_popup(request):
         except Exception as e:
             messages.warning(request, f'데이터베이스 오류가 발생했습니다. {e}')
 
-    return redirect('wtm:work_schedule')
+        # 어느 화면을 통해서 요청이 왔는지에 따라 리다이렉트 분기
+        from_index = request.POST.get("from_index") == "1"
+
+        if from_index:
+            # Today 화면으로
+            return redirect('wtm:index', new_stand_date)
+        else:
+            # 근무표 화면으로
+            return redirect('wtm:work_schedule')
 
 
 @login_required(login_url="common:login")
