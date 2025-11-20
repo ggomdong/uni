@@ -277,8 +277,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 각 오류 버튼에 클릭 이벤트 부여
     errorButtons.forEach(function (btn) {
-        btn.style.cursor = 'pointer';
+        btn.style.cursor = isAuthenticated ? 'pointer' : 'default';
         btn.addEventListener('click', function (e) {
+            if (!isAuthenticated) return;
+
             e.stopPropagation(); // document 클릭으로 바로 닫히는 것 방지
 
             currentError = {
