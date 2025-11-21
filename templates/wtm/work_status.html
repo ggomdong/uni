@@ -2,6 +2,14 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container-fluid my-3 px-4">
+
+    {# 상단 페이지 제목 #}
+    <div class="row align-items-center mb-2">
+        <div class="col fs-5 fw-semibold">
+            근태현황
+        </div>
+    </div>
+
     <!-- 상단 필터 버튼 -->
     <div class="btn-group metric-filter d-flex mb-3" role="group" aria-label="근태 지표 필터">
         <a href="{% url 'wtm:work_status' stand_ym %}"
@@ -26,20 +34,6 @@
         </a>
     </div>
 
-<!--    <div class="row align-items-center mb-3">-->
-<!--        <div class="col fs-4 fw-semibold">근태현황 (월간)</div>-->
-<!--        <div class="col text-end">-->
-<!--            <a class="btn btn-light me-2" href="{% url 'wtm:work_status' stand_ym|get_month:-1 %}">◀</a>-->
-<!--            <input type="month" id="ym" class="form-control d-inline-block w-auto"-->
-<!--             value="{{ stand_ym|slice:'0:4' }}-{{ stand_ym|slice:'4:6' }}" onkeydown="return false">-->
-<!--            <a class="btn btn-light ms-2" href="{% url 'wtm:work_status' stand_ym|get_month:1 %}">▶</a>-->
-<!--        </div>-->
-<!--    </div>-->
-
-<!--  <div class="alert alert-secondary py-2 small">-->
-<!--    • 개인 속성의 “근태확인 제외”는 집계 제외 • 시간단위: hh:mm:ss-->
-<!--  </div>-->
-
     <div class="table-responsive status-table-wrapper">
         <table class="table table-sm table-bordered align-middle text-center work-status-table">
             <colgroup>
@@ -60,7 +54,7 @@
                 <tr>
                     <th colspan="100%">
                         <div class="row my-3 text-start">
-                            <div class="col-10 fs-3">
+                            <div class="col-10 fs-4">
                                 <a href="{% url 'wtm:work_status' stand_ym|get_month:-1 %}">
                                 <button type="button" class="btn-hover">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">

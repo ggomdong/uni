@@ -2,59 +2,108 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <div>
-    <table class="table table-borderless table-sm text-center sticky-top">
-        <thead>
-        <tr>
-            <th colspan="100%">
-            <div class="row my-3 text-start">
-                <div class="col-10 fs-3">
-                    <a href="{% url 'wtm:work_log' stand_day|get_day:-1 %}">
-                        <button type="button" class="btn-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+
+    {# 상단 페이지 제목 #}
+    <div class="row align-items-center mb-2">
+        <div class="col fs-5 fw-semibold">
+            근무로그
+        </div>
+    </div>
+
+    {# ------------------------------------------------------------------ #}
+    {# 상단 컨트롤 바: 날짜 네비 + 검색 + 등록                           #}
+    {# ------------------------------------------------------------------ #}
+    <div class="row align-items-center mb-3 g-2">
+        {# 왼쪽: 날짜 네비 #}
+        <div class="col-md-6 col-12">
+            <div class="d-flex align-items-center gap-2 flex-wrap fs-4">
+                <a href="{% url 'wtm:work_log' stand_day|get_day:-1 %}">
+                    <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-left text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
                         </svg>
-                        </button></a>
-                    <a href="{% url 'wtm:work_log' stand_day|get_day:1 %}">
-                        <button type="button" class="btn-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                    </button>
+                </a>
+                <a href="{% url 'wtm:work_log' stand_day|get_day:1 %}">
+                    <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-right text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
                         </svg>
-                        </button></a>
-                    <input type="text" readonly class="uniTodayDate" onkeydown="return false" onfocus="this.showPicker()"
-                        value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}} ({{days}})"/>
-                    <span class="nativeDatePicker">
-                        <input type="date" class="uniTodayDatePicker" id="selectDay" name="selectDay" onkeydown="return false" onfocus="this.showPicker()"/>
-                    </span>
-                </div>
-                <div class="col-2 text-end">
-                    <button type="button"
-                            class="btn btn-sm btn-primary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#logModal"
-                            data-mode="create">
-                        등록
+                    </button>
+                </a>
+
+                <input type="text"
+                       readonly
+                       class="uniTodayDate"
+                       onkeydown="return false"
+                       onfocus="this.showPicker()"
+                       value="{{stand_day|slice:'0:4'}}-{{stand_day|slice:'4:6'}}-{{stand_day|slice:'6:8'}} ({{days}})"/>
+
+                <span class="nativeDatePicker">
+                    <input type="date"
+                           class="uniTodayDatePicker"
+                           id="selectDay"
+                           name="selectDay"
+                           onkeydown="return false"
+                           onfocus="this.showPicker()"/>
+                </span>
+            </div>
+        </div>
+
+        {# 오른쪽: 검색 + 등록 #}
+        <div class="col-md-6 col-12">
+            <div class="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap">
+                <div class="input-group input-group-sm" style="max-width: 260px;">
+                    <input type="text"
+                           id="search_kw"
+                           class="form-control"
+                           placeholder="직원명 검색"
+                           value="{{ kw|default_if_none:'' }}">
+                    <button class="btn btn-outline-secondary" type="button" id="btn_search">
+                        검색
                     </button>
                 </div>
+                <button type="button"
+                        class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#logModal"
+                        data-mode="create">
+                    등록
+                </button>
             </div>
-            </th>
-        </tr>
-        </thead>
-    </table>
+        </div>
     </div>
-    <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle text-center">
-            <thead class="table-dark">
-            <tr>
-                <th style="width: 60px;">번호</th>
-                <th style="width: 80px;">구분</th>
-                <th style="width: 120px;">시간</th>
-                <th>부서</th>
-                <th>직위</th>
-                <th>성명</th>
-                <th style="width: 90px;"></th>
-                <th style="width: 90px;"></th>
-            </tr>
+
+    {# 근무로그 테이블 - 근무현황 스타일 #}
+    <div class="table-responsive status-table-wrapper">
+        <table class="table table-sm table-bordered align-middle text-center work-status-table">
+            <colgroup>
+                <col style="width:6%;">   {# 번호 #}
+                <col style="width:8%;">   {# 구분 #}
+                <col style="width:12%;">  {# 시간 #}
+                <col style="width:18%;">  {# 부서 #}
+                <col style="width:14%;">  {# 직위 #}
+                <col style="width:16%;">  {# 성명 #}
+                <col style="width:13%;">  {# 수정 #}
+                <col style="width:13%;">  {# 삭제 #}
+            </colgroup>
+            <thead class="table-light">
+                <tr>
+                    <th>번호</th>
+                    <th>구분</th>
+                    <th>시간</th>
+                    <th>부서</th>
+                    <th>직위</th>
+                    <th>성명</th>
+                    <th></th>
+                    <th></th>
+                </tr>
             </thead>
             <tbody>
             {% if log_list %}
@@ -63,11 +112,10 @@
                     <td>{{ forloop.counter }}</td>
                     <td>{{ log.get_work_code_display }}</td>
                     <td>{{ log.record_date|date:"H:i:s" }}</td>
-                    <td>{{ log.user.dept }}</td>
-                    <td>{{ log.user.position }}</td>
-                    <td>{{ log.user.emp_name }}</td>
+                    <td class="text-nowrap">{{ log.user.dept }}</td>
+                    <td class="text-nowrap">{{ log.user.position }}</td>
+                    <td class="text-nowrap">{{ log.user.emp_name }}</td>
 
-                    {# 수정 버튼: 모달 오픈용 data-* #}
                     <td>
                         <button type="button"
                                 class="btn btn-sm btn-outline-primary"
@@ -82,7 +130,6 @@
                         </button>
                     </td>
 
-                    {# 삭제 버튼: POST form + confirm #}
                     <td>
                         <form method="post"
                               action="{% url 'wtm:work_log_delete' log.id %}"
@@ -98,7 +145,7 @@
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="8" class="py-5 text-muted">
                         근무 로그가 없습니다.
                     </td>
                 </tr>
@@ -108,6 +155,12 @@
     </div>
 </div>
 
+{# 검색용 GET 폼 #}
+<form id="searchForm" method="get" action="{% url 'wtm:work_log' stand_day %}">
+    <input type="hidden" id="kw" name="kw" value="{{ kw|default_if_none:'' }}">
+</form>
+
+{# 모달: 근무로그 등록/수정 #}
 <div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -165,8 +218,8 @@
         </div>
     </div>
 </div>
-
 {% endblock %}
+
 {% block script %}
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function () {
@@ -203,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (logIdInput)   logIdInput.value   = '';
                 if (userSelect) {
                     userSelect.value   = '';
-                    userSelect.disabled = false;   // 등록 모드에서는 선택 가능
+                    userSelect.disabled = false;   // 등록 모드: 선택 가능
                 }
                 if (workCodeSel)  workCodeSel.value  = '';
                 if (recordTimeEl) recordTimeEl.value = '';
@@ -212,10 +265,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (logIdInput)   logIdInput.value   = button.getAttribute('data-id') || '';
                 if (userSelect) {
                     userSelect.value    = button.getAttribute('data-user-id') || '';
-                    userSelect.disabled = true;    // 수정 모드에서는 직원 변경 불가
+                    userSelect.disabled = true;    // 수정 모드: 직원 변경 불가
                 }
                 if (workCodeSel)  workCodeSel.value  = button.getAttribute('data-work-code') || '';
-                if (recordTimeEl) recordTimeEl.value = (button.getAttribute('data-record-time') || '').substring(0, 8);
+                if (recordTimeEl) recordTimeEl.value =
+                    (button.getAttribute('data-record-time') || '').substring(0, 8);
             }
         });
     }
@@ -229,6 +283,40 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // 검색 버튼: 공지사항 리스트와 동일 패턴
+    const btnSearch = document.getElementById('btn_search');
+    const searchInput = document.getElementById('search_kw');
+
+    // 페이지 로드 시 검색창에 포커스
+    if (searchInput) {
+        searchInput.focus();
+        searchInput.select();   // 기존 검색어가 있으면 전체 선택
+    }
+
+    function doSearch() {
+        const kwHidden = document.getElementById('kw');
+        if (kwHidden && searchInput) {
+            kwHidden.value = searchInput.value;
+        }
+        document.getElementById('searchForm').submit();
+    }
+
+    if (btnSearch) {
+        btnSearch.addEventListener('click', function () {
+            doSearch();
+        });
+    }
+
+    // 검색 인풋에서 Enter 눌렀을 때도 검색
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();   // 폼 기본 제출 막고
+                doSearch();           // 검색 실행
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

@@ -1510,10 +1510,13 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
 
 @login_required(login_url='common:login')
 def work_log(request, stand_day=None):
+    # 0) 검색어
+    kw = request.GET.get("kw", "").strip()
+
     # 1) 기준일 값이 없으면 현재로 세팅
     if stand_day is None:
         target_date = datetime.today()
-        stand_day = datetime.today().strftime('%Y%m%d')
+        stand_day = target_date.strftime('%Y%m%d')
     else:
         # 'YYYYMMDD' → date 로 변환 및 유효성 검사
         try:
@@ -1529,8 +1532,12 @@ def work_log(request, stand_day=None):
         Work.objects
         .filter(record_day=target_date)
         .select_related('user')
-        .order_by('-record_date')  # 기존대로 최신시간이 위로
+        .order_by('-record_date')  # 최신 로그가 위로
     )
+
+    # 직원명 검색 (emp_name 기준)
+    if kw:
+        log_list = log_list.filter(user__emp_name__icontains=kw)
 
     # 3) 모달에서 쓸 '대상 직원 목록' (RAW SQL)
     try:
@@ -1545,6 +1552,7 @@ def work_log(request, stand_day=None):
         'target_date': target_date,
         'log_list': log_list,
         'user_list': user_list,
+        'kw': kw,
     }
     return render(request, 'wtm/work_log.html', context)
 
