@@ -3,13 +3,16 @@
 {% block content %}
 <div class="container my-3">
 
-    <h4 class="my-3 border-bottom pb-2">근로계약 등록</h4>
-        <div class="mb-3 col-md-4">
-            <div class="alert alert-warning" role="alert">
+    <div class="page-header">
+        <h4 class="page-title">근로계약 관리</h4>
+    </div>
+
+    <div class="mb-3 col-md-4">
+        <div class="alert alert-warning" role="alert">
 <!--                <h5 class="alert-heading">근로계약 대상</h5>-->
-                {{target_user.position}} {{target_user.emp_name}} ({{target_user.dept}})
-            </div>
+            {{target_user.position}} {{target_user.emp_name}} ({{target_user.dept}})
         </div>
+    </div>
     <form method="post">
         {% csrf_token %}
         {% include 'form_errors.html' %}
@@ -122,8 +125,9 @@
         </div>
 
         <button type="submit" class="btn btn-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-save-fill" viewBox="0 0 16 16">
-              <path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v7.793L4.854 6.646a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l3.5-3.5a.5.5 0 0 0-.708-.708L8.5 9.293V1.5z"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
+              <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
+              <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
             </svg>
             저장하기
         </button>

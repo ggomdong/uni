@@ -2,34 +2,78 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container-fluid my-3 px-4">
-<!--  <h4>{{ metric_label }} 현황 — {{ stand_ym|slice:":4" }}년 {{ stand_ym|slice:"4:" }}월</h4>-->
 
-    <!-- 상단 필터 버튼 -->
-    <div class="btn-group metric-filter d-flex mb-3" role="group" aria-label="근태 지표 필터">
-        <a href="{% url 'wtm:work_status' stand_ym %}"
-           class="btn btn-sm {% if active_metric == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-          전체
-        </a>
-        <a href="{% url 'wtm:work_metric' 'late' stand_ym %}"
-           class="btn btn-sm {% if active_metric == 'late' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-          지각
-        </a>
-        <a href="{% url 'wtm:work_metric' 'early' stand_ym %}"
-           class="btn btn-sm {% if active_metric == 'early' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-          조퇴
-        </a>
-        <a href="{% url 'wtm:work_metric' 'overtime' stand_ym %}"
-           class="btn btn-sm {% if active_metric == 'overtime' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-          연장근무
-        </a>
-        <a href="{% url 'wtm:work_metric' 'holiday' stand_ym %}"
-           class="btn btn-sm {% if active_metric == 'holiday' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-          휴일근무
-        </a>
+    <div class="page-header">
+        <h4 class="page-title">근태현황</h4>
     </div>
 
     {% now "Ymd" as nowymd %}
     {% with nowym=nowymd|slice:":6" nowd=nowymd|slice:"6:" %}
+
+    {# ------------------------------------------------------------------ #}
+    {# 상단 컨트롤 바: 날짜 네비 + 지표 네비 + 엑셀                             #}
+    {# ------------------------------------------------------------------ #}
+    <div class="row align-items-center mb-3 g-2">
+        {# 왼쪽: 날짜 네비 #}
+        <div class="col-lg-5 col-md-6 col-12">
+            <div class="d-flex align-items-center gap-2 flex-wrap fs-4">
+                <a href="{% url 'wtm:work_metric' metric stand_ym|get_month:-1 %}">
+                    <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-left text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                        </svg>
+                    </button>
+                </a>
+                <a href="{% url 'wtm:work_metric' metric stand_ym|get_month:1 %}">
+                    <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-right text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                        </svg>
+                    </button>
+                </a>
+
+                <span class="nativeDatePicker">
+                    <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
+                    value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
+                </span>
+            </div>
+        </div>
+
+        <!-- 오른쪽: 지표 필터 + Excel 버튼 -->
+        <div class="col-lg-7 col-md-6 col-12 text-md-end text-start mt-2 mt-md-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-md-end">
+
+                <div class="btn-group metric-filter me-2" role="group" aria-label="근태 지표 필터">
+                    <a href="{% url 'wtm:work_status' stand_ym %}"
+                       class="btn btn-sm {% if active_metric == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        전체
+                    </a>
+                    <a href="{% url 'wtm:work_metric' 'late' stand_ym %}"
+                       class="btn btn-sm {% if active_metric == 'late' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        지각
+                    </a>
+                    <a href="{% url 'wtm:work_metric' 'early' stand_ym %}"
+                       class="btn btn-sm {% if active_metric == 'early' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        조퇴
+                    </a>
+                    <a href="{% url 'wtm:work_metric' 'overtime' stand_ym %}"
+                       class="btn btn-sm {% if active_metric == 'overtime' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        연장근무
+                    </a>
+                    <a href="{% url 'wtm:work_metric' 'holiday' stand_ym %}"
+                       class="btn btn-sm {% if active_metric == 'holiday' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        휴일근무
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="table-responsive metric-table-wrapper">
         <table class="table table-sm table-bordered align-middle text-center work-metric-table">
@@ -43,40 +87,6 @@
               {% endfor %}
             </colgroup>
             <thead>
-                <tr>
-                    <th colspan="100%">
-                        <div class="row my-3 text-start">
-                            <div class="col-10 fs-3">
-                                <a href="{% url 'wtm:work_metric' metric stand_ym|get_month:-1 %}">
-                                <button type="button" class="btn-hover">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
-                                </svg>
-                                </button></a>
-                                <a href="{% url 'wtm:work_metric' metric stand_ym|get_month:1 %}">
-                                <button type="button" class="btn-hover">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
-                                </svg>
-                                </button></a>
-                                <span class="nativeDatePicker">
-                                <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
-                                value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
-                                </span>
-                            </div>
-                            <div class="col-2 text-end">
-                                {% if user.is_authenticated %}
-                                <a href="{% url 'wtm:work_schedule_reg' stand_ym %}" class="btn btn-primary">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-download-fill" viewBox="0 0 16 16">
-                                      <path fill-rule="evenodd" d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.5a.5.5 0 0 1 1 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0m-.354 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V11h-1v3.293l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
-                                    </svg>
-                                Excel
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </th>
-                </tr>
                 <tr class="table-light">
                     <th rowspan="2" style="min-width:80px">부서</th>
                     <!--          <th rowspan="2" style="min-width:80px">직위</th>-->

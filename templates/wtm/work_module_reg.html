@@ -2,7 +2,10 @@
 {% load pybo_filter %}
 {% block content %}
 <div class="container my-3">
-    <h4 class="my-3 border-bottom pb-2">근무모듈 등록</h4>
+    <div class="page-header">
+        <h4 class="page-title">근무모듈 관리</h4>
+    </div>
+
     <form method="post">
         {% csrf_token %}
         {% include 'form_errors.html' %}
