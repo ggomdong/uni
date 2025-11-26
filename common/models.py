@@ -2,6 +2,25 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 
+class Branch(models.Model):
+    code = models.CharField("지점코드", max_length=20, unique=True)
+    name = models.CharField("지점명", max_length=100)
+
+    # 선택: 지점 정렬 순서
+    sort_order = models.PositiveIntegerField("정렬순서", default=0)
+
+    is_active = models.BooleanField("사용여부", default=True)
+
+    reg_date = models.DateTimeField(auto_now_add=True)
+    mod_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "code"]
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+
 class User(AbstractUser):
     emp_name = models.CharField(max_length=20)  # 직원명
     dept = models.CharField(max_length=50)      # 부서명

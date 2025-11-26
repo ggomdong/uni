@@ -3,7 +3,7 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from common.models import User
+from common.models import Branch, User
 
 
 # 근무모듈
@@ -103,3 +103,37 @@ def set_record_day(sender, instance: Work, **kwargs):
         instance.record_date = timezone.now()
     # 항상 record_day 동기화
     instance.record_day = instance.record_date.date()
+
+
+class Beacon(models.Model):
+    branch = models.ForeignKey(Branch, verbose_name="지점", on_delete=models.PROTECT, related_name="beacons")
+    name = models.CharField("비콘명", max_length=100)  # 예: "1층 카운터 앞"
+
+    uuid = models.CharField(max_length=64)
+    major = models.IntegerField()
+    minor = models.IntegerField()
+
+    # 거리/신호 튜닝용
+    max_distance_meters = models.FloatField("최대 인식 거리(m)", default=3.0)
+    rssi_threshold = models.IntegerField("RSSI 임계값(dBm)", default=-65)
+    tx_power = models.IntegerField("Tx Power", default=-59)  # 선택
+
+    stabilize_count = models.IntegerField("연속 인식 횟수", default=3)
+    timeout_seconds = models.IntegerField("시간초과(초)", default=10)
+
+    is_active = models.BooleanField("사용여부", default=True)
+    valid_from = models.DateField(null=True, blank=True)
+    valid_to = models.DateField(null=True, blank=True)
+
+    memo = models.TextField("비고", blank=True)
+
+    reg_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='beacon_reg_id')
+    reg_date = models.DateTimeField(auto_now_add=True)
+    mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='beacon_mod_id')
+    mod_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("branch", "uuid", "major", "minor")
+
+    def __str__(self):
+        return f"{self.branch.name} - {self.name} ({self.major}/{self.minor})"
