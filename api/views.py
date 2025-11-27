@@ -9,9 +9,9 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from datetime import datetime
-from .serializers import UserProfileSerializer, AttendanceSerializer, MonthlyAttendanceDaySerializer, WorkSerializer
+from .serializers import UserProfileSerializer, AttendanceSerializer, MonthlyAttendanceDaySerializer, WorkSerializer, BeaconSerializer
 from common.models import User
-from wtm.models import Work, Schedule
+from wtm.models import Work, Schedule, Beacon
 from wtm.services.attendance import build_monthly_attendance_for_user
 
 
@@ -102,6 +102,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class AttendanceAPIView(APIView):
+    """
+    앱 사용자 1명의 오늘의 스케쥴, 출퇴근 정보
+    GET /api/attendance
+
+    - 앱의 홈화면에서 사용자의 정보를 가져올때 사용
+    - 인증된 사용자(request.user)의 스케쥴, 출퇴근 정보, 조퇴/연장근무 판단
+    """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -157,6 +165,14 @@ class AttendanceAPIView(APIView):
 
 
 class MonthlyAttendanceAPIView(APIView):
+    """
+    앱 사용자 1명의 월간 스케쥴, 출퇴근 정보
+    GET /api/attendance/monthly
+
+    - 앱의 통계화면에서 사용자의 정보를 가져올때 사용
+    - 인증된 사용자(request.user)의 월간 스케쥴, 출퇴근 정보, 지각/조퇴/연장근무/휴일근무 등 상태 값
+    """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -176,6 +192,42 @@ class MonthlyAttendanceAPIView(APIView):
         # print(results)
 
         serializer = MonthlyAttendanceDaySerializer(results, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BeaconListAPIView(APIView):
+    """
+    내 지점 비콘 목록
+    GET /api/beacons
+
+    - 인증된 사용자(request.user)의 User.branch 기준으로 필터
+    - is_active = True
+    - valid_from / valid_to 기준으로 오늘 날짜에 유효한 것만
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.now()
+
+        # 1) 사용자에 branch가 설정되어 있는지 확인
+        branch = getattr(user, "branch", None)
+        if branch is None:
+            return Response(
+                {"detail": "사용자의 지점정보가 없습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 2) 해당 지점의 유효한 비콘만 조회
+        results = Beacon.objects.filter(
+            branch=branch,
+            is_active=True,
+        ).order_by("name")
+
+        print(results)
+
+        serializer = BeaconSerializer(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

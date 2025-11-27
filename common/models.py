@@ -22,18 +22,25 @@ class Branch(models.Model):
 
 
 class User(AbstractUser):
-    emp_name = models.CharField(max_length=20)  # 직원명
-    dept = models.CharField(max_length=50)      # 부서명
-    position = models.CharField(max_length=50)  # 직위명
-    join_date = models.DateField(null=True)     # 입사일자
-    out_date = models.DateField(null=True, blank=True)     # 퇴사일자
-    device_id = models.CharField(max_length=255, blank=True, null=True) # 기기정보
+    emp_name = models.CharField("직원명", max_length=20)  # 직원명
+    dept = models.CharField("부서명", max_length=50)  # 부서명
+    position = models.CharField("직위명", max_length=50)  # 직위명
+    join_date = models.DateField("입사일자", null=True)  # 입사일자
+    out_date = models.DateField("퇴사일자", null=True, blank=True)  # 퇴사일자
+    device_id = models.CharField("기기정보", max_length=255, blank=True, null=True)
 
-    emp_name.verbose_name = "직원명"
-    dept.verbose_name = "부서명"
-    position.verbose_name = "직위명"
-    join_date.verbose_name = "입사일자"
-    out_date.verbose_name = "퇴사일자"
+    # ★ 새로 추가
+    branch = models.ForeignKey(
+        "common.Branch",  # 문자열로 참조해서 선언 순서 문제 피하기
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        null=True,  # 기존 사용자들 때문에 처음엔 널 허용
+        blank=True,
+        related_name="users",  # branch.users 로 역참조
+    )
+
+    def __str__(self):
+        return f"{self.username} ({self.emp_name})"
 
 
 class Dept(models.Model):

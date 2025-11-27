@@ -3,8 +3,9 @@ from .models import User, Branch
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'emp_name')
-    list_filter = ('emp_name',)
+    list_display = ("username", "email", "emp_name", "branch")
+    list_filter = ("branch",)
+    search_fields = ("username", "emp_name", "email", "dept", "position")
 
 
 @admin.register(Branch)

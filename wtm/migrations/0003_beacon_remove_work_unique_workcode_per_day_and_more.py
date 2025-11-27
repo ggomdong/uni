@@ -54,4 +54,13 @@ class Migration(migrations.Migration):
             name='beacon',
             unique_together={('branch', 'uuid', 'major', 'minor')},
         ),
+        migrations.AlterField(
+            model_name='work',
+            name='record_date',
+            field=models.DateTimeField(),
+        ),
+        migrations.RemoveConstraint(
+            model_name='work',
+            name='unique_workcode_per_day',
+        ),
     ]

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from common.models import User
-from wtm.models import Work
+from wtm.models import Work, Beacon
 
 
 class AttendanceSerializer(serializers.Serializer):
@@ -61,3 +61,29 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'emp_name', 'dept', 'position', 'email', 'join_date', 'out_date']
+
+
+class BeaconSerializer(serializers.ModelSerializer):
+    # 디버깅이나 로그용으로 branch 코드/이름이 있으면 편해서 넣었고, 필요 없으면 나중에 빼도 됨.
+    branch_code = serializers.CharField(source="branch.code", read_only=True)
+    branch_name = serializers.CharField(source="branch.name", read_only=True)
+
+    class Meta:
+        model = Beacon
+        fields = [
+            'id',
+            'branch_code',
+            'branch_name',
+            'name',
+            'uuid',
+            'major',
+            'minor',
+            'max_distance_meters',
+            'rssi_threshold',
+            'tx_power',
+            'stabilize_count',
+            'timeout_seconds',
+            'is_active',
+            'valid_from',
+            'valid_to',
+        ]
