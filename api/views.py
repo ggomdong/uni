@@ -14,6 +14,9 @@ from common.models import User
 from wtm.models import Work, Schedule, Beacon
 from wtm.services.attendance import build_monthly_attendance_for_user
 
+_TEST_MODE = False
+_TEST_TODAY = datetime(2025, 12, 5).date()
+_TEST_NOW = datetime.combine(_TEST_TODAY, datetime.strptime("08:35", "%H:%M").time())
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -115,14 +118,14 @@ class AttendanceAPIView(APIView):
     def get(self, request):
         user = request.user
 
-        TEST_MODE = False
+        TEST_MODE = _TEST_MODE
 
         if TEST_MODE:
-            today = datetime(2025, 8, 6).date()
-            now = datetime.combine(today, datetime.strptime("13:00", "%H:%M").time())
+            today = _TEST_TODAY
+            now = _TEST_NOW
         else:
-            today = timezone.now().date()
             now = timezone.now()
+            today = now.date()
 
         # 출근/퇴근 기록 조회
         checkin = Work.objects.filter(user=user, work_code='I', record_day=today).order_by('record_date').first()
@@ -225,7 +228,7 @@ class BeaconListAPIView(APIView):
             is_active=True,
         ).order_by("name")
 
-        print(results)
+        # print(results)
 
         serializer = BeaconSerializer(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

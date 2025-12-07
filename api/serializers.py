@@ -55,6 +55,7 @@ class WorkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Work
         fields = ['user', 'work_code', 'record_date']
+        read_only_fields = ['record_date']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
