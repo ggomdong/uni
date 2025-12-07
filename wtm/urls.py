@@ -30,4 +30,5 @@ urlpatterns = [
     path('log/<int:log_id>/delete/', views.work_log_delete, name='work_log_delete'),
     path('meal/', views.work_meal, name='work_meal'),
     path('meal/<str:stand_year>', views.work_meal, name='work_meal'),
+    path('privacy/', views.work_privacy, name='work_privacy'),
 ]

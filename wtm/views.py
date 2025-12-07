@@ -9,7 +9,7 @@ from django.utils import timezone
 from datetime import datetime, date
 from calendar import monthrange
 
-from .models import Work, Module, Contract, Schedule
+from .models import Work, Module, Contract, Schedule, Branch
 from .forms import ModuleForm, ContractForm, WorkForm
 from common.models import User, Holiday
 from common import context_processors
@@ -1714,3 +1714,18 @@ def work_meal(request, stand_year=None):
 
     context = {'stand_year': stand_year, 'md_list': md_list, 'user_list': user_list}
     return render(request, 'wtm/work_meal.html', context)
+
+
+def work_privacy(request):
+    branch_code = request.GET.get("branch")
+    branch_name = None
+
+    if branch_code:
+        branch = Branch.objects.filter(code=branch_code).first()
+        if branch:
+            branch_name = branch.name
+
+    context = {
+        "branch_name": branch_name,
+    }
+    return render(request, "wtm/privacy.html", context)
