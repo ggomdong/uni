@@ -95,6 +95,11 @@ class Work(models.Model):
     record_date = models.DateTimeField()
     record_day = models.DateField(editable=False, null=False, blank=False, db_index=True)
 
+    class Meta:
+        permissions = [
+            ("bypass_beacon", "Can bypass beacon requirement for attendance"),
+        ]
+
 # Work 저장시 항상 record_day를 record_date에 맞춰 설정해줌
 @receiver(pre_save, sender=Work)
 def set_record_day(sender, instance: Work, **kwargs):
