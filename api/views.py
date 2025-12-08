@@ -152,6 +152,8 @@ class AttendanceAPIView(APIView):
             elif now > scheduled_end:
                 is_early_checkout = False
 
+        can_bypass_beacon = user.has_perm("wtm.bypass_beacon")
+
         data = {
             "emp_name": user.emp_name,
             "work_start": work_start,
@@ -159,6 +161,7 @@ class AttendanceAPIView(APIView):
             "checkin_time": checkin.record_date if checkin else None,
             "checkout_time": checkout.record_date if checkout else None,
             "is_early_checkout": is_early_checkout,
+            "can_bypass_beacon": can_bypass_beacon,
         }
 
         # print(data)

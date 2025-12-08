@@ -10,6 +10,7 @@ class AttendanceSerializer(serializers.Serializer):
     checkin_time = serializers.DateTimeField(allow_null=True)
     checkout_time = serializers.DateTimeField(allow_null=True)
     is_early_checkout = serializers.BooleanField()
+    can_bypass_beacon = serializers.BooleanField()
 
 
 class MonthlyAttendanceDaySerializer(serializers.Serializer):
