@@ -29,7 +29,6 @@ class User(AbstractUser):
     out_date = models.DateField("퇴사일자", null=True, blank=True)  # 퇴사일자
     device_id = models.CharField("기기정보", max_length=255, blank=True, null=True)
 
-    # ★ 새로 추가
     branch = models.ForeignKey(
         "common.Branch",  # 문자열로 참조해서 선언 순서 문제 피하기
         verbose_name="지점",
@@ -37,6 +36,12 @@ class User(AbstractUser):
         null=True,  # 기존 사용자들 때문에 처음엔 널 허용
         blank=True,
         related_name="users",  # branch.users 로 역참조
+    )
+
+    is_employee = models.BooleanField(
+        default=True,
+        verbose_name="근태/직원목록 대상 여부",
+        help_text="직원목록 및 근태 관리 대상인 사용자인지 여부입니다.",
     )
 
     def __str__(self):

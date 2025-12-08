@@ -37,7 +37,7 @@ def _fetch_base_users_for_month(stand_ym: str) -> list[dict]:
         SELECT u.id, u.dept, u.position, u.emp_name
           FROM common_user u
           LEFT JOIN wtm_schedule s ON s.user_id = u.id
-         WHERE u.is_superuser = FALSE
+         WHERE u.is_employee = TRUE
            AND s.year  = %s
            AND s.month = %s
            AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
@@ -133,7 +133,7 @@ def _fetch_log_users_for_day(stand_day: str):
                 ON u.dept = d.dept_name
             LEFT OUTER JOIN common_position p
                 ON u.position = p.position_name
-        WHERE u.is_superuser = FALSE
+        WHERE u.is_employee = TRUE
           AND c.check_yn = 'Y'
           AND s.year  = '{stand_day[0:4]}'
           AND s.month = '{stand_day[4:6]}'
@@ -185,7 +185,7 @@ def index(request, stand_day=None):
             LEFT OUTER JOIN wtm_module m on (s.d{int(stand_day[6:8])}_id = m.id)
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
             LEFT OUTER JOIN common_position p on (u.position = p.position_name)
-        WHERE is_superuser = false
+        WHERE is_employee = TRUE
           and s.year = '{stand_day[0:4]}'
           and s.month = '{stand_day[4:6]}'
           and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
@@ -278,7 +278,7 @@ def index(request, stand_day=None):
                              ON u.dept = d.dept_name
                 LEFT OUTER JOIN common_position p
                              ON u.position = p.position_name
-            WHERE is_superuser = false
+            WHERE is_employee = TRUE
               and c.check_yn = 'Y'
               and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
               and (DATE_FORMAT(u.out_date, '%Y%m%d') is null OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
@@ -491,7 +491,7 @@ def work_schedule(request, stand_ym=None):
             FROM common_user u
                 LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
                 LEFT OUTER JOIN common_position p on (u.position = p.position_name)
-            WHERE is_superuser = false 
+            WHERE is_employee = TRUE
                 and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
                 and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
             ORDER BY do, po, join_date
@@ -608,7 +608,7 @@ def work_schedule(request, stand_ym=None):
         (
             SELECT id, emp_name
             FROM common_user u
-            WHERE is_superuser = false 
+            WHERE is_employee = TRUE
                 and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_ym + list(day_list)[-1]}'
                 and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
         ) a
@@ -651,7 +651,7 @@ def work_schedule(request, stand_ym=None):
         (
             SELECT id
             FROM common_user u
-            WHERE is_superuser = false 
+            WHERE is_employee = TRUE
                 and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_ym + list(day_list)[-1]}'
                 and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
         ) a
@@ -852,7 +852,7 @@ def work_schedule_reg(request, stand_ym):
         FROM common_user u
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
             LEFT OUTER JOIN common_position p on (u.position = p.position_name)
-        WHERE is_superuser = false 
+        WHERE is_employee = TRUE
             and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
             and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
         ORDER BY do, po, join_date
@@ -1179,7 +1179,7 @@ def work_schedule_modify(request, stand_ym):
         FROM common_user u
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
             LEFT OUTER JOIN common_position p on (u.position = p.position_name)
-        WHERE is_superuser = false 
+        WHERE is_employee = TRUE
             and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
             and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
         ORDER BY do, po, join_date
@@ -1659,7 +1659,7 @@ def work_meal(request, stand_year=None):
         FROM common_user u
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
             LEFT OUTER JOIN common_position p on (u.position = p.position_name)
-        WHERE is_superuser = false 
+        WHERE is_employee = TRUE
             and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{str(stand_year) + "1231"}'
             and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{str(stand_year) + "0101"}')
         ORDER BY do, po, join_date

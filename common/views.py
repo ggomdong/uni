@@ -116,7 +116,7 @@ def user_list(request):
             on (u.id = c.user_id)
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
 			LEFT OUTER JOIN common_position p on (u.position = p.position_name)
-        WHERE is_superuser = false 
+        WHERE is_employee = TRUE
             and {work_condition}
             and {dept_condition}
             and {position_condition}
