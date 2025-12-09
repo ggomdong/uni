@@ -603,25 +603,23 @@ def work_schedule(request, stand_ym=None):
 
     # 근무표와 직원현황이 다른 경우 1 : 스케쥴 작성 이후 추가된 직원이 있는 경우 (user minus schedule)
     raw_query = f'''
-        SELECT emp_name
-        FROM
-        (
-            SELECT id, emp_name
-            FROM common_user u
-            WHERE is_employee = TRUE
-                and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_ym + list(day_list)[-1]}'
-                and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
-        ) a
-        LEFT JOIN
-        (
-            SELECT u.id
-            FROM wtm_schedule s
-                LEFT OUTER JOIN common_user u on (s.user_id = u.id)
-            WHERE year = '{stand_ym[0:4]}'
-              and month = '{stand_ym[4:6]}'
-        ) b
-        on a.id = b.id
-        WHERE b.id is null
+        SELECT u.emp_name
+        FROM common_user u
+        WHERE u.is_employee = TRUE
+          -- 해당 월에 단 하루라도 재직한 사람
+          AND DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_ym + list(day_list)[-1]}'
+          AND (
+                u.out_date IS NULL
+                OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}'
+              )
+          -- 그 달 스케쥴이 1건도 없는 경우
+          AND NOT EXISTS (
+                SELECT 1
+                FROM wtm_schedule s
+                WHERE s.user_id = u.id
+                  AND s.year  = '{stand_ym[0:4]}'
+                  AND s.month = '{stand_ym[4:6]}'
+          )
         '''
 
     with connection.cursor() as cursor:
@@ -638,25 +636,20 @@ def work_schedule(request, stand_ym=None):
 
     # 근무표와 직원현황이 다른 경우 2 : 스케쥴 작성 이후 삭제 또는 입사일 변경 등 직원이 있는 경우 (schedule minus user)
     raw_query = f'''
-        SELECT b.emp_name
-        FROM
-        (
-            SELECT u.id, u.emp_name
-            FROM wtm_schedule s
-                LEFT OUTER JOIN common_user u on (s.user_id = u.id)
-            WHERE year = '{stand_ym[0:4]}'
-              and month = '{stand_ym[4:6]}'
-        ) b        
-        LEFT JOIN
-        (
-            SELECT id
-            FROM common_user u
-            WHERE is_employee = TRUE
-                and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_ym + list(day_list)[-1]}'
-                and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
-        ) a
-        on b.id = a.id
-        WHERE a.id is null
+        SELECT DISTINCT u.emp_name
+        FROM wtm_schedule s
+        JOIN common_user u ON s.user_id = u.id
+        WHERE u.is_employee = TRUE
+          AND s.year  = '{stand_ym[0:4]}'
+          AND s.month = '{stand_ym[4:6]}'
+          -- "그 달 직원" 조건에 해당하지 않는 사람만
+          AND NOT (
+                DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_ym + list(day_list)[-1]}'
+            AND (
+                  u.out_date IS NULL
+                  OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}'
+                )
+          )
         '''
 
     with connection.cursor() as cursor:
