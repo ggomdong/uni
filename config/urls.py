@@ -16,7 +16,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-import wtm.views as views
 from django.views.generic.base import RedirectView
 
 admin.site.site_header = 'YOU&I Admin'      # 사이트명
