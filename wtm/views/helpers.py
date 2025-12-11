@@ -24,6 +24,77 @@ def sec_to_hhmmss(total_seconds: int) -> str:
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
+def build_contracts_by_user(user_list, schedule_date):
+    """
+    근무표 수정을 위한 헬퍼함수
+    wtm_contract에서 기준일자(schedule_date)까지의 계약을 한 번에 읽어서 user_id별로 정리
+    반환: { user_id: [ { 'user_id': ..., 'stand_date': date, 'mon_id': ..., ... }, ... ] }
+    """
+    if not user_list:
+        return {}
+
+    user_ids = [str(u['id']) for u in user_list if u.get('id') is not None]
+    if not user_ids:
+        return {}
+
+    # schedule_date는 'YYYYMMDD' 문자열
+    query = f'''
+        SELECT
+            id,
+            user_id,
+            stand_date,
+            mon_id,
+            tue_id,
+            wed_id,
+            thu_id,
+            fri_id,
+            sat_id,
+            sun_id
+        FROM wtm_contract
+        WHERE user_id IN ({",".join(user_ids)})
+          AND DATE_FORMAT(stand_date, '%Y%m%d') <= '{schedule_date}'
+        ORDER BY user_id, stand_date
+    '''
+
+    contracts_by_user: dict[int, list[dict]] = {}
+
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        cols = [col[0] for col in cursor.description]
+
+    for row in rows:
+        d = dict(zip(cols, row))
+        # stand_date를 date 타입으로 통일
+        if hasattr(d["stand_date"], "date"):
+            d["stand_date"] = d["stand_date"].date()
+        contracts_by_user.setdefault(d["user_id"], []).append(d)
+
+    return contracts_by_user
+
+
+def get_contract_module_id(contracts, target_date, weekday_eng: str):
+    """
+    근무표 수정을 위한 헬퍼함수
+    해당 직원의 계약 리스트(contracts)에서
+    target_date 기준으로 가장 최근 stand_date의 weekday_eng(mon/tue/...) 모듈 id를 찾아준다.
+    """
+    if not contracts:
+        return None
+
+    field = f"{weekday_eng}_id"
+    latest_val = None
+
+    for c in contracts:
+        if c["stand_date"] <= target_date:
+            latest_val = c.get(field)
+        else:
+            # stand_date 오름차순 정렬되어 있으니 여기서 끊어도 됨
+            break
+
+    return latest_val
+
+
 def fetch_base_users_for_month(stand_ym: str) -> list[dict]:
     """
     근태현황/지표 화면 공통: 월 단위 대상 직원 리스트 조회

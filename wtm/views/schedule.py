@@ -6,9 +6,10 @@ from django.db import connection, transaction
 from django.utils import timezone
 from datetime import datetime
 
-from ..models import Module, Schedule
 from common.models import User, Holiday
 from common import context_processors
+from ..models import Module, Schedule
+from .helpers import build_contracts_by_user, get_contract_module_id
 
 
 def work_schedule(request, stand_ym=None):
@@ -23,8 +24,11 @@ def work_schedule(request, stand_ym=None):
     day_list = context_processors.get_day_list(stand_ym)  # ex) {'1':'목', '2':'금', ..., '31':'토'}
 
     # 공휴일 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
-    holiday_list = list(Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6]).annotate(
-        day=ExtractDay('holiday')).values_list('day', flat=True))
+    holiday_list = list(
+        Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6])
+        .annotate(day=ExtractDay('holiday'))
+        .values_list('day', flat=True)
+    )
 
     # 기준이 되는 최종 일요일(이번달 말일이 일요일인 경우 or 다음달 첫 일요일) 날짜를 지정 -> 해당 날짜 기준으로 대상 직원 추출
     schedule_date = stand_ym + list(day_list)[-1]
@@ -42,15 +46,17 @@ def work_schedule(request, stand_ym=None):
         next_ym = context_processors.get_month(stand_ym, 1)[0:6]
         next_day_list = context_processors.get_day_list(next_ym, 6 - last_day_weekday)
         next_holiday_list = list(
-            Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6]).annotate(
-                day=ExtractDay('holiday')).values_list('day', flat=True))
+            Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6])
+            .annotate(day=ExtractDay('holiday'))
+            .values_list('day', flat=True)
+        )
         schedule_date = next_ym + str(6 - last_day_weekday).zfill(2)
 
-    # 대상 직원을 추출하여 user_list에 저장
+    # 대상 직원을 추출하여 schedule_list에 저장 (기존 raw 유지)
     query_user = f'''
             SELECT u.id, u.emp_name, u.dept, u.position,
                     DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
-                    d.order as do, p.order as po
+                    d.`order` as do, p.`order` as po
             FROM common_user u
                 LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
                 LEFT OUTER JOIN common_position p on (u.position = p.position_name)
@@ -74,95 +80,59 @@ def work_schedule(request, stand_ym=None):
                 i = i + 1
             schedule_list.append(d)
 
+    # 이번달 / 다음달 스케줄을 한 번에 가져와서 user_id별로 묶기
+    user_ids = [row["id"] for row in schedule_list]
+
+    # 이번달 스케줄
+    schedules_qs = Schedule.objects.filter(
+        year=stand_ym[0:4],
+        month=stand_ym[4:6],
+        user_id__in=user_ids,
+    )
+    schedule_map = {s.user_id: s for s in schedules_qs}
+
+    # 다음달 스케줄 (말일이 일요일이 아닐 때만)
+    next_schedule_map = {}
+    if next_ym is not None:
+        next_schedules_qs = Schedule.objects.filter(
+            year=next_ym[0:4],
+            month=next_ym[4:6],
+            user_id__in=user_ids,
+        )
+        next_schedule_map = {s.user_id: s for s in next_schedules_qs}
+
+    # 모듈 전체를 한 번에 가져와서 "id,cat,name,start,end,color" 문자열로 매핑
+    module_list = list(Module.objects.all())  # 나중에 context에도 그대로 사용
+    module_str_map = {}
+    for m in module_list:
+        module_str_map[m.id] = f"{m.id},{m.cat},{m.name},{m.start_time},{m.end_time},{m.color}"
+
     # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
     pre_dept = None
 
-    # schedule_list 일자별 근무모듈을 매핑
-    for schedule in schedule_list:
-        raw_query = f'''
-            SELECT 
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d1_id) d1,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d2_id) d2,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d3_id) d3,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d4_id) d4,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d5_id) d5,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d6_id) d6,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d7_id) d7,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d8_id) d8,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d9_id) d9,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d10_id) d10,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d11_id) d11,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d12_id) d12,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d13_id) d13,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d14_id) d14,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d15_id) d15,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d16_id) d16,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d17_id) d17,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d18_id) d18,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d19_id) d19,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d20_id) d20,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d21_id) d21,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d22_id) d22,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d23_id) d23,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d24_id) d24,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d25_id) d25,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d26_id) d26,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d27_id) d27,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d28_id) d28,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d29_id) d29,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d30_id) d30,
-                (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d31_id) d31
-            FROM wtm_schedule s
-                LEFT OUTER JOIN common_user u on (s.user_id = u.id)
-                LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
-                LEFT OUTER JOIN common_position p on (u.position = p.position_name)
-            WHERE year = '{stand_ym[0:4]}'
-              and month = '{stand_ym[4:6]}'
-              and user_id = '{schedule["id"]}'
-            '''
+    # 직원별로 일자별 근무모듈을 매핑
+    for row in schedule_list:
+        uid = row["id"]
 
-        with connection.cursor() as cursor:
-            cursor.execute(raw_query)
-            results = cursor.fetchall()
+        # 이번달 스케줄 row (있으면)
+        sched = schedule_map.get(uid)
+        if sched is not None:
+            # d1 ~ d31
+            for i in range(1, 32):
+                module_id = getattr(sched, f"d{i}_id", None)
+                row[f"d{i}"] = module_str_map.get(module_id) if module_id else None
 
-            if results:
-                x = cursor.description
-                for r in results:
-                    i = 0
-                    while i < len(x):
-                        schedule[x[i][0]] = r[i]
-                        i = i + 1
+        # 다음달 n1 ~ n6 (다음달 스케줄이 있고, next_ym이 있는 경우만)
+        if next_ym is not None:
+            next_sched = next_schedule_map.get(uid)
+            if next_sched is not None:
+                for i in range(1, 7):
+                    module_id = getattr(next_sched, f"d{i}_id", None)
+                    row[f"n{i}"] = module_str_map.get(module_id) if module_id else None
 
-        if last_day_weekday != 6:
-            raw_query = f'''
-                SELECT 
-                    (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d1_id) n1,
-                    (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d2_id) n2,
-                    (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d3_id) n3,
-                    (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d4_id) n4,
-                    (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d5_id) n5,
-                    (SELECT CONCAT(id, ',', cat, ',', name, ',', start_time, ',', end_time, ',', color) FROM wtm_module WHERE id = s.d6_id) n6
-                FROM wtm_schedule s
-                WHERE year = '{next_ym[0:4]}'
-                  and month = '{next_ym[4:6]}'
-                  and user_id = '{schedule["id"]}'
-                '''
-
-            with connection.cursor() as cursor:
-                cursor.execute(raw_query)
-                results = cursor.fetchall()
-
-                if results:
-                    x = cursor.description
-                    for r in results:
-                        i = 0
-                        while i < len(x):
-                            schedule[x[i][0]] = r[i]
-                            i = i + 1
-
-        # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅
-        schedule['dept_diff'] = ('N' if pre_dept == schedule['dept'] else 'Y')
-        pre_dept = schedule['dept']
+        # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅 (기존 로직 그대로)
+        row['dept_diff'] = ('N' if pre_dept == row['dept'] else 'Y')
+        pre_dept = row['dept']
 
     # 근무표와 직원현황이 다른 경우 1 : 스케쥴 작성 이후 추가된 직원이 있는 경우 (user minus schedule)
     raw_query = f'''
@@ -227,149 +197,174 @@ def work_schedule(request, stand_ym=None):
         messages.warning(request, f'근무표 제외 필요 : {need_to_sub}')
         redirect('wtm:work_schedule', stand_ym=stand_ym)
 
-    module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
-
-    context = {'schedule_list': schedule_list, 'stand_ym': stand_ym, 'day_list': day_list,
-               'holiday_list': holiday_list, 'next_ym': next_ym, 'next_day_list': next_day_list,
-               'next_holiday_list': next_holiday_list, 'module_list': module_list}
+    context = {
+        'schedule_list': schedule_list,
+        'stand_ym': stand_ym,
+        'day_list': day_list,
+        'holiday_list': holiday_list,
+        'next_ym': next_ym,
+        'next_day_list': next_day_list,
+        'next_holiday_list': next_holiday_list,
+        'module_list': module_list,  # 위에서 만든 list 재사용
+    }
     return render(request, 'wtm/work_schedule.html', context)
 
 
 @login_required(login_url='common:login')
 def work_schedule_reg(request, stand_ym):
     if request.method == 'POST':
-        # html form에서 넘어오는 값은 'sch_"user_id"_"day"': 'value' 형태임
-        # 이를 Schedule 테이블에 user단위로 넣기 위해 schedule_row라는 dict로 정리하고,
-        # 해당 row를 담을 schedule_list를 만든다.
-        schedule_list = []
-        schedule_row = {
-            'user_id': None, 'd1': None, 'd2': None, 'd3': None, 'd4': None, 'd5': None, 'd6': None, 'd7': None,
-            'd8': None, 'd9': None, 'd10': None, 'd11': None, 'd12': None, 'd13': None, 'd14': None, 'd15': None,
-            'd16': None, 'd17': None, 'd18': None, 'd19': None, 'd20': None, 'd21': None, 'd22': None, 'd23': None,
-            'd24': None, 'd25': None, 'd26': None, 'd27': None, 'd28': None, 'd29': None, 'd30': None, 'd31': None,
-            'n1': None, 'n2': None, 'n3': None, 'n4': None, 'n5': None, 'n6': None,
-        }
+        # -----------------------------
+        # 1. POST 데이터 파싱
+        #    sch_{user_id}_{day} → user별 row(dict) 구성
+        #    값은 Module 객체 대신 "모듈 id(int)"만 저장
+        # -----------------------------
+        def empty_row(user_id: int | None = None):
+            base = {f'd{i}': None for i in range(1, 32)}  # d1 ~ d31
+            base.update({f'n{i}': None for i in range(1, 7)})  # n1 ~ n6
+            base['user_id'] = user_id
+            return base
+
+        rows_by_user: dict[int, dict] = {}
 
         for key, value in request.POST.items():
-            # sch로 시작하는 key만 대상으로 함
-            if key.startswith('sch'):
-                # 최초 schedule_row['user_id'] 값을 세팅
-                if schedule_row['user_id'] == None:
-                    schedule_row['user_id'] = key.split("_")[1]
-                # user_id가 바뀌면 schedule_row를 list에 넣어준다. 이때 참조가 아닌 값으로 넣기위해 copy를 선행함
-                elif schedule_row['user_id'] != key.split("_")[1]:
-                    dummy = schedule_row.copy()
-                    schedule_list.append(dummy)
-                    # schedule_row['user_id']를 바뀐 값으로 세팅
-                    schedule_row['user_id'] = key.split("_")[1]
+            if not key.startswith('sch_'):
+                continue
 
-                # n으로 시작하면 다음달, 아니면 이번달
-                if key.split("_")[2].startswith('n'):
-                    schedule_row[key.split("_")[2]] = (None if value == '' else Module.objects.get(id=value))
-                else:
-                    schedule_row["d" + key.split("_")[2]] = (None if value == '' else Module.objects.get(id=value))
+            # key 형식: sch_{user_id}_{day}
+            # 예: sch_15_1, sch_15_31, sch_15_n1 ...
+            _, user_id_str, day_key = key.split('_', 2)
+            user_id = int(user_id_str)
 
-        # 마지막 요소를 list에 추가
-        dummy = schedule_row.copy()
-        schedule_list.append(dummy)
+            row = rows_by_user.get(user_id)
+            if row is None:
+                row = empty_row(user_id)
+                rows_by_user[user_id] = row
 
-        # stand_ym 기준 기존 스케쥴이 입력되어 있는 user_id를 가져옴
-        schedule_user_list = list(
-            Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).values_list('user_id', flat=True))
+            module_id = int(value) if value else None
 
-        # 다음달 근무표를 저장하기 위한 변수
-        # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.next_ym 계산
+            if day_key.startswith('n'):
+                # n1 ~ n6
+                row[day_key] = module_id
+            else:
+                # 이번달은 d1 ~ d31 로 매핑
+                row[f'd{day_key}'] = module_id
+
+        schedule_list = list(rows_by_user.values())
+
+        # POST로 넘어온 게 없으면 바로 목록으로
+        if not schedule_list:
+            return redirect('wtm:work_schedule', stand_ym=stand_ym)
+
+        # -----------------------------
+        # 2. 기존 스케줄 중복 체크 (기존 로직 유지)
+        # -----------------------------
+        existing_users_this_month = set(
+            Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+            .values_list('user_id', flat=True)
+        )
+
+        post_user_ids = {row['user_id'] for row in schedule_list}
+        duplicated_users = existing_users_this_month & post_user_ids
+
+        # 기존 코드: 한 명이라도 있으면 '중복된 스케쥴입니다.' 찍고 바로 work_schedule로
+        if duplicated_users:
+            messages.error(request, '중복된 스케쥴입니다.')
+            return redirect('wtm:work_schedule', stand_ym=stand_ym)
+
+        # -----------------------------
+        # 3. 공통 날짜 정보 (말일/요일/다음달 등)
+        # -----------------------------
+        # 예: stand_ym = '202512' → '20251231' 같은 형태
         schedule_date = stand_ym + str(context_processors.get_last_day(stand_ym))
-        last_day_weekday = context_processors.get_days(schedule_date)
-        next_ym = context_processors.get_month(stand_ym, 1)[0:6]
+        last_day_weekday = context_processors.get_days(schedule_date)  # 0=월 ~ 6=일
+        next_ym = context_processors.get_month(stand_ym, 1)[0:6]  # 다음달 'YYYYMM'
+        last_day_of_month = int(schedule_date[6:8])  # 말일(28/29/30/31)
 
+        # -----------------------------
+        # 4. User / 다음달 Schedule 한 번에 로딩
+        # -----------------------------
+        users = User.objects.in_bulk(post_user_ids)  # {id: User}
+
+        next_schedule_map: dict[int, Schedule] = {}
+        days_to_copy = 0
+        if last_day_weekday != 6:
+            # 다음달 스케줄은 d1 ~ d(일요일까지)만 사용
+            days_to_copy = 6 - last_day_weekday
+            next_qs = Schedule.objects.filter(
+                year=next_ym[0:4],
+                month=next_ym[4:6],
+                user_id__in=post_user_ids,
+            )
+            next_schedule_map = {s.user_id: s for s in next_qs}
+
+        now = timezone.now()
+
+        # -----------------------------
+        # 5. 트랜잭션 내에서 이번달 + 다음달 저장
+        # -----------------------------
         with transaction.atomic():
-            for schedule in schedule_list:
-                # 기존 스케쥴이 있는 경우 저장하지 않음(정상적인 루트로는 불가능하지만, url을 치고 들어온다거나 하는 케이스)
-                if int(schedule['user_id']) in schedule_user_list:
-                    messages.error(request, '중복된 스케쥴입니다.')
-                    return redirect('wtm:work_schedule', stand_ym=stand_ym)
-                # 기존 스케쥴이 없는 경우 저장
+            for row in schedule_list:
+                user_id = row['user_id']
+                user = users.get(user_id)
+                if user is None:
+                    # 방어 코드: 이론상 없어야 함
+                    continue
+
+                # 5-1. 이번달 스케줄 insert
+                # 직원의 입사일이 stand_ym의 말일보다 크면, stand_ym 기준 스케쥴은 없으므로 패스
+                if stand_ym < user.join_date.strftime('%Y%m'):
+                    pass
                 else:
-                    # stand_ym 대상에 대한 입력 처리
-                    # 직원의 입사일이 stand_ym의 말일보다 크면, stand_ym 기준 스케쥴은 없으므로 패스함
-                    user = User.objects.get(pk=schedule['user_id'])
-                    if stand_ym < user.join_date.strftime('%Y%m'):
-                        pass
+                    obj1 = Schedule(
+                        user_id=user_id,
+                        year=stand_ym[0:4],
+                        month=stand_ym[4:6],
+                        reg_id=request.user,
+                        reg_date=now,
+                        mod_id=request.user,
+                        mod_date=now,
+                    )
+
+                    # d1 ~ d(말일) 까지만 세팅 (FK id 필드에 직접 모듈 id를 넣음)
+                    for i in range(1, last_day_of_month + 1):
+                        module_id = row.get(f'd{i}')
+                        setattr(obj1, f'd{i}_id', module_id)
+
+                    obj1.save()
+
+                # 5-2. 다음달 (첫 일요일까지) 처리
+                # 말일이 일요일이 아니면 다음달 일요일까지 입력
+                if last_day_weekday != 6:
+                    # 직원의 최종근무일이 next_ym의 1일보다 작으면, next_ym 기준 스케쥴은 없음
+                    if user.out_date is not None and user.out_date.strftime('%Y%m') < next_ym:
+                        continue
+
+                    obj2 = next_schedule_map.get(user_id)
+                    if obj2 is not None:
+                        # 기존 스케줄 update
+                        obj2.mod_id = request.user
+                        obj2.mod_date = now
                     else:
-                        try:
-                            obj1 = Schedule(
-                                user_id=schedule['user_id'],
-                                year=stand_ym[0:4],
-                                month=stand_ym[4:6],
-                                reg_id=request.user,
-                                reg_date=timezone.now(),
-                                mod_id=request.user,
-                                mod_date=timezone.now(),
-                            )
+                        # 새 스케줄 insert
+                        obj2 = Schedule(
+                            user_id=user_id,
+                            year=next_ym[0:4],
+                            month=next_ym[4:6],
+                            reg_id=request.user,
+                            reg_date=now,
+                            mod_id=request.user,
+                            mod_date=now,
+                        )
+                        next_schedule_map[user_id] = obj2
 
-                            # 일자별 스케쥴 대입. ex)obj1.d1 = schedule['d1']
-                            for i in range(1, int(schedule_date[6:8]) + 1):
-                                setattr(obj1, f'd{i}', schedule[f'd{i}'])
+                    # d1 ~ d{days_to_copy} ← n1 ~ n{days_to_copy}
+                    for i in range(1, days_to_copy + 1):
+                        module_id = row.get(f'n{i}')
+                        setattr(obj2, f'd{i}_id', module_id)
 
-                            obj1.save()
-                        except Exception as e:
-                            messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-                            return redirect('wtm:work_schedule_reg', stand_ym=stand_ym)
+                    obj2.save()
 
-                    # 말일이 일요일이 아니면, 다음달 일요일까지 입력이 필요함
-                    # 단, 다음달의 스케쥴이 이미 있는 경우, 중복이 되지 않도록 update로 처리
-                    if last_day_weekday != 6:
-                        # 직원의 최종근무일이 next_ym의 1일보다 작으면, next_ym 기준 스케쥴은 없으므로 패스함
-                        if user.out_date is not None and user.out_date.strftime('%Y%m') < next_ym:
-                            pass
-                        else:
-                            # next_ym 기준 기존 스케쥴이 입력되어 있는 user_id를 가져옴
-                            next_schedule_user_list = list(
-                                Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6]).values_list('user_id', flat=True))
-
-                            # 기존 스케쥴이 존재하는 경우 기존 schedule을 수정
-                            if int(schedule['user_id']) in next_schedule_user_list:
-                                try:
-                                    obj2 = Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6],
-                                                                   user_id=schedule['user_id'])
-                                    obj_to_update = obj2[0]
-
-                                    obj_to_update.mod_id=request.user
-                                    obj_to_update.mod_date=timezone.now()
-
-                                    # 일자별 스케쥴 대입. ex)obj_to_update.d1 = schedule['n1']
-                                    # 단순히 n1~n6을 모두 업데이트하면, 일요일 이후는 None으로 매핑되므로, 기존 스케쥴이 None으로 바뀔 수 있음
-                                    # 따라서, 정확히 필요한 날짜만 계산해서 업데이트 필수적
-                                    for i in range(1, 6 - last_day_weekday + 1):
-                                        setattr(obj_to_update, f'd{i}', schedule[f'n{i}'])
-
-                                    obj_to_update.save()
-                                except Exception as e:
-                                    messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-                                    return redirect('wtm:work_schedule_reg', stand_ym=stand_ym)
-
-                            # 기존 스케쥴이 없는 경우 insert
-                            else:
-                                try:
-                                    obj2 = Schedule(
-                                        user_id=schedule['user_id'],
-                                        year=next_ym[0:4],
-                                        month=next_ym[4:6],
-                                        reg_id=request.user,
-                                        reg_date=timezone.now(),
-                                        mod_id=request.user,
-                                        mod_date=timezone.now(),
-                                    )
-
-                                    # 일자별 스케쥴 대입. ex)obj2.d1 = schedule['n1']
-                                    for i in range(1, 6 - last_day_weekday + 1):
-                                        setattr(obj2, f'd{i}', schedule[f'n{i}'])
-
-                                    obj2.save()
-                                except Exception as e:
-                                    messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-                                    return redirect('wtm:work_schedule_reg', stand_ym=stand_ym)
+        messages.success(request, '근무표가 등록되었습니다.')
 
         return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
@@ -427,6 +422,9 @@ def work_schedule_reg(request, stand_ym):
                 i = i + 1
             user_list.append(d)
 
+    # 직원별 계약 정보를 한 번에 불러와서 메모리에 적재
+    contracts_by_user = build_contracts_by_user(user_list, schedule_date)
+
     # 공휴일 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
     holiday_list = list(Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6]).annotate(
         day=ExtractDay('holiday')).values_list('day', flat=True))
@@ -449,22 +447,13 @@ def work_schedule_reg(request, stand_ym):
             elif int(key) in holiday_list:
                 user[key] = off_module_id
             else:
-                query = f'''
-                    SELECT c.val
-                    FROM
-                    (
-                    SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
-                    FROM wtm_contract
-                    WHERE user_id = {user['id']}
-                      and DATE_FORMAT(stand_date, '%Y%m%d') <= '{stand_ym + key.zfill(2)}'
-                    ) c
-                    WHERE rownum = 1
-                    '''
-                with connection.cursor() as cursor:
-                    cursor.execute(query)
-                    r = cursor.fetchone()
-
-                user[key] = (None if r == None else r[0])
+                # 미리 불러온 계약 정보에서 찾기
+                contracts = contracts_by_user.get(user["id"])
+                if not contracts:
+                    user[key] = None
+                else:
+                    target_date = datetime.strptime(stand_ym + key.zfill(2), "%Y%m%d").date()
+                    user[key] = get_contract_module_id(contracts, target_date, value)
 
         # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅
         user['dept_diff'] = ('N' if pre_dept == user['dept'] else 'Y')
@@ -507,22 +496,12 @@ def work_schedule_reg(request, stand_ym):
                     elif int(key) in next_holiday_list:
                         user["n"+key] = off_module_id
                     else:
-                        query = f'''
-                                SELECT c.val
-                                FROM
-                                (
-                                SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
-                                FROM wtm_contract
-                                WHERE user_id = {user['id']}
-                                  and DATE_FORMAT(stand_date, '%Y%m%d') <= '{next_ym + key.zfill(2)}'
-                                ) c
-                                WHERE rownum = 1
-                                '''
-                        with connection.cursor() as cursor:
-                            cursor.execute(query)
-                            r = cursor.fetchone()
-
-                        user["n"+key] = (None if r == None else r[0])
+                        contracts = contracts_by_user.get(user["id"])
+                        if not contracts:
+                            user["n" + key] = None
+                        else:
+                            target_date = datetime.strptime(next_ym + key.zfill(2), "%Y%m%d").date()
+                            user["n" + key] = get_contract_module_id(contracts, target_date, value)
 
     module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
 
@@ -535,164 +514,188 @@ def work_schedule_reg(request, stand_ym):
 @login_required(login_url='common:login')
 def work_schedule_modify(request, stand_ym):
     if request.method == 'POST':
-        # html form에서 넘어오는 값은 'sch_"user_id"_"day"': 'value' 형태임
-        # 이를 Schedule 테이블에 user단위로 넣기 위해 schedule_row라는 dict로 정리하고,
-        # 해당 row를 담을 schedule_list를 만든다.
-        schedule_list = []
-        schedule_row = {
-            'user_id': None, 'd1': None, 'd2': None, 'd3': None, 'd4': None, 'd5': None, 'd6': None, 'd7': None,
-            'd8': None, 'd9': None, 'd10': None, 'd11': None, 'd12': None, 'd13': None, 'd14': None, 'd15': None,
-            'd16': None, 'd17': None, 'd18': None, 'd19': None, 'd20': None, 'd21': None, 'd22': None, 'd23': None,
-            'd24': None, 'd25': None, 'd26': None, 'd27': None, 'd28': None, 'd29': None, 'd30': None, 'd31': None,
-            'n1': None, 'n2': None, 'n3': None, 'n4': None, 'n5': None, 'n6': None,
-        }
+        # -----------------------------
+        # 1. POST 데이터 파싱
+        #    sch_{user_id}_{day}  → user별 row(dict)로 정리
+        #    값은 Module 인스턴스 대신 "모듈 id(int)"만 저장
+        # -----------------------------
+        # day 필드 초기 템플릿
+        def empty_row(user_id: int | None = None):
+            base = {f'd{i}': None for i in range(1, 32)}
+            base.update({f'n{i}': None for i in range(1, 7)})
+            base['user_id'] = user_id
+            return base
+
+        rows_by_user: dict[int, dict] = {}
 
         for key, value in request.POST.items():
-            # sch로 시작하는 key만 대상으로 함
-            if key.startswith('sch'):
-                # 최초 schedule_row['user_id'] 값을 세팅
-                if schedule_row['user_id'] == None:
-                    schedule_row['user_id'] = key.split("_")[1]
-                # user_id가 바뀌면 schedule_row를 list에 넣어준다. 이때 참조가 아닌 값으로 넣기위해 copy를 선행함
-                elif schedule_row['user_id'] != key.split("_")[1]:
-                    dummy = schedule_row.copy()
-                    schedule_list.append(dummy)
-                    # schedule_row['user_id']를 바뀐 값으로 세팅
-                    schedule_row['user_id'] = key.split("_")[1]
+            if not key.startswith('sch_'):
+                continue
 
-                # n으로 시작하면 다음달, 아니면 이번달
-                if key.split("_")[2].startswith('n'):
-                    schedule_row[key.split("_")[2]] = (None if value == '' else Module.objects.get(id=value))
-                else:
-                    schedule_row["d" + key.split("_")[2]] = (None if value == '' else Module.objects.get(id=value))
+            # key 형식: sch_{user_id}_{day}  (day: '1'~'31' 또는 'n1'~'n6')
+            _, user_id_str, day_key = key.split('_', 2)
+            user_id = int(user_id_str)
 
-        # 마지막 요소를 list에 추가
-        dummy = schedule_row.copy()
-        schedule_list.append(dummy)
+            row = rows_by_user.get(user_id)
+            if row is None:
+                row = empty_row(user_id)
+                rows_by_user[user_id] = row
 
-        # stand_ym 기준 기존 스케쥴이 입력되어 있는 user_id를 가져옴
-        schedule_user_list = list(
-            Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).values_list('user_id', flat=True))
+            module_id = int(value) if value else None
 
-        # 다음달 근무표를 저장하기 위한 변수
-        # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.next_ym 계산
+            if day_key.startswith('n'):
+                # n1 ~ n6 그대로 사용
+                row[day_key] = module_id
+            else:
+                # 이번달은 d1 ~ d31 으로 매핑
+                row[f'd{day_key}'] = module_id
+
+        # dict → list 로 변환 (기존 schedule_list와 동일한 역할)
+        schedule_list = list(rows_by_user.values())
+
+        # -----------------------------
+        # 2. 공통 변수/정보 계산
+        # -----------------------------
+        # stand_ym 기준 기존 스케쥴이 입력되어 있는 user_id 전체 (삭제용)
+        existing_users_this_month = set(
+            Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+            .values_list('user_id', flat=True)
+        )
+
+        # 이번 POST에서 넘어온 user_id
+        post_user_ids = {row['user_id'] for row in schedule_list}
+
+        # 삭제 대상: 기존에는 있었는데, 이번 POST에는 없는 유저
+        users_to_delete = existing_users_this_month - post_user_ids
+
+        # 다음달 관련 계산
         schedule_date = stand_ym + str(context_processors.get_last_day(stand_ym))
         last_day_weekday = context_processors.get_days(schedule_date)
         next_ym = context_processors.get_month(stand_ym, 1)[0:6]
 
+        # 한 달의 마지막 일자 (1~말일 d필드만 사용)
+        last_day_of_month = int(schedule_date[6:8])
+
+        # -----------------------------
+        # 3. 한 번에 필요한 User / Schedule 미리 로딩
+        # -----------------------------
+        from django.db import transaction
+
         with transaction.atomic():
-            # 삭제 대상이면(기존 스케쥴은 있었으나, 현재 추출한 schedule_list에 없는 경우), 해당 schedule을 삭제
-            for user in schedule_user_list:
-                if user not in [int(item['user_id']) for item in schedule_list]:
-                    try:
-                        schedule_to_delete = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6],
-                                                                     user_id=user)
-                        schedule_to_delete.delete()
-                    except Exception as e:
-                        messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-                        return redirect('wtm:work_schedule', stand_ym=stand_ym)
+            # (1) 이번달 스케쥴 삭제 (삭제 대상만 bulk delete)
+            if users_to_delete:
+                Schedule.objects.filter(
+                    year=stand_ym[0:4],
+                    month=stand_ym[4:6],
+                    user_id__in=users_to_delete,
+                ).delete()
 
-            for schedule in schedule_list:
-                user = User.objects.get(pk=schedule['user_id'])
-                # 기존 스케쥴이 존재하는 경우 기존 schedule을 수정
-                if int(schedule['user_id']) in schedule_user_list:
-                    try:
-                        obj = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6],
-                                                      user_id=schedule['user_id'])
-                        obj_to_update = obj[0]
+            # (2) 이번 POST에 포함된 직원 정보 / 스케쥴 미리 로딩
+            #     - User: join_date / out_date 비교용
+            #     - Schedule: 수정/삽입용 (select_for_update 로 락 걸어도 좋음)
+            users = User.objects.in_bulk(post_user_ids)  # {id: User}
 
-                        obj_to_update.mod_id = request.user
-                        obj_to_update.mod_date = timezone.now()
+            current_qs = Schedule.objects.filter(
+                year=stand_ym[0:4],
+                month=stand_ym[4:6],
+                user_id__in=post_user_ids,
+            )
+            current_map = {s.user_id: s for s in current_qs}  # {user_id: Schedule}
 
-                        # 일자별 스케쥴 대입. ex)obj_to_update.d1 = schedule['d1']
-                        for i in range(1, int(schedule_date[6:8]) + 1):
-                            setattr(obj_to_update, f'd{i}', schedule[f'd{i}'])
+            # (3) 다음달 스케쥴도 미리 로딩 (말일이 일요일이 아닐 때만)
+            next_map: dict[int, Schedule] = {}
+            if last_day_weekday != 6:
+                next_qs = Schedule.objects.filter(
+                    year=next_ym[0:4],
+                    month=next_ym[4:6],
+                    user_id__in=post_user_ids,
+                )
+                next_map = {s.user_id: s for s in next_qs}
 
-                        obj_to_update.save()
-                    except Exception as e:
-                        messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-                        return redirect('wtm:work_schedule_modify', stand_ym=stand_ym)
+            now = timezone.now()
 
-                # 기존 스케쥴이 없는 경우 insert
+            # -----------------------------
+            # 4. 이번달 스케쥴 저장/수정
+            # -----------------------------
+            for row in schedule_list:
+                user_id = row['user_id']
+                user = users.get(user_id)
+                if user is None:
+                    # 이론상 없어야 하지만, 방어적으로
+                    continue
+
+                # 기존 스케쥴이 존재하는 경우: update
+                obj = current_map.get(user_id)
+                if obj is not None:
+                    obj.mod_id = request.user
+                    obj.mod_date = now
                 else:
-                    # 직원의 입사일이 stand_ym의 말일보다 크면, stand_ym 기준 스케쥴은 없으므로 패스함
+                    # 기존 스케쥴이 없는 경우 insert
+                    # 직원의 입사일이 stand_ym의 말일보다 크면, stand_ym 기준 스케쥴은 없으므로 패스
                     if stand_ym < user.join_date.strftime('%Y%m'):
-                        pass
+                        obj = None
                     else:
-                        try:
-                            obj = Schedule(
-                                user_id=schedule['user_id'],
-                                year=stand_ym[0:4],
-                                month=stand_ym[4:6],
-                                reg_id=request.user,
-                                reg_date=timezone.now(),
-                                mod_id=request.user,
-                                mod_date=timezone.now(),
-                            )
+                        obj = Schedule(
+                            user_id=user_id,
+                            year=stand_ym[0:4],
+                            month=stand_ym[4:6],
+                            reg_id=request.user,
+                            reg_date=now,
+                            mod_id=request.user,
+                            mod_date=now,
+                        )
+                        current_map[user_id] = obj
 
-                            # 일자별 스케쥴 대입. ex)obj1.d1 = schedule['d1']
-                            for i in range(1, int(schedule_date[6:8]) + 1):
-                                setattr(obj, f'd{i}', schedule[f'd{i}'])
+                # 실제 d1~d(말일) 값 세팅
+                if obj is not None:
+                    for i in range(1, last_day_of_month + 1):
+                        module_id = row.get(f'd{i}')
+                        # FK: d{i}_id 에 직접 id 세팅
+                        setattr(obj, f'd{i}_id', module_id)
+                    obj.save()
 
-                            obj.save()
-                        except Exception as e:
-                            messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-                            return redirect('wtm:work_schedule_modify', stand_ym=stand_ym)
+            # -----------------------------
+            # 5. 다음달(첫 일요일까지) 스케쥴 저장/수정
+            # -----------------------------
+            if last_day_weekday != 6:
+                days_to_copy = 6 - last_day_weekday  # n1 ~ n{days_to_copy} 사용
 
-                # 말일이 일요일이 아니면, 다음달 일요일까지 입력이 필요함
-                # 단, 다음달의 스케쥴이 이미 있는 경우, 중복이 되지 않도록 update로 처리
-                if last_day_weekday != 6:
-                    # 직원의 최종근무일이 next_ym의 1일보다 작으면, next_ym 기준 스케쥴은 없으므로 패스함
+                for row in schedule_list:
+                    user_id = row['user_id']
+                    user = users.get(user_id)
+                    if user is None:
+                        continue
+
+                    # 직원의 최종근무일이 next_ym의 1일보다 작으면, next_ym 기준 스케쥴은 없으므로 패스
                     if user.out_date is not None and user.out_date.strftime('%Y%m') < next_ym:
-                        pass
+                        continue
+
+                    obj2 = next_map.get(user_id)
+                    if obj2 is not None:
+                        # 기존 스케쥴이 존재하는 경우: update
+                        obj2.mod_id = request.user
+                        obj2.mod_date = now
                     else:
-                        # next_ym 기준 기존 스케쥴이 입력되어 있는 user_id를 가져옴
-                        next_schedule_user_list = list(
-                            Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6]).values_list(
-                                'user_id', flat=True))
+                        # 기존 스케쥴이 없는 경우: insert
+                        obj2 = Schedule(
+                            user_id=user_id,
+                            year=next_ym[0:4],
+                            month=next_ym[4:6],
+                            reg_id=request.user,
+                            reg_date=now,
+                            mod_id=request.user,
+                            mod_date=now,
+                        )
+                        next_map[user_id] = obj2
 
-                        # 기존 스케쥴이 존재하는 경우 기존 schedule을 수정
-                        if int(schedule['user_id']) in next_schedule_user_list:
-                            try:
-                                obj2 = Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6],
-                                                               user_id=schedule['user_id'])
-                                obj_to_update = obj2[0]
+                    # d1 ~ d{days_to_copy} ← n1 ~ n{days_to_copy} 매핑
+                    for i in range(1, days_to_copy + 1):
+                        module_id = row.get(f'n{i}')
+                        setattr(obj2, f'd{i}_id', module_id)
 
-                                obj_to_update.mod_id = request.user
-                                obj_to_update.mod_date = timezone.now()
+                    obj2.save()
 
-                                # 일자별 스케쥴 대입. ex)obj_to_update.d1 = schedule['n1']
-                                # 단순히 n1~n6을 모두 업데이트하면, 일요일 이후는 None으로 매핑되므로, 기존 스케쥴이 None으로 바뀔 수 있음
-                                # 따라서, 정확히 필요한 날짜만 계산해서 업데이트 필수적
-                                for i in range(1, 6 - last_day_weekday + 1):
-                                    setattr(obj_to_update, f'd{i}', schedule[f'n{i}'])
-
-                                obj_to_update.save()
-                            except Exception as e:
-                                messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-                                return redirect('wtm:work_schedule_modify', stand_ym=stand_ym)
-
-                        # 기존 스케쥴이 없는 경우 insert
-                        else:
-                            try:
-                                obj2 = Schedule(
-                                    user_id=schedule['user_id'],
-                                    year=next_ym[0:4],
-                                    month=next_ym[4:6],
-                                    reg_id=request.user,
-                                    reg_date=timezone.now(),
-                                    mod_id=request.user,
-                                    mod_date=timezone.now(),
-                                )
-
-                                # 일자별 스케쥴 대입. ex)obj2.d1 = schedule['n1']
-                                for i in range(1, 6 - last_day_weekday + 1):
-                                    setattr(obj2, f'd{i}', schedule[f'n{i}'])
-
-                                obj2.save()
-                            except Exception as e:
-                                messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
-                                return redirect('wtm:work_schedule_modify', stand_ym=stand_ym)
+        messages.success(request, '근무표가 수정되었습니다.')
 
         return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
@@ -727,7 +730,7 @@ def work_schedule_modify(request, stand_ym):
         next_ym = context_processors.get_month(stand_ym, 1)[0:6]
         schedule_date = next_ym + str(6 - last_day_weekday).zfill(2)
 
-    # stand_ym 대상 직원을 추출하여 user_list에 저장
+    # 1) stand_ym 대상 직원을 추출하여 user_list에 저장
     query_user = f'''
         SELECT u.id, u.emp_name, u.dept, u.position,
                 DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
@@ -754,6 +757,7 @@ def work_schedule_modify(request, stand_ym):
                 i = i + 1
             user_list.append(d)
 
+    # 2) 공휴일, OFF 모듈
     # 공휴일 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
     holiday_list = list(Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6]).annotate(
         day=ExtractDay('holiday')).values_list('day', flat=True))
@@ -762,15 +766,39 @@ def work_schedule_modify(request, stand_ym):
     off_module_list = list(Module.objects.filter(cat='OFF').values_list('id', flat=True))
     off_module_id = (off_module_list[0] if off_module_list else None)
 
+    # 3) 이번달 스케줄 전체, dict로 매핑
+    schedule_origin = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).select_related()
+    schedule_user_list = list(schedule_origin.values_list('user_id', flat=True))
+    schedule_map = {s.user_id: s for s in schedule_origin}
+
+    # 4) 다음달(필요시) 스케줄 전체, dict로 매핑 + 공휴일
+    next_schedule_map = {}
+    next_schedule_user_list = []
+    if last_day_weekday != 6:
+        next_day_list = context_processors.get_day_list(next_ym, 6 - last_day_weekday)
+        next_day_list_eng = {}
+        for key, value in next_day_list.items():
+            next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
+
+        next_holiday_list = list(
+            Holiday.objects
+            .filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6])
+            .annotate(day=ExtractDay('holiday'))
+            .values_list('day', flat=True)
+        )
+
+        next_schedule_origin = Schedule.objects.filter(
+            year=next_ym[0:4], month=next_ym[4:6]
+        ).select_related()
+        next_schedule_user_list = list(next_schedule_origin.values_list('user_id', flat=True))
+        next_schedule_map = {s.user_id: s for s in next_schedule_origin}
+
+    # 5) 계약 전체를 한 번에 불러와 user별로 매핑
+    # schedule_date는 위에서 '기준 마지막 일자(이번달 말 or 다음달 첫 일요일)'로 세팅해 둠
+    contracts_by_user = build_contracts_by_user(user_list, schedule_date)
+
     # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
     pre_dept = None
-
-    # 기존 스케쥴이 입력되어 있는 user_id를 가져옴
-    schedule_user_list = list(
-        Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).values_list('user_id', flat=True))
-
-    # 스케쥴을 가져옴
-    schedule_origin = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
 
     # user_list에 일자별 근무모듈을 매핑
     for user in user_list:
@@ -834,60 +862,60 @@ def work_schedule_modify(request, stand_ym):
         user['dept_diff'] = ('N' if pre_dept == user['dept'] else 'Y')
         pre_dept = user['dept']
 
-        # 다음달 일요일까지 날짜를 추가하기 위한 로직
-        # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.해당 날짜들로 구성된 day_list 작성
-        # 3.next_ym 기준 공휴일 list 생성 4.user_list에 next_ym 기준 스케쥴 추가
-        # last_day_weekday가 6(일요일)이면 패스
-        if last_day_weekday != 6:
-            next_day_list = context_processors.get_day_list(next_ym, 6 - last_day_weekday)
-            next_day_list_eng = {}
-            for key, value in next_day_list.items():
-                next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
-            next_holiday_list = list(
-                Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6]).annotate(
-                    day=ExtractDay('holiday')).values_list('day', flat=True))
+    # 다음달 일요일까지 날짜를 추가하기 위한 로직
+    # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.해당 날짜들로 구성된 day_list 작성
+    # 3.next_ym 기준 공휴일 list 생성 4.user_list에 next_ym 기준 스케쥴 추가
+    # last_day_weekday가 6(일요일)이면 패스
+    if last_day_weekday != 6:
+        next_day_list = context_processors.get_day_list(next_ym, 6 - last_day_weekday)
+        next_day_list_eng = {}
+        for key, value in next_day_list.items():
+            next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
+        next_holiday_list = list(
+            Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6]).annotate(
+                day=ExtractDay('holiday')).values_list('day', flat=True))
 
-            # 기존 스케쥴이 입력되어 있는 user_id를 가져옴
-            next_schedule_user_list = list(
-                Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6]).values_list('user_id', flat=True))
+        # 기존 스케쥴이 입력되어 있는 user_id를 가져옴
+        next_schedule_user_list = list(
+            Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6]).values_list('user_id', flat=True))
 
-            # 스케쥴을 가져옴
-            next_schedule_origin = Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6])
+        # 스케쥴을 가져옴
+        next_schedule_origin = Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6])
 
-            # user_list에 일자별 근무모듈을 매핑
-            for user in user_list:
-                # 기존 스케쥴이 있는 경우 schedule에서 가져옴
-                if user['id'] in next_schedule_user_list:
-                    for key, value in next_day_list.items():
-                        user["n" + key] = \
-                        list(next_schedule_origin.filter(user_id=user['id']).values_list('d' + key + '_id', flat=True))[0]
-                # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴
-                else:
-                    for key, value in next_day_list_eng.items():
-                        # 입사 전이나, 최종근무일 후라면 None으로 세팅
-                        if next_ym + key.zfill(2) < user['join_date'] or (
-                                user['out_date'] is not None and next_ym + key.zfill(2) > user['out_date']):
-                            user["n" + key] = None
-                        # 공휴일이면 OFF 모듈로 세팅
-                        elif int(key) in next_holiday_list:
-                            user["n" + key] = off_module_id
-                        else:
-                            query = f'''
-                                    SELECT c.val
-                                    FROM
-                                    (
-                                    SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
-                                    FROM wtm_contract
-                                    WHERE user_id = {user['id']}
-                                      and DATE_FORMAT(stand_date, '%Y%m%d') <= '{next_ym + key.zfill(2)}'
-                                    ) c
-                                    WHERE rownum = 1
-                                    '''
-                            with connection.cursor() as cursor:
-                                cursor.execute(query)
-                                r = cursor.fetchone()
+        # user_list에 일자별 근무모듈을 매핑
+        for user in user_list:
+            # 기존 스케쥴이 있는 경우 schedule에서 가져옴
+            if user['id'] in next_schedule_user_list:
+                for key, value in next_day_list.items():
+                    user["n" + key] = \
+                    list(next_schedule_origin.filter(user_id=user['id']).values_list('d' + key + '_id', flat=True))[0]
+            # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴
+            else:
+                for key, value in next_day_list_eng.items():
+                    # 입사 전이나, 최종근무일 후라면 None으로 세팅
+                    if next_ym + key.zfill(2) < user['join_date'] or (
+                            user['out_date'] is not None and next_ym + key.zfill(2) > user['out_date']):
+                        user["n" + key] = None
+                    # 공휴일이면 OFF 모듈로 세팅
+                    elif int(key) in next_holiday_list:
+                        user["n" + key] = off_module_id
+                    else:
+                        query = f'''
+                                SELECT c.val
+                                FROM
+                                (
+                                SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
+                                FROM wtm_contract
+                                WHERE user_id = {user['id']}
+                                  and DATE_FORMAT(stand_date, '%Y%m%d') <= '{next_ym + key.zfill(2)}'
+                                ) c
+                                WHERE rownum = 1
+                                '''
+                        with connection.cursor() as cursor:
+                            cursor.execute(query)
+                            r = cursor.fetchone()
 
-                            user["n" + key] = (None if r == None else r[0])
+                        user["n" + key] = (None if r == None else r[0])
 
     module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
     context = {'stand_ym': stand_ym, 'day_list': day_list, 'user_list': user_list, 'module_list': module_list,
@@ -907,6 +935,8 @@ def work_schedule_delete(request, stand_ym):
     except Exception as e:
         messages.error(request, f'데이터베이스 오류가 발생했습니다. {e}')
         return redirect('wtm:work_schedule_reg', stand_ym=stand_ym)
+
+    messages.success(request, '근무표가 삭제되었습니다.')
 
     return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
@@ -950,4 +980,4 @@ def work_schedule_popup(request):
             return redirect('wtm:index', new_stand_date)
         else:
             # 근무표 화면으로
-            return redirect('wtm:work_schedule')
+            return redirect('wtm:work_schedule', new_stand_date[0:6])

@@ -44,6 +44,11 @@ class User(AbstractUser):
         help_text="직원목록 및 근태 관리 대상인 사용자인지 여부입니다.",
     )
 
+    class Meta(AbstractUser.Meta):
+        permissions = [
+            ("web_access", "웹 페이지 접속 권한"),
+        ]
+
     def __str__(self):
         return f"{self.username} ({self.emp_name})"
 

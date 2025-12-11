@@ -97,7 +97,7 @@ class Work(models.Model):
 
     class Meta:
         permissions = [
-            ("bypass_beacon", "Can bypass beacon requirement for attendance"),
+            ("bypass_beacon", "비콘 바이패스 권한"),
         ]
 
 # Work 저장시 항상 record_day를 record_date에 맞춰 설정해줌

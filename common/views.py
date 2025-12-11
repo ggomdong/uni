@@ -1,9 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.views import LoginView
+from django.contrib.auth import logout
 from django.shortcuts import render, get_object_or_404, redirect
-from django.core.paginator import Paginator
-from django.db.models import Q
 from django.db.models.functions import ExtractYear
 from django.db import connection
 from django.forms import modelformset_factory
@@ -16,6 +16,33 @@ from wtm.models import Module, Contract
 
 def page_not_found(request, exception):
     return render(request, 'common/404.html', {})
+
+
+class WebLoginView(LoginView):
+    template_name = "common/login.html"  # 기존 login 템플릿 재사용
+
+    def form_valid(self, form):
+        """
+        1) 기본 LoginView 로직으로 로그인 처리한 뒤
+        2) web_access 권한이 없으면 곧바로 로그아웃 + 차단
+        """
+        # Django 기본 로그인 처리 (세션 생성, next 처리 등)
+        response = super().form_valid(form)
+
+        user = self.request.user
+
+        # web_access 권한 체크
+        if not (user.is_active and (user.is_superuser or user.has_perm("common.web_access"))):
+            logout(self.request)
+            messages.error(
+                self.request,
+                "웹 페이지 접근 권한이 없는 계정입니다. 관리자에게 문의하세요.",
+            )
+            return redirect("common:login")
+
+        # 권한 있는 경우: 원래 LoginView의 redirect 동작 유지
+        return response
+
 
 @login_required(login_url='common:login')
 def signup(request):
