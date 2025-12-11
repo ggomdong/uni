@@ -209,23 +209,21 @@ def build_daily_attendance_for_users(base_rows: list[dict], day: date) -> list[d
                 rest2_end_time=r.get("rest2_end_time"),
             )
 
-        # IN/OUT HH:mm:ss
-        checkin_time = first_in[uid].strftime("%H:%M:%S") if uid in first_in else None
+        checkin_dt = first_in.get(uid)
+        checkin_time = checkin_dt.strftime("%H:%M:%S") if checkin_dt else None
 
-        # 스케줄 종료
         sched_end_hhmm = r["end_time"] if r.get("end_time") and r["end_time"] != "-" else None
         sched_end_dt = to_dt(day, sched_end_hhmm) if sched_end_hhmm else None
-        checkin_dt = to_dt(day, checkin_time) if checkin_time else None
 
-        # 체크아웃 결정 (보정 정책)
-        if uid in last_out:
-            checkout_time = last_out[uid].strftime("%H:%M:%S")
-        else:
-            if (day < today) and sched_end_dt and checkin_dt and (checkin_dt <= sched_end_dt):
-                # 스케줄은 분 단위 → 초 보정
-                checkout_time = f"{sched_end_hhmm}:00"
-            else:
-                checkout_time = None
+        checkout_dt = last_out.get(uid)
+
+        checkout_time = determine_checkout_time(
+            checkout_dt=checkout_dt,
+            record_day=day,
+            checkin_dt=checkin_dt,
+            sched_end_dt=sched_end_dt,
+            today=today,
+        )
 
         metrics = compute_seconds_status_for_day(
             record_day=day,
@@ -329,6 +327,8 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
     if not users:
         return {}
 
+    today = timezone.now().date()
+
     days, sched_map, modules, logs_map = prepare_month(users, year, month)
 
     summary: dict[int, dict] = {}
@@ -346,10 +346,35 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
 
             ins  = logs_map.get(uid, {}).get(rd, {}).get("I", [])
             outs = logs_map.get(uid, {}).get(rd, {}).get("O", [])
-            cin  = (min(ins).strftime("%H:%M:%S") if ins else None)
-            cout = (max(outs).strftime("%H:%M:%S") if outs else None)
 
-            m = compute_seconds_status_for_day(record_day=rd, module=module, log=LogsDay(cin, cout))
+            # --- 출근 dt / 시간 ---
+            checkin_dt = min(ins) if ins else None
+            checkin_time = checkin_dt.strftime("%H:%M:%S") if checkin_dt else None
+
+            # --- 스케줄 종료 dt ---
+            sched_end_hhmm = None
+            if module and getattr(module, "end_time", None) and module.end_time != "-":
+                sched_end_hhmm = module.end_time
+            sched_end_dt = to_dt(rd, sched_end_hhmm) if sched_end_hhmm else None
+
+            # --- 실제 퇴근 로그 dt ---
+            checkout_dt = max(outs) if outs else None
+
+            # --- 공통 퇴근 보정 정책 적용 ---
+            checkout_time = determine_checkout_time(
+                checkout_dt=checkout_dt,
+                record_day=rd,
+                checkin_dt=checkin_dt,
+                sched_end_dt=sched_end_dt,
+                today=today,
+            )
+
+            # --- 코어 계산 ---
+            m = compute_seconds_status_for_day(
+                record_day=rd,
+                module=module,
+                log=LogsDay(checkin=checkin_time, checkout=checkout_time),
+            )
 
             if m.late_seconds     > 0: agg["late_count"]     += 1
             if m.early_seconds    > 0: agg["early_count"]    += 1
@@ -396,6 +421,8 @@ def build_monthly_metric_details_for_users(
     if not users:
         return {}
 
+    today = timezone.now().date()
+
     days, sched_map, modules, logs_map = prepare_month(users, year, month)
 
     result: dict[int, dict] = {}
@@ -413,10 +440,34 @@ def build_monthly_metric_details_for_users(
             ins = day_log.get("I", [])
             outs = day_log.get("O", [])
 
-            cin  = (min(ins).strftime("%H:%M:%S") if ins else None)
-            cout = (max(outs).strftime("%H:%M:%S") if outs else None)
+            # --- 출근 dt / 시간 ---
+            checkin_dt = min(ins) if ins else None
+            checkin_time = checkin_dt.strftime("%H:%M:%S") if checkin_dt else None
 
-            m = compute_seconds_status_for_day(record_day=rd, module=module, log=LogsDay(cin, cout))
+            # --- 스케줄 종료 dt ---
+            sched_end_hhmm = None
+            if module and getattr(module, "end_time", None) and module.end_time != "-":
+                sched_end_hhmm = module.end_time
+            sched_end_dt = to_dt(rd, sched_end_hhmm) if sched_end_hhmm else None
+
+            # --- 실제 퇴근 로그 dt ---
+            checkout_dt = max(outs) if outs else None
+
+            # --- 공통 퇴근 보정 정책 적용 ---
+            checkout_time = determine_checkout_time(
+                checkout_dt=checkout_dt,
+                record_day=rd,
+                checkin_dt=checkin_dt,
+                sched_end_dt=sched_end_dt,
+                today=today,
+            )
+
+            # --- 코어 계산 ---
+            m = compute_seconds_status_for_day(
+                record_day=rd,
+                module=module,
+                log=LogsDay(checkin=checkin_time, checkout=checkout_time),
+            )
             seconds = getattr(m, key)
             day_map[rd] = seconds
             if seconds > 0:
