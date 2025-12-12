@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
-# 근무/휴게/지각/조퇴/연장 계산의 "핵심 공통 로직".
-# - 스케줄(근로모듈)의 "유급 근로 시간대"를 구간(segments)으로 만들고,
-# - 실제 체류(출근~퇴근)와의 '구간 연산'으로 각 지표(지각/조퇴/연장/휴일근무)를 계산한다.
+# 근로/휴게/지각/조퇴/연장 계산의 "핵심 공통 로직".
+# - 근로모듈의 "유급 근로 시간대"를 구간(segments)으로 만들고,
+# - 실제 체류(출근~퇴근)와의 '구간 연산'으로 각 지표(지각/조퇴/연장/휴일근로)를 계산한다.
 # - 모든 지표는 '초(second)'를 기준으로 산출한다.
 #
 # ※ 이 모듈은 "순수 함수"들로만 구성되어 있으므로
@@ -62,19 +62,19 @@ def to_dt(day: date, hhmmss: Optional[str]) -> Optional[datetime]:
 
 def make_paid_segments(day: date, module: "Module") -> List[Segment]:
     """
-    하나의 모듈(근무표상 스케줄)에서 '유급 근로 세그먼트' 리스트를 생성.
-    - 근무 전체 구간: (start_time ~ end_time)
+    하나의 모듈(근무표)에서 '유급 근로 세그먼트' 리스트를 생성.
+    - 근로 전체 구간: (start_time ~ end_time)
     - 휴게 구간: (rest1_start~rest1_end), (rest2_start~rest2_end) [0~2개]
     - 유급 = 전체 - 휴게 (겹침/순서는 정렬·클리핑으로 정리)
     """
-    # 근무 구간 파싱
+    # 근로 구간 파싱
     if not module or not module.start_time or not module.end_time \
        or module.start_time == "-" or module.end_time == "-":
         return []
 
     S = to_dt(day, module.start_time)
     E = to_dt(day, module.end_time)
-    # 비정상 혹은 0분 근무는 유급세그먼트 없음
+    # 비정상 혹은 0분 근로는 유급세그먼트 없음
     if not S or not E or E <= S:
         return []
 
@@ -85,7 +85,7 @@ def make_paid_segments(day: date, module: "Module") -> List[Segment]:
     if r1s and r1e and r1e > r1s: rests.append((r1s, r1e))
     if r2s and r2e and r2e > r2s: rests.append((r2s, r2e))
 
-    # 1) 근무 전체에서 시작
+    # 1) 근로 전체에서 시작
     segments: List[Segment] = [(S, E)]
 
     # 2) 휴게 구간들을 시간순으로 적용하면서, 그 부분을 잘라낸다.
@@ -114,7 +114,7 @@ def make_paid_segments(day: date, module: "Module") -> List[Segment]:
 def seconds_before(t: Optional[datetime], segments: Sequence[Segment]) -> int:
     """
     시각 t '이전'의 유급 근로 누적 초.
-    - '지각(late)' 계산에 사용: 스케줄상의 유급 근로가 시작됐는데, 출근(t)이 그 이후라면
+    - '지각(late)' 계산에 사용: 근무표 상의 유급 근로가 시작됐는데, 출근(t)이 그 이후라면
       t 이전의 유급 근로가 모두 지각 초로 잡힌다.
     """
     if t is None:
@@ -134,7 +134,7 @@ def seconds_before(t: Optional[datetime], segments: Sequence[Segment]) -> int:
 def seconds_after(t: Optional[datetime], segments: Sequence[Segment]) -> int:
     """
     시각 t '이후'의 유급 근로 누적 초.
-    - '조퇴(early)' 계산에 사용: 스케줄상의 유급 근로가 남아 있는데, 퇴근(t)이 그 이전이라면
+    - '조퇴(early)' 계산에 사용: 근무표 상의 유급 근로가 남아 있는데, 퇴근(t)이 그 이전이라면
       t 이후의 유급 근로가 모두 조퇴 초로 잡힌다.
     """
     if t is None:
@@ -153,8 +153,9 @@ def seconds_after(t: Optional[datetime], segments: Sequence[Segment]) -> int:
 def intersection_seconds(a: Optional[datetime], b: Optional[datetime], segments: Sequence[Segment]) -> int:
     """
     체류 구간 [a, b) 과 유급 세그먼트들의 교집합 총 초.
-    - '휴일근무(holiday)' 초 계산에 사용: 휴일 스케줄이라면 실제 체류와 유급 근로가 겹친 시간만 인정.
-    - 일반 일자에서도 '실제 유급 체류'가 얼마나 있었는지 확인할 때 쓸 수 있음.
+    사용처:
+    - presence_paid_seconds: 실제 유급 체류 여부/양을 판단 (ERROR 판정 등)
+    - compute_overtime_seconds: '유급구간에 전혀 머물지 않은 경우 연장 0' 가드
     """
     if a is None or b is None or b <= a:
         return 0
@@ -183,7 +184,7 @@ def compute_overtime_seconds(
 ) -> int:
     """
     연장(overtime) 초 산출.
-    - 스케줄 유급세그먼트와 실제 근무의 교집합이 0이면 연장 0.
+    - 근무표 유급세그먼트와 실제 근로의 교집합이 0이면 연장 0.
     - 마지막 유급 종료 이후 실제 퇴근까지의 초를 연장으로 인정.
     """
     if not checkin or not checkout:
@@ -192,7 +193,7 @@ def compute_overtime_seconds(
     if not last_end:
         return 0
 
-    # 핵심 가드: 스케줄 유급세그먼트와 실제 근무의 교집합이 0이면 연장 없음
+    # 핵심 가드: 근무표 유급세그먼트와 실제 근로의 교집합이 0이면 연장 없음
     paid_overlap = intersection_seconds(checkin, min(checkout, last_end), segments)
     if paid_overlap == 0:
         return 0
@@ -201,6 +202,34 @@ def compute_overtime_seconds(
     if checkout <= last_end:
         return 0
     return int((checkout - last_end).total_seconds())
+
+
+def compute_holiday_seconds(
+    module: "Module | None",
+    has_checkin: bool,
+    has_checkout: bool,
+    segments: Sequence[Segment],
+) -> int:
+    """
+    휴일근로 초 산출.
+
+    - 모듈이 '휴일근로'일 때만 대상.
+    - 출근/퇴근 로그가 모두 있는 날만 계산.
+    - 근무표 유급세그먼트(시업~종업 - 휴게)의 전체 길이를
+      휴일근로시간으로 본다.
+      (지각/조퇴는 별도 지표(late/early)로 분리되어 있으므로
+       여기서는 차감하지 않음)
+    """
+    if not module or module.cat != "휴일근로":
+        return 0
+    if not has_checkin or not has_checkout:
+        return 0
+
+    total = 0
+    for a, b in segments:
+        total += int((b - a).total_seconds())
+    return total
+
 
 
 def compute_seconds_status_for_day(record_day: date, module: "Module | None", log: LogsDay) -> Metrics:
@@ -232,10 +261,13 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
     # 2) 연장
     overtime_seconds = compute_overtime_seconds(checkin_dt, checkout_dt, paid_segments)
 
-    # 3) 휴일근무
-    holiday_seconds = 0
-    if module and module.cat == "휴일근무" and has_checkin and has_checkout:
-        holiday_seconds = intersection_seconds(checkin_dt, checkout_dt, paid_segments)
+    # 3) 휴일근로: 스케줄 유급시간(시업~종업 - 휴게), 지각/조퇴 미차감
+    holiday_seconds = compute_holiday_seconds(
+        module=module,
+        has_checkin=has_checkin,
+        has_checkout=has_checkout,
+        segments=paid_segments,
+    )
 
     ######### 상태 정의 ##########
 
@@ -255,7 +287,7 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
     else:
         cat = module.cat
 
-        # 1) 휴무/오프/스케줄 있는 날 먼저 처리
+        # 1) 휴무/오프/근무표 있는 날 먼저 처리
         if cat in ("유급휴무", "무급휴무", "OFF"):
             # 휴무일에 출퇴근 기록 존재 → ERROR
             if has_checkin or has_checkout:
@@ -264,11 +296,11 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
                 base_map = {"유급휴무": "PAY", "무급휴무": "NOPAY", "OFF": "OFF"}
                 status_codes = [base_map[cat]]
 
-        elif cat in ("정규근무", "휴일근무"):
+        elif cat in ("소정근로", "휴일근로"):
             if is_future:
-                # 미래: 휴일근무 외에는 아직 결정되지 않음(칩/점 미표시용으로 빈 배열)
+                # 미래: 휴일근로 외에는 아직 결정되지 않음(칩/점 미표시용으로 빈 배열)
                 status_codes = []
-                if cat == "휴일근무":
+                if cat == "휴일근로":
                     status_codes.append("HOLIDAY")
 
             else:
@@ -280,17 +312,17 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
                 else:
                     is_error = (
                         # (1) 출퇴근 기록 없음
-                            (not has_checkin and not has_checkout) or
-                            # (2) 유급 교집합 0
-                            (paid_total_seconds > 0 and has_checkin and has_checkout and presence_paid_seconds == 0)
+                        (not has_checkin and not has_checkout) or
+                        # (2) 유급 교집합 0
+                        (paid_total_seconds > 0 and has_checkin and has_checkout and presence_paid_seconds == 0)
                     )
 
                 if is_error:
                     status_codes = ["ERROR"]
                 else:
                     status_codes = []
-                    # 휴일근무면, "휴일근무" 상태 설정, 정규근무는 "정규근무"라고 설정하지 않음
-                    if cat == "휴일근무":
+                    # 휴일근로면, "휴일근로" 상태 설정, 소정근로는 "소정근로"라고 설정하지 않음
+                    if cat == "휴일근로":
                         status_codes.append("HOLIDAY")
 
                     # 모디파이어
@@ -301,10 +333,10 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
                     if overtime_seconds > 0:
                         status_codes.append("OVERTIME")
 
-                    # 정규근무에서 '정상' 부여 규칙
+                    # 소정근로에서 '정상' 부여 규칙
                     # - 지각/조퇴가 없으면 NORMAL 추가
                     # - '정상 + 연장' 케이스 허용을 위해, 연장이 있더라도 NORMAL은 함께 둘 수 있음(이때 NORMAL을 앞으로 두어 정렬처리)
-                    if cat == "정규근무" and has_checkin and ("LATE" not in status_codes) and ("EARLY" not in status_codes):
+                    if cat == "소정근로" and has_checkin and ("LATE" not in status_codes) and ("EARLY" not in status_codes):
                         status_codes.insert(0, "NORMAL")
 
         else:

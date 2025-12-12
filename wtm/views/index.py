@@ -17,7 +17,7 @@ def index(request, stand_day=None):
 
     days = context_processors.get_days_korean(stand_day)
 
-    ###### 1. 근무 스케쥴 (화면 상단) ######
+    ###### 1. 근무인원 현황 (화면 상단) ######
 
     query = f'''
         SELECT u.dept, u.position, u.emp_name,
@@ -88,8 +88,7 @@ def index(request, stand_day=None):
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')
 
-    ###### 2. 근무 현황 (화면 하단) ######
-
+    ###### 2. 근태현황 (화면 하단) ######
 
     ymd = stand_day if stand_day else timezone.now().strftime("%Y%m%d")
     day = date(int(ymd[:4]), int(ymd[4:6]), int(ymd[6:8]))

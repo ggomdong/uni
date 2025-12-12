@@ -4,7 +4,7 @@
 <div class="container-fluid my-3 px-4">
 
     <div class="page-header">
-        <h4 class="page-title">근태현황</h4>
+        <h4 class="page-title">근태기록 》 월간집계</h4>
     </div>
 
     {# ------------------------------------------------------------------ #}
@@ -61,11 +61,11 @@
                     </a>
                     <a href="{% url 'wtm:work_metric' 'overtime' stand_ym %}"
                        class="btn btn-sm {% if active_metric == 'overtime' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                        연장근무
+                        연장근로
                     </a>
                     <a href="{% url 'wtm:work_metric' 'holiday' stand_ym %}"
                        class="btn btn-sm {% if active_metric == 'holiday' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                        휴일근무
+                        휴일근로
                     </a>
                 </div>
 
@@ -90,7 +90,7 @@
               <col style="width:10%;">  <!-- 부서 -->
               <col style="width:9%;">  <!-- 성명 -->
               <col style="width:9%;">   <!-- 오류(일수) -->
-              <!-- 지각/조퇴/초과/휴일 × [횟수,시간] 8개 -->
+              <!-- 지각/조퇴/연장/휴일 × [횟수,시간] 8개 -->
               <col style="width:9%;">
               <col style="width:9%;">
               <col style="width:9%;">
@@ -108,8 +108,8 @@
                     <th rowspan="2">오류<br>(일수)</th>
                     <th colspan="2">지각</th>
                     <th colspan="2">조퇴</th>
-                    <th colspan="2">초과근무</th>
-                    <th colspan="2">휴일근무</th>
+                    <th colspan="2">연장근로</th>
+                    <th colspan="2">휴일근로</th>
                 </tr>
                 <tr class="table-light">
                     <th>횟수</th><th>시간</th>

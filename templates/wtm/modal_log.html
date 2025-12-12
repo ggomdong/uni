@@ -5,7 +5,7 @@
             <form method="post" action="{% url 'wtm:work_log_save' %}">
                 {% csrf_token %}
                 <div class="modal-header">
-                    <h5 class="modal-title" id="logModalLabel">근무로그 등록</h5>
+                    <h5 class="modal-title" id="logModalLabel">근태기록 등록</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
                 </div>
 
@@ -36,7 +36,7 @@
                     </div>
 
                     <div class="mb-0">
-                        <label for="logRecordTimeInput" class="form-label">시간</label>
+                        <label for="logRecordTimeInput" class="form-label">시각</label>
                         <input type="time"
                                id="logRecordTimeInput"
                                name="record_time"
@@ -78,7 +78,7 @@ if (logModal) {
         const fromIndexInput  = document.getElementById('logFromIndexInput');
 
         if (mode === 'create') {
-            modalTitle.textContent = '근무로그 등록';
+            modalTitle.textContent = '근태기록 등록';
             if (logIdInput)   logIdInput.value   = '';
             if (userSelect) {
                 userSelect.value   = '';
@@ -87,7 +87,7 @@ if (logModal) {
             if (workCodeSel)  workCodeSel.value  = '';
             if (recordTimeEl) recordTimeEl.value = '';
         } else {
-            modalTitle.textContent = '근무로그 수정';
+            modalTitle.textContent = '근태기록 수정';
             if (logIdInput)   logIdInput.value   = button.getAttribute('data-id') || '';
             if (userSelect) {
                 userSelect.value    = button.getAttribute('data-user-id') || '';

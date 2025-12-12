@@ -11,7 +11,7 @@
     <!-- etc CSS -->
     <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
     <link rel="shortcut icon" href="{% static 'favicon.png' %}">
-    <title>YOU&I 왕십리점 관리앱</title>
+    <title>YOU&I 근태관리</title>
 </head>
 <body>
 <!-- 네비게이션바 -->
@@ -20,7 +20,7 @@
 {% block content %}
 {% endblock %}
 <!-- 개별 html End -->
-{# 🔹 Django messages → Bootstrap Toasts #}
+{# Django messages → Bootstrap Toasts #}
 {% if messages %}
 <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3"
      style="z-index: 1100; margin-top: 60px;">
@@ -53,7 +53,7 @@
 <!--script src="{% static 'bootstrap.min.js' %}"></script-->
 <script src="{% static 'bootstrap.bundle.min.js' %}"></script>
 
-{# 🔹 Toast 초기화 스크립트 #}
+{# Toast 초기화 스크립트 #}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     var toastElList = [].slice.call(document.querySelectorAll('.toast'));

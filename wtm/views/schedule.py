@@ -17,7 +17,7 @@ def work_schedule(request, stand_ym=None):
     if stand_ym is None:
         stand_ym = str(datetime.today().year) + str(datetime.today().month).zfill(2)
 
-    # stand_ym 기준 스케쥴이 없으면 패스
+    # stand_ym 기준 근무표가 없으면 패스
     if Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).count() == 0:
         return render(request, 'wtm/work_schedule.html', {'stand_ym': stand_ym})
 
@@ -80,10 +80,10 @@ def work_schedule(request, stand_ym=None):
                 i = i + 1
             schedule_list.append(d)
 
-    # 이번달 / 다음달 스케줄을 한 번에 가져와서 user_id별로 묶기
+    # 이번달 / 다음달 근무표를 한 번에 가져와서 user_id별로 묶기
     user_ids = [row["id"] for row in schedule_list]
 
-    # 이번달 스케줄
+    # 이번달 근무표
     schedules_qs = Schedule.objects.filter(
         year=stand_ym[0:4],
         month=stand_ym[4:6],
@@ -91,7 +91,7 @@ def work_schedule(request, stand_ym=None):
     )
     schedule_map = {s.user_id: s for s in schedules_qs}
 
-    # 다음달 스케줄 (말일이 일요일이 아닐 때만)
+    # 다음달 근무표 (말일이 일요일이 아닐 때만)
     next_schedule_map = {}
     if next_ym is not None:
         next_schedules_qs = Schedule.objects.filter(
@@ -110,11 +110,11 @@ def work_schedule(request, stand_ym=None):
     # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
     pre_dept = None
 
-    # 직원별로 일자별 근무모듈을 매핑
+    # 직원별로 일자별 근로모듈을 매핑
     for row in schedule_list:
         uid = row["id"]
 
-        # 이번달 스케줄 row (있으면)
+        # 이번달 근무표 row (있으면)
         sched = schedule_map.get(uid)
         if sched is not None:
             # d1 ~ d31
@@ -122,7 +122,7 @@ def work_schedule(request, stand_ym=None):
                 module_id = getattr(sched, f"d{i}_id", None)
                 row[f"d{i}"] = module_str_map.get(module_id) if module_id else None
 
-        # 다음달 n1 ~ n6 (다음달 스케줄이 있고, next_ym이 있는 경우만)
+        # 다음달 n1 ~ n6 (다음달 근무표가 있고, next_ym이 있는 경우만)
         if next_ym is not None:
             next_sched = next_schedule_map.get(uid)
             if next_sched is not None:
@@ -134,7 +134,7 @@ def work_schedule(request, stand_ym=None):
         row['dept_diff'] = ('N' if pre_dept == row['dept'] else 'Y')
         pre_dept = row['dept']
 
-    # 근무표와 직원현황이 다른 경우 1 : 스케쥴 작성 이후 추가된 직원이 있는 경우 (user minus schedule)
+    # 근무표와 직원현황이 다른 경우 1 : 근무표 작성 이후 추가된 직원이 있는 경우 (user minus schedule)
     raw_query = f'''
         SELECT u.emp_name
         FROM common_user u
@@ -145,7 +145,7 @@ def work_schedule(request, stand_ym=None):
                 u.out_date IS NULL
                 OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}'
               )
-          -- 그 달 스케쥴이 1건도 없는 경우
+          -- 그 달 근무표가 1건도 없는 경우
           AND NOT EXISTS (
                 SELECT 1
                 FROM wtm_schedule s
@@ -167,7 +167,7 @@ def work_schedule(request, stand_ym=None):
         messages.warning(request, f'근무표 추가 필요 : {need_to_add}')
         redirect('wtm:work_schedule', stand_ym=stand_ym)
 
-    # 근무표와 직원현황이 다른 경우 2 : 스케쥴 작성 이후 삭제 또는 입사일 변경 등 직원이 있는 경우 (schedule minus user)
+    # 근무표와 직원현황이 다른 경우 2 : 근무표 작성 이후 삭제 또는 입사일 변경 등 직원이 있는 경우 (schedule minus user)
     raw_query = f'''
         SELECT DISTINCT u.emp_name
         FROM wtm_schedule s
@@ -256,7 +256,7 @@ def work_schedule_reg(request, stand_ym):
             return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
         # -----------------------------
-        # 2. 기존 스케줄 중복 체크 (기존 로직 유지)
+        # 2. 기존 근무표 중복 체크 (기존 로직 유지)
         # -----------------------------
         existing_users_this_month = set(
             Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
@@ -266,9 +266,9 @@ def work_schedule_reg(request, stand_ym):
         post_user_ids = {row['user_id'] for row in schedule_list}
         duplicated_users = existing_users_this_month & post_user_ids
 
-        # 기존 코드: 한 명이라도 있으면 '중복된 스케쥴입니다.' 찍고 바로 work_schedule로
+        # 기존 코드: 한 명이라도 있으면 '중복된 근무표입니다.' 찍고 바로 work_schedule로
         if duplicated_users:
-            messages.error(request, '중복된 스케쥴입니다.')
+            messages.error(request, '중복된 근무표입니다.')
             return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
         # -----------------------------
@@ -288,7 +288,7 @@ def work_schedule_reg(request, stand_ym):
         next_schedule_map: dict[int, Schedule] = {}
         days_to_copy = 0
         if last_day_weekday != 6:
-            # 다음달 스케줄은 d1 ~ d(일요일까지)만 사용
+            # 다음달 근무표는 d1 ~ d(일요일까지)만 사용
             days_to_copy = 6 - last_day_weekday
             next_qs = Schedule.objects.filter(
                 year=next_ym[0:4],
@@ -310,8 +310,8 @@ def work_schedule_reg(request, stand_ym):
                     # 방어 코드: 이론상 없어야 함
                     continue
 
-                # 5-1. 이번달 스케줄 insert
-                # 직원의 입사일이 stand_ym의 말일보다 크면, stand_ym 기준 스케쥴은 없으므로 패스
+                # 5-1. 이번달 근무표 insert
+                # 직원의 입사일이 stand_ym의 말일보다 크면, stand_ym 기준 근무표은 없으므로 패스
                 if stand_ym < user.join_date.strftime('%Y%m'):
                     pass
                 else:
@@ -335,17 +335,17 @@ def work_schedule_reg(request, stand_ym):
                 # 5-2. 다음달 (첫 일요일까지) 처리
                 # 말일이 일요일이 아니면 다음달 일요일까지 입력
                 if last_day_weekday != 6:
-                    # 직원의 최종근무일이 next_ym의 1일보다 작으면, next_ym 기준 스케쥴은 없음
+                    # 직원의 최종근로일이 next_ym의 1일보다 작으면, next_ym 기준 근무표는 없음
                     if user.out_date is not None and user.out_date.strftime('%Y%m') < next_ym:
                         continue
 
                     obj2 = next_schedule_map.get(user_id)
                     if obj2 is not None:
-                        # 기존 스케줄 update
+                        # 기존 근무표 update
                         obj2.mod_id = request.user
                         obj2.mod_date = now
                     else:
-                        # 새 스케줄 insert
+                        # 새 근무표 insert
                         obj2 = Schedule(
                             user_id=user_id,
                             year=next_ym[0:4],
@@ -436,10 +436,10 @@ def work_schedule_reg(request, stand_ym):
     # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
     pre_dept = None
 
-    # user_list에 일자별 근무모듈을 매핑
+    # user_list에 일자별 근로모듈을 매핑
     for user in user_list:
         for key, value in day_list_eng.items():
-            # 입사 전이나, 최종근무일 후라면 None으로 세팅
+            # 입사 전이나, 최종근로일 후라면 None으로 세팅
             if stand_ym + key.zfill(2) < user['join_date'] or (
                     user['out_date'] is not None and stand_ym + key.zfill(2) > user['out_date']):
                 user[key] = None
@@ -461,7 +461,7 @@ def work_schedule_reg(request, stand_ym):
 
     # 다음달 일요일까지 날짜를 추가하기 위한 로직
     # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.해당 날짜들로 구성된 day_list 작성
-    # 3.next_ym 기준 공휴일 list 생성 4.user_list에 next_ym 기준 스케쥴 추가
+    # 3.next_ym 기준 공휴일 list 생성 4.user_list에 next_ym 기준 근무표 추가
     # last_day_weekday가 6(일요일)이면 패스
     if last_day_weekday != 6:
         next_day_list = context_processors.get_day_list(next_ym, 6-last_day_weekday)
@@ -472,23 +472,23 @@ def work_schedule_reg(request, stand_ym):
             Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6]).annotate(
                 day=ExtractDay('holiday')).values_list('day', flat=True))
 
-        # 기존 스케쥴이 입력되어 있는 user_id를 가져옴
+        # 기존 근무표가 입력되어 있는 user_id를 가져옴
         next_schedule_user_list = list(
             Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6]).values_list('user_id', flat=True))
 
-        # 스케쥴을 가져옴
+        # 근무표를 가져옴
         next_schedule_origin = Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6])
 
-        # user_list에 일자별 근무모듈을 매핑
+        # user_list에 일자별 근로모듈을 매핑
         for user in user_list:
-            # 기존 스케쥴이 있는 경우 schedule에서 가져옴
+            # 기존 근무표가 있는 경우 schedule에서 가져옴
             if user['id'] in next_schedule_user_list:
                 for key, value in next_day_list.items():
                     user["n"+key] = list(next_schedule_origin.filter(user_id=user['id']).values_list('d' + key + '_id', flat=True))[0]
-            # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴
+            # 기존 근무표가 없는 경우 공휴일 세팅 및 contract에서 가져옴
             else:
                 for key, value in next_day_list_eng.items():
-                    # 입사 전이나, 최종근무일 후라면 None으로 세팅
+                    # 입사 전이나, 최종근로일 후라면 None으로 세팅
                     if next_ym + key.zfill(2) < user['join_date'] or (
                             user['out_date'] is not None and next_ym + key.zfill(2) > user['out_date']):
                         user["n"+key] = None
@@ -556,7 +556,7 @@ def work_schedule_modify(request, stand_ym):
         # -----------------------------
         # 2. 공통 변수/정보 계산
         # -----------------------------
-        # stand_ym 기준 기존 스케쥴이 입력되어 있는 user_id 전체 (삭제용)
+        # stand_ym 기준 기존 근무표가 입력되어 있는 user_id 전체 (삭제용)
         existing_users_this_month = set(
             Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
             .values_list('user_id', flat=True)
@@ -582,7 +582,7 @@ def work_schedule_modify(request, stand_ym):
         from django.db import transaction
 
         with transaction.atomic():
-            # (1) 이번달 스케쥴 삭제 (삭제 대상만 bulk delete)
+            # (1) 이번달 근무표 삭제 (삭제 대상만 bulk delete)
             if users_to_delete:
                 Schedule.objects.filter(
                     year=stand_ym[0:4],
@@ -590,7 +590,7 @@ def work_schedule_modify(request, stand_ym):
                     user_id__in=users_to_delete,
                 ).delete()
 
-            # (2) 이번 POST에 포함된 직원 정보 / 스케쥴 미리 로딩
+            # (2) 이번 POST에 포함된 직원 정보 / 근무표 미리 로딩
             #     - User: join_date / out_date 비교용
             #     - Schedule: 수정/삽입용 (select_for_update 로 락 걸어도 좋음)
             users = User.objects.in_bulk(post_user_ids)  # {id: User}
@@ -602,7 +602,7 @@ def work_schedule_modify(request, stand_ym):
             )
             current_map = {s.user_id: s for s in current_qs}  # {user_id: Schedule}
 
-            # (3) 다음달 스케쥴도 미리 로딩 (말일이 일요일이 아닐 때만)
+            # (3) 다음달 근무표도 미리 로딩 (말일이 일요일이 아닐 때만)
             next_map: dict[int, Schedule] = {}
             if last_day_weekday != 6:
                 next_qs = Schedule.objects.filter(
@@ -615,7 +615,7 @@ def work_schedule_modify(request, stand_ym):
             now = timezone.now()
 
             # -----------------------------
-            # 4. 이번달 스케쥴 저장/수정
+            # 4. 이번달 근무표 저장/수정
             # -----------------------------
             for row in schedule_list:
                 user_id = row['user_id']
@@ -624,14 +624,14 @@ def work_schedule_modify(request, stand_ym):
                     # 이론상 없어야 하지만, 방어적으로
                     continue
 
-                # 기존 스케쥴이 존재하는 경우: update
+                # 기존 근무표가 존재하는 경우: update
                 obj = current_map.get(user_id)
                 if obj is not None:
                     obj.mod_id = request.user
                     obj.mod_date = now
                 else:
-                    # 기존 스케쥴이 없는 경우 insert
-                    # 직원의 입사일이 stand_ym의 말일보다 크면, stand_ym 기준 스케쥴은 없으므로 패스
+                    # 기존 근무표가 없는 경우 insert
+                    # 직원의 입사일이 stand_ym의 말일보다 크면, stand_ym 기준 근무표는 없으므로 패스
                     if stand_ym < user.join_date.strftime('%Y%m'):
                         obj = None
                     else:
@@ -655,7 +655,7 @@ def work_schedule_modify(request, stand_ym):
                     obj.save()
 
             # -----------------------------
-            # 5. 다음달(첫 일요일까지) 스케쥴 저장/수정
+            # 5. 다음달(첫 일요일까지) 근무표 저장/수정
             # -----------------------------
             if last_day_weekday != 6:
                 days_to_copy = 6 - last_day_weekday  # n1 ~ n{days_to_copy} 사용
@@ -666,17 +666,17 @@ def work_schedule_modify(request, stand_ym):
                     if user is None:
                         continue
 
-                    # 직원의 최종근무일이 next_ym의 1일보다 작으면, next_ym 기준 스케쥴은 없으므로 패스
+                    # 직원의 최종근로일이 next_ym의 1일보다 작으면, next_ym 기준 근무표는 없으므로 패스
                     if user.out_date is not None and user.out_date.strftime('%Y%m') < next_ym:
                         continue
 
                     obj2 = next_map.get(user_id)
                     if obj2 is not None:
-                        # 기존 스케쥴이 존재하는 경우: update
+                        # 기존 근무표가 존재하는 경우: update
                         obj2.mod_id = request.user
                         obj2.mod_date = now
                     else:
-                        # 기존 스케쥴이 없는 경우: insert
+                        # 기존 근무표가 없는 경우: insert
                         obj2 = Schedule(
                             user_id=user_id,
                             year=next_ym[0:4],
@@ -703,7 +703,7 @@ def work_schedule_modify(request, stand_ym):
     # 근무표 수정 기능 설명
     # 1. 해당 stand_ym의 대상 직원 추출
     # 2. 공휴일, 영업일 세팅
-    # 3. 기존 스케쥴 있으면 스케쥴을 가져오고, 없으면 근로계약에서 가져옴
+    # 3. 기존 근무표 있으면 근무표를 가져오고, 없으면 근로계약에서 가져옴
     ##############################################
 
     day_list = context_processors.get_day_list(stand_ym)  # ex) {'1':'목', '2':'금', ..., '31':'토'}
@@ -766,12 +766,12 @@ def work_schedule_modify(request, stand_ym):
     off_module_list = list(Module.objects.filter(cat='OFF').values_list('id', flat=True))
     off_module_id = (off_module_list[0] if off_module_list else None)
 
-    # 3) 이번달 스케줄 전체, dict로 매핑
+    # 3) 이번달 근무표 전체, dict로 매핑
     schedule_origin = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).select_related()
     schedule_user_list = list(schedule_origin.values_list('user_id', flat=True))
     schedule_map = {s.user_id: s for s in schedule_origin}
 
-    # 4) 다음달(필요시) 스케줄 전체, dict로 매핑 + 공휴일
+    # 4) 다음달(필요시) 근무표 전체, dict로 매핑 + 공휴일
     next_schedule_map = {}
     next_schedule_user_list = []
     if last_day_weekday != 6:
@@ -800,9 +800,9 @@ def work_schedule_modify(request, stand_ym):
     # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
     pre_dept = None
 
-    # user_list에 일자별 근무모듈을 매핑
+    # user_list에 일자별 근로모듈을 매핑
     for user in user_list:
-        # 기존 스케쥴이 있는 경우 schedule에서 가져옴
+        # 기존 근무표가 있는 경우 schedule에서 가져옴
         if user['id'] in schedule_user_list:
             user['is_new'] = False
             for key, value in day_list_eng.items():
@@ -829,11 +829,11 @@ def work_schedule_modify(request, stand_ym):
 
                         user[key] = (None if r == None else r[0])
 
-        # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴달
+        # 기존 근무표가 없는 경우 공휴일 세팅 및 contract에서 가져옴달
         else:
             user['is_new'] = True
             for key, value in day_list_eng.items():
-                # 입사 전이나, 최종근무일 후라면 None으로 세팅
+                # 입사 전이나, 최종근로일 후라면 None으로 세팅
                 if stand_ym + key.zfill(2) < user['join_date'] or (
                         user['out_date'] is not None and stand_ym + key.zfill(2) > user['out_date']):
                     user[key] = None
@@ -864,7 +864,7 @@ def work_schedule_modify(request, stand_ym):
 
     # 다음달 일요일까지 날짜를 추가하기 위한 로직
     # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.해당 날짜들로 구성된 day_list 작성
-    # 3.next_ym 기준 공휴일 list 생성 4.user_list에 next_ym 기준 스케쥴 추가
+    # 3.next_ym 기준 공휴일 list 생성 4.user_list에 next_ym 기준 근무표 추가
     # last_day_weekday가 6(일요일)이면 패스
     if last_day_weekday != 6:
         next_day_list = context_processors.get_day_list(next_ym, 6 - last_day_weekday)
@@ -875,24 +875,24 @@ def work_schedule_modify(request, stand_ym):
             Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6]).annotate(
                 day=ExtractDay('holiday')).values_list('day', flat=True))
 
-        # 기존 스케쥴이 입력되어 있는 user_id를 가져옴
+        # 기존 근무표가 입력되어 있는 user_id를 가져옴
         next_schedule_user_list = list(
             Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6]).values_list('user_id', flat=True))
 
-        # 스케쥴을 가져옴
+        # 근무표를 가져옴
         next_schedule_origin = Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6])
 
-        # user_list에 일자별 근무모듈을 매핑
+        # user_list에 일자별 근로모듈을 매핑
         for user in user_list:
-            # 기존 스케쥴이 있는 경우 schedule에서 가져옴
+            # 기존 근무표가 있는 경우 schedule에서 가져옴
             if user['id'] in next_schedule_user_list:
                 for key, value in next_day_list.items():
                     user["n" + key] = \
                     list(next_schedule_origin.filter(user_id=user['id']).values_list('d' + key + '_id', flat=True))[0]
-            # 기존 스케쥴이 없는 경우 공휴일 세팅 및 contract에서 가져옴
+            # 기존 근무표가 없는 경우 공휴일 세팅 및 contract에서 가져옴
             else:
                 for key, value in next_day_list_eng.items():
-                    # 입사 전이나, 최종근무일 후라면 None으로 세팅
+                    # 입사 전이나, 최종근로일 후라면 None으로 세팅
                     if next_ym + key.zfill(2) < user['join_date'] or (
                             user['out_date'] is not None and next_ym + key.zfill(2) > user['out_date']):
                         user["n" + key] = None

@@ -4,7 +4,7 @@
 <div class="container-fluid my-3 px-4">
 
     <div class="page-header">
-        <h4 class="page-title">근태현황</h4>
+        <h4 class="page-title">근태기록 》 월간집계</h4>
     </div>
 
     {% now "Ymd" as nowymd %}
@@ -64,11 +64,11 @@
                     </a>
                     <a href="{% url 'wtm:work_metric' 'overtime' stand_ym %}"
                        class="btn btn-sm {% if active_metric == 'overtime' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                        연장근무
+                        연장근로
                     </a>
                     <a href="{% url 'wtm:work_metric' 'holiday' stand_ym %}"
                        class="btn btn-sm {% if active_metric == 'holiday' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                        휴일근무
+                        휴일근로
                     </a>
                 </div>
             </div>

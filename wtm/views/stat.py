@@ -19,11 +19,9 @@ from wtm.services.attendance import build_monthly_metric_details_for_users
 from .helpers import sec_to_hhmmss, build_work_status_rows, fetch_base_users_for_month
 
 
+# 근태기록-월간집계(전체)
 @login_required(login_url="common:login")
 def work_status(request, stand_ym: str | None = None):
-    """
-    근태현황(월 요약) 화면.
-    """
     stand_ym, rows = build_work_status_rows(stand_ym)
 
     return render(request, "wtm/work_status.html", {
@@ -33,12 +31,10 @@ def work_status(request, stand_ym: str | None = None):
     })
 
 
+# 근태기록-월간집계(전체) 엑셀 다운로드
 @login_required(login_url="common:login")
 def work_status_excel(request, stand_ym: str | None = None):
-    """
-    근태현황(월 요약) 엑셀 다운로드.
-    - 화면에서 보는 work_status의 rows를 그대로 엑셀로 내려준다.
-    """
+
     # 공통 빌더로 데이터 얻기
     stand_ym, rows = build_work_status_rows(stand_ym)
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
@@ -51,10 +47,10 @@ def work_status_excel(request, stand_ym: str | None = None):
     # 1) 워크북/시트 생성
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "근태현황"
+    ws.title = "근태기록"
 
     # 2) 제목 (1행)
-    ws["A1"] = f"{year}년 {month}월 근태현황 (전체)"
+    ws["A1"] = f"{year}년 {month}월 근태기록 월간집계(전체)"
     ws["A1"].font = Font(size=10, bold=True)
 
     # 3) 헤더 (2행)
@@ -67,10 +63,10 @@ def work_status_excel(request, stand_ym: str | None = None):
         "지각(시간)",
         "조퇴(횟수)",
         "조퇴(시간)",
-        "초과근무(횟수)",
-        "초과근무(시간)",
-        "휴일근무(횟수)",
-        "휴일근무(시간)",
+        "연장근로(횟수)",
+        "연장근로(시간)",
+        "휴일근로(횟수)",
+        "휴일근로(시간)",
     ]
     ws.append(headers)
 
@@ -128,24 +124,24 @@ def work_status_excel(request, stand_ym: str | None = None):
     ws.column_dimensions["F"].width = 14  # 지각(시간)
     ws.column_dimensions["G"].width = 12  # 조퇴(횟수)
     ws.column_dimensions["H"].width = 14  # 조퇴(시간)
-    ws.column_dimensions["I"].width = 14  # 초과근무(횟수)
-    ws.column_dimensions["J"].width = 14  # 초과근무(시간)
-    ws.column_dimensions["K"].width = 14  # 휴일근무(횟수)
-    ws.column_dimensions["L"].width = 14  # 휴일근무(시간)
+    ws.column_dimensions["I"].width = 14  # 연장근로(횟수)
+    ws.column_dimensions["J"].width = 14  # 연장근로(시간)
+    ws.column_dimensions["K"].width = 14  # 휴일근로(횟수)
+    ws.column_dimensions["L"].width = 14  # 휴일근로(시간)
 
     # 6) HTTP 응답으로 xlsx 전송
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     # 한글처리를 위해 quote()로 감싸기
-    filename = quote(f"근태현황_{stand_ym}.xlsx")
+    filename = quote(f"근태기록-월간집계(전체)_{stand_ym}.xlsx")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
     wb.save(response)
     return response
 
 
-
+# 근태기록-월간집계(지각/조퇴/연장/휴일근로)
 @login_required(login_url="common:login")
 def work_metric(request, metric: str, stand_ym: str | None = None):
     """
@@ -153,7 +149,7 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
     - unit: month
     - calc: seconds (템플릿에서 HH:MM:SS 포맷)
     """
-    _ALLOWED_METRICS = {"late": "지각", "early": "조퇴", "overtime": "연장근무", "holiday": "휴일근무"}
+    _ALLOWED_METRICS = {"late": "지각", "early": "조퇴", "overtime": "연장근로", "holiday": "휴일근로"}
     metric = metric.lower()
     if metric not in _ALLOWED_METRICS:
         return render(request, "wtm/work_metric.html", {
@@ -211,6 +207,7 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
     })
 
 
+# 식대
 @login_required(login_url='common:login')
 def work_meal(request, stand_year=None):
     if stand_year is None:

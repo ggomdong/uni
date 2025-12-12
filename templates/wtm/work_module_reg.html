@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container my-3">
     <div class="page-header">
-        <h4 class="page-title">근무모듈 관리</h4>
+        <h4 class="page-title">근로모듈 관리</h4>
     </div>
 
     <form method="post">
@@ -18,13 +18,13 @@
             </select>
         </div>
         <div class="mb-3 col-md-4">
-            <label class="form-label" for="name">근무명</label>
+            <label class="form-label" for="name">근로명</label>
             <input type="text" class="form-control" name="name" id="name"
                    value="{{ form.name.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 row g-2">
             <div class="col-md-2">
-                <label class="form-label" for="start_time">근무시간(시업)</label>
+                <label class="form-label" for="start_time">근로시간(시업)</label>
                 <!-- 많은 시행착오 끝에, 시간 컬럼은 CharField로 하기로 했음.
                  <input type='time'>이면 브라우저 설정을 따르기 때문에 24시간제로 하기 어렵고,
                  시간 list를 미리 만들고 <select>로 하면 DB의 TimeField를 불러올때 '오전', '오후' 값이 포함되어서 비교가 힘듬-->
@@ -36,7 +36,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label" for="end_time">근무시간(종업)</label>
+                <label class="form-label" for="end_time">근로시간(종업)</label>
                 <select class="form-select" name="end_time" id="end_time">
                     <option></option>
                     {% for time in times %}
@@ -102,7 +102,7 @@
                 {% endfor %}
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" class="btn btn-sm btn-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-save2-fill" viewBox="0 0 16 16">
               <path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v6h-2a.5.5 0 0 0-.354.854l2.5 2.5a.5.5 0 0 0 .708 0l2.5-2.5A.5.5 0 0 0 10.5 7.5h-2v-6z"/>
             </svg>
@@ -131,12 +131,12 @@ function selectCategory() {
     itemList = [name, start_time, end_time, rest1_start_time, rest1_end_time, rest2_start_time, rest2_end_time];
 
     // color11(흰색)을 별도로 세팅하고,
-    // name=color인 DOM객체를 colors에 저장하여 유급휴무/OFF/휴일근무시 특정 색상으로 고정하기 위해 활용
+    // name=color인 DOM객체를 colors에 저장하여 유급휴무/OFF/휴일근로시 특정 색상으로 고정하기 위해 활용
     const color11 = document.querySelector("input#color11");
     const colors = document.querySelectorAll("input[name='color']");
 
 
-    if (selVal == '정규근무') {
+    if (selVal == '소정근로') {
         // 모든 DOM객체(i=0부터 시작)를 Editable하게 초기화
         for (let i=0; i < itemList.length; i++) {
             itemList[i].value = '';
@@ -147,7 +147,7 @@ function selectCategory() {
         for (const color of colors) {
             color.onclick = function() { };
         }
-    } else if (selVal == '휴일근무') {
+    } else if (selVal == '휴일근로') {
         // 모든 DOM객체(i=0부터 시작)를 Editable하게 초기화
         for (let i=0; i < itemList.length; i++) {
             itemList[i].value = '';
@@ -159,7 +159,7 @@ function selectCategory() {
             if (!color.checked) color.onclick = function() { return(false) };
         }
     } else if (selVal == '유급휴무') {
-        // 근무명을 제외한 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
+        // 근로명을 제외한 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
         for (let i=1; i < itemList.length; i++) {
             itemList[i].value = '-';
             itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';
@@ -173,7 +173,7 @@ function selectCategory() {
             if (!color.checked) color.onclick = function() { return(false) };
         }
     } else if (selVal == '무급휴무') {
-        // 근무명을 제외한 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
+        // 근로명을 제외한 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
         for (let i=1; i < itemList.length; i++) {
             itemList[i].value = '-';
             itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';
@@ -187,7 +187,7 @@ function selectCategory() {
             if (!color.checked) color.onclick = function() { return(false) };
         }
     } else if (selVal == 'OFF') {
-        // 근무명은 'OFF'로, 그 외 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
+        // 근로명은 'OFF'로, 그 외 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
         for (let i=0; i < itemList.length; i++) {
             itemList[i].value = '-';
             itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';

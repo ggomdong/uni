@@ -97,9 +97,9 @@ def get_contract_module_id(contracts, target_date, weekday_eng: str):
 
 def fetch_base_users_for_month(stand_ym: str) -> list[dict]:
     """
-    근태현황/지표 화면 공통: 월 단위 대상 직원 리스트 조회
+    근태기록-월간집계 : 월 단위 대상 직원 리스트 조회
     - 계약(check_yn='Y') 있는 사람만
-    - 스케줄 존재하는 사람만
+    - 근무표 존재하는 사람만
     - 부서/직위 order + 입사일 순으로 정렬
     """
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
@@ -160,7 +160,7 @@ def fetch_base_users_for_month(stand_ym: str) -> list[dict]:
 
 def build_work_status_rows(stand_ym: str | None):
     """
-    근태현황(월 요약)에서 사용하는 rows 공통 빌더.
+    근태기록-월간집계(전체)에서 사용하는 rows 공통 빌더.
     - stand_ym: 'YYYYMM' 형식 또는 None
     - return: (정규화된 stand_ym, rows 리스트)
     """
@@ -205,9 +205,9 @@ def build_work_status_rows(stand_ym: str | None):
 
 def fetch_log_users_for_day(stand_day: str):
     """
-    근무로그 화면에서 사용할 '대상 직원 목록'을 RAW SQL로 조회.
+    근태기록-일별상세 화면에서 사용할 '대상 직원 목록'을 RAW SQL로 조회.
     - contract.check_yn = 'Y'
-    - 해당 연월에 스케줄 존재 + 그 날(dN)에 모듈 지정(s.dN_id IS NOT NULL)
+    - 해당 연월에 근무표 존재 + 그 날(dN)에 모듈 지정(s.dN_id IS NOT NULL)
     - 재직자(입사/퇴사일 기준)
     - 부서/직위 order 순으로 정렬
     """

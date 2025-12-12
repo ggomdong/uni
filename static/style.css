@@ -403,7 +403,7 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 
   flex: 0 0 80px;           /* 🔹 고정 폭(80px). 필요하면 80~100 조정 */
   text-align: center;       /* 글자 가운데 정렬 */
-  white-space: nowrap;      /* 줄바꿈 방지 (연장근무, 휴일근무 깨지지 않게) */
+  white-space: nowrap;      /* 줄바꿈 방지 (연장근로, 휴일근로 깨지지 않게) */
 }
 
 /* 색상: #02b3bb로 통일 */

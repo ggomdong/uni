@@ -6,7 +6,7 @@ from django.utils import timezone
 from common.models import Branch, User
 
 
-# 근무모듈
+# 근로모듈
 class Module(models.Model):
     cat = models.CharField(max_length=20)
     name = models.CharField(max_length=50)
@@ -84,14 +84,14 @@ class Schedule(models.Model):
     mod_date = models.DateTimeField()
 
 
-# 근무로그
+# 근태기록
 class Work(models.Model):
     class WorkCode(models.TextChoices):
         IN = 'I', '출근'
         OUT = 'O', '퇴근'
 
     user = models.ForeignKey(User, on_delete=models.PROTECT)
-    work_code = models.CharField(max_length=1, choices=WorkCode.choices, verbose_name="근무코드")
+    work_code = models.CharField(max_length=1, choices=WorkCode.choices, verbose_name="근로코드")
     record_date = models.DateTimeField()
     record_day = models.DateField(editable=False, null=False, blank=False, db_index=True)
 
@@ -110,6 +110,7 @@ def set_record_day(sender, instance: Work, **kwargs):
     instance.record_day = instance.record_date.date()
 
 
+# 비콘정보
 class Beacon(models.Model):
     branch = models.ForeignKey(Branch, verbose_name="지점", on_delete=models.PROTECT, related_name="beacons")
     name = models.CharField("비콘명", max_length=100)  # 예: "1층 카운터 앞"

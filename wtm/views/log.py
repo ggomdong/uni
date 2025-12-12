@@ -30,12 +30,12 @@ def work_log(request, stand_day=None):
 
     days = context_processors.get_days_korean(stand_day)
 
-    # 2) 해당 날짜 근무로그
+    # 2) 해당 날짜 근태기록
     log_list = (
         Work.objects
         .filter(record_day=target_date)
         .select_related('user')
-        .order_by('-record_date')  # 최신 로그가 위로
+        .order_by('-record_date')  # 최신 기록이 위로
     )
 
     # 직원명 검색 (emp_name 기준)
@@ -119,7 +119,7 @@ def work_log_save(request):
         obj.user = target_user
     obj.save()
 
-    messages.success(request, "근무로그가 저장되었습니다.")
+    messages.success(request, "근태기록이 저장되었습니다.")
     return redirect('wtm:work_log', stand_day=stand_day)
 
 
@@ -130,7 +130,7 @@ def work_log_delete(request, log_id: int):
 
     if request.method == "POST":
         log.delete()
-        messages.success(request, "근무로그가 삭제되었습니다.")
+        messages.success(request, "근태기록이 삭제되었습니다.")
     else:
         messages.error(request, "잘못된 요청입니다.")
 

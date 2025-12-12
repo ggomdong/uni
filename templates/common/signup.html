@@ -1,38 +1,42 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container my-3">
-    <h4 class="my-3 border-bottom pb-2">직원 등록</h4>
-    <form method="post" action="{% url 'common:signup' %}">
+    <div class="page-header">
+        <h4 class="page-title">직원등록</h4>
+    </div>
+
+    <form method="post" action="{% url 'common:signup' %}" class="small">
         {% csrf_token %}
         {% include 'form_errors.html' %}
+
         <div class="mb-3 col-md-4">
             <label class="form-label" for="username">ID(휴대폰 번호)</label>
-            <input type="text" class="form-control" name="username" id="username"
+            <input type="text" class="form-control form-control-sm" name="username" id="username"
                    value="{{ form.username.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="password1">비밀번호</label>
-            <input type="password" class="form-control" name="password1" id="password1"
+            <input type="password" class="form-control form-control-sm" name="password1" id="password1"
                    value="{{ form.password1.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="password2">비밀번호 확인</label>
-            <input type="password" class="form-control" name="password2" id="password2"
+            <input type="password" class="form-control form-control-sm" name="password2" id="password2"
                    value="{{ form.password2.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="emp_name">직원명</label>
-            <input type="text" class="form-control" name="emp_name" id="emp_name"
+            <input type="text" class="form-control form-control-sm" name="emp_name" id="emp_name"
                    value="{{ form.emp_name.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="email">이메일</label>
-            <input type="text" class="form-control" name="email" id="email"
+            <input type="text" class="form-control form-control-sm" name="email" id="email"
                    value="{{ form.email.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="dept">부서명</label>
-            <select class="form-select" name="dept" id="dept">
+            <select class="form-select form-select-sm" name="dept" id="dept">
                 {% for dept in dept_list %}
                 <option value="{{dept}}">{{dept}}</option>
                 {% endfor %}
@@ -40,7 +44,7 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="position">직위명</label>
-            <select class="form-select" name="position" id="position">
+            <select class="form-select form-select-sm" name="position" id="position">
                 {% for position in position_list %}
                 <option value="{{position}}">{{position}}</option>
                 {% endfor %}
@@ -48,15 +52,15 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="join_date">입사일자</label>
-            <input type="date" class="form-control" name="join_date" id="join_date" max="9999-12-31"
+            <input type="date" class="form-control form-control-sm" name="join_date" id="join_date" max="9999-12-31"
                    value="{{ form.join_date.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
-            <label class="form-label" for="out_date">최종근무일자</label>
-            <input type="date" class="form-control" name="out_date" id="out_date" max="9999-12-31"
+            <label class="form-label" for="out_date">최종근로일자</label>
+            <input type="date" class="form-control form-control-sm" name="out_date" id="out_date" max="9999-12-31"
                    value="{{ form.out_date.value|default_if_none:'' }}">
         </div>
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" class="btn btn-sm btn-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-save2-fill" viewBox="0 0 16 16">
               <path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v6h-2a.5.5 0 0 0-.354.854l2.5 2.5a.5.5 0 0 0 .708 0l2.5-2.5A.5.5 0 0 0 10.5 7.5h-2v-6z"/>
             </svg>

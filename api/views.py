@@ -106,11 +106,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class AttendanceAPIView(APIView):
     """
-    앱 사용자 1명의 오늘의 스케쥴, 출퇴근 정보
+    앱 사용자 1명의 오늘의 근무표, 출퇴근 정보
     GET /api/attendance
 
     - 앱의 홈화면에서 사용자의 정보를 가져올때 사용
-    - 인증된 사용자(request.user)의 스케쥴, 출퇴근 정보, 조퇴/연장근무 판단
+    - 인증된 사용자(request.user)의 근무표, 출퇴근 정보, 조퇴/연장근로 판단
     """
 
     permission_classes = [IsAuthenticated]
@@ -131,7 +131,7 @@ class AttendanceAPIView(APIView):
         checkin = Work.objects.filter(user=user, work_code='I', record_day=today).order_by('record_date').first()
         checkout = Work.objects.filter(user=user, work_code='O', record_day=today).order_by('-record_date').first()
 
-        # 오늘 스케쥴 정보 조회
+        # 오늘 근무표 정보 조회
         try:
             schedule = Schedule.objects.get(user=user, year=str(today.year), month=f"{today.month:02}")
             module = getattr(schedule, f"d{today.day}", None)
@@ -142,7 +142,7 @@ class AttendanceAPIView(APIView):
         work_start = module.start_time if module and module.start_time and module.start_time != '-' else None
         work_end = module.end_time if module and module.end_time and module.end_time != '-' else None
 
-        # 현재 시간 기준 조퇴/연장근무 판단. True(조퇴), False(연장근무 후 퇴근)
+        # 현재 시간 기준 조퇴/연장근로 판단. True(조퇴), False(연장근로 후 퇴근)
         is_early_checkout = False
 
         if work_end and checkin:
@@ -172,11 +172,11 @@ class AttendanceAPIView(APIView):
 
 class MonthlyAttendanceAPIView(APIView):
     """
-    앱 사용자 1명의 월간 스케쥴, 출퇴근 정보
+    앱 사용자 1명의 월간 근무표, 출퇴근 정보
     GET /api/attendance/monthly
 
     - 앱의 통계화면에서 사용자의 정보를 가져올때 사용
-    - 인증된 사용자(request.user)의 월간 스케쥴, 출퇴근 정보, 지각/조퇴/연장근무/휴일근무 등 상태 값
+    - 인증된 사용자(request.user)의 월간 근무표, 출퇴근 정보, 지각/조퇴/연장근로/휴일근로 등 상태 값
     """
 
     permission_classes = [IsAuthenticated]
@@ -250,7 +250,7 @@ class WorkCreateAPIView(APIView):
             # 오늘 출근 여부 확인
             checkin_exists = Work.objects.select_for_update().filter(user=user, work_code='I', record_day=today).exists()
 
-            # 출근 기록이 없으면 출근, 있으면 퇴근으로 설정
+            # 근태기록이 없으면 출근, 있으면 퇴근으로 설정
             work_code = 'I' if not checkin_exists else 'O'
 
             # Work 로그 저장

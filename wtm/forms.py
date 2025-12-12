@@ -10,9 +10,9 @@ class ModuleForm(forms.ModelForm):
 
         labels = {
             'cat': '구분',
-            'name': '근무명',
-            'start_time': '근무시간(시업)',
-            'end_time': '근무시간(종업)',
+            'name': '근로명',
+            'start_time': '근로시간(시업)',
+            'end_time': '근로시간(종업)',
             'rest1_start_time': '휴게시간1(시작)',
             'rest1_end_time': '휴게시간1(종료)',
             'rest2_start_time': '휴게시간2(시작)',
@@ -28,7 +28,7 @@ class ContractForm(forms.ModelForm):
 
         labels = {
             'stand_date': '기준일자',
-            'type': '근무형태',
+            'type': '근로형태',
             'check_yn': '근태확인',
             'mon': '월요일',
             'tue': '화요일',

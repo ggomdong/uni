@@ -26,7 +26,7 @@ def work_module_reg(request):
             module.mod_id = request.user
             module.mod_date = timezone.now()
             module.save()
-            messages.success(request, "근무모듈을 등록했습니다.")
+            messages.success(request, "근로모듈을 등록했습니다.")
             return redirect('wtm:work_module')
     else:
         form = ModuleForm()
@@ -55,7 +55,7 @@ def work_module_modify(request, module_id):
             module.mod_id = request.user
             module.mod_date = timezone.now()
             module.save()
-            messages.success(request, "근무모듈을 수정했습니다.")
+            messages.success(request, "근로모듈을 수정했습니다.")
             return redirect('wtm:work_module')
     # GET 방식으로 수정화면 호출
     else:
@@ -74,5 +74,5 @@ def work_module_delete(request, module_id):
     #     messages.error(request, '삭제 권한이 없습니다.')
     #     return redirect('pybo:detail', question_id=question.id)
     module.delete()
-    messages.success(request, "근무모듈을 삭제했습니다.")
+    messages.success(request, "근로모듈을 삭제했습니다.")
     return redirect('wtm:work_module')

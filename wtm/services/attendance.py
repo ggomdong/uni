@@ -24,21 +24,21 @@ def determine_checkout_time(
     - 없으면:
       - '어제까지'인 날(record_day < today)이고
       - 출근이 있고(checkin_dt)
-      - 출근이 스케줄 종료 이전 또는 같을 때(checkin_dt <= sched_end_dt)
-        → 스케줄 종료 시각으로 보정
+      - 출근이 근무표 종업 이전 또는 같을 때(checkin_dt <= sched_end_dt)
+        → 근무표 종업 시각으로 보정
     """
     # 1) 실제 퇴근 로그가 있으면 사용
     if checkout_dt:
         return checkout_dt.strftime("%H:%M:%S")
 
-    # 2) 퇴근 로그 없을 때: 어제까지 & 출근 ≤ 스케줄 종료 → 스케줄 종료로 보정
+    # 2) 퇴근 로그 없을 때: 어제까지 & 출근 ≤ 근무표 종업시각 → 근무표 종업시각으로 보정
     if (
         record_day < today
         and sched_end_dt is not None
         and checkin_dt is not None
         and checkin_dt <= sched_end_dt
     ):
-        # 스케줄은 분 단위만 사용하지만, 나중을 위해 초까지 그대로 사용
+        # 근로모듈에 정의된 시각은 분 단위만 사용하지만, 나중을 위해 초까지 그대로 사용
         return sched_end_dt.strftime("%H:%M:%S")
 
     return None
@@ -46,8 +46,8 @@ def determine_checkout_time(
 
 # 앱 캘린더에서 사용. 1인 * 1개월
 def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]:
-    """한 사용자에 대한 '월간 일자별 근태' 리스트를 생성."""
-    # 1. 스케줄 조회 : Schedule 가져올 때 한 방에 join → 이후 schedule.d1… 접근 시 추가 쿼리 없음
+    """한 사용자에 대한 '월간 근태' 리스트를 생성."""
+    # 1. 근무표 조회 : Schedule 가져올 때 한 방에 join → 이후 schedule.d1… 접근 시 추가 쿼리 없음
     try:
         schedule = (
             Schedule.objects
@@ -57,7 +57,7 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
     except Schedule.DoesNotExist:
         return []
 
-    # 2. 근태 기록 조회
+    # 2. 근태기록 조회
     works = (
         Work.objects
         .filter(user=user, record_day__year=year, record_day__month=month)
@@ -83,7 +83,7 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
         record_day = date(year, month, day)
         module: Module = getattr(schedule, f"d{day}", None)
 
-        # 출퇴근 기록 목록 (이미 record_date 기준 정렬됨)
+        # 근태기록 목록 (이미 record_date 기준 정렬됨)
         ins = work_map.get(record_day, {}).get("I", [])
         outs = work_map.get(record_day, {}).get("O", [])
 
@@ -91,14 +91,14 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
         checkin_dt = ins[0] if ins else None
         checkin_time = checkin_dt.strftime("%H:%M:%S") if checkin_dt else None
 
-        # 스케줄 종료시각 파싱
+        # 근무표 종업시각 파싱
         sched_end_hhmm = module.end_time if (module and module.end_time and module.end_time != "-") else None
         sched_end_dt = to_dt(record_day, sched_end_hhmm) if sched_end_hhmm else None
 
         # 퇴근 datetime (가장 늦은 O)
         checkout_dt = outs[-1] if outs else None
 
-        # 퇴근 시각 결정 (공통 헬퍼 사용)
+        # 퇴근시각 결정 (공통 헬퍼 사용)
         checkout_time = determine_checkout_time(
             checkout_dt=checkout_dt,
             record_day=record_day,
@@ -126,9 +126,9 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
             # 상태(앱은 status_codes/labels 배열을 쓰면 됨)
             "status": res.status,
             "status_codes": res.status_codes,  # ["REGULAR","LATE",...]
-            "status_labels": res.status_labels,  # ["정규근무","지각",...]
+            "status_labels": res.status_labels,  # ["소정근로","지각",...]
 
-            # 모듈
+            # 근로모듈
             "work_cat": module.cat if module else None,
             "work_name": module.name if module else None,
 
@@ -147,14 +147,14 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
     return results
 
 
-# 웹 초기화면 근무현황에서 활용. 전체 사용자 * 1일
+# 웹 TODAY 하단 근태현황에서 활용. 전체 사용자 * 1일
 def build_daily_attendance_for_users(base_rows: list[dict], day: date) -> list[dict]:
     """
-    인덱스 화면 하단 '근무현황' 표용 work_list를 생성한다.
+    인덱스 화면 하단 '근태현황'용 work_list를 생성한다.
     - base_rows: 뷰에서 실행한 기존 SQL 결과(dict 리스트). (dept, position, emp_name, start_time, end_time, cat 등 포함)
     - day: 기준 일자 (datetime.date)
     정책:
-      - 체크아웃 보정: 오늘은 보정 안 함. 과거일이고 (출근 ≤ 스케줄 종료)일 때만 스케줄 종료로 보정.
+      - 퇴근시각 보정: 오늘은 보정 안 함. 과거일이고 (출근시각 ≤ 근무표 종업시각)일 때만 종업시각으로 보정.
       - 초/상태 계산은 compute_seconds_status_for_day 재사용.
     반환:
       - 템플릿(index.html)의 컬럼명에 맞춘 dict 리스트.
@@ -173,7 +173,7 @@ def build_daily_attendance_for_users(base_rows: list[dict], day: date) -> list[d
             user_ids.append(uid)
             seen.add(uid)
 
-    # 2) 해당 일자 로그 일괄 조회 → 최초 IN / 최종 OUT
+    # 2) 해당 일자 근태기록 일괄 조회 → 최초 IN / 최종 OUT
     works = (
         Work.objects
         .filter(user_id__in=user_ids, record_day=day)
@@ -195,7 +195,7 @@ def build_daily_attendance_for_users(base_rows: list[dict], day: date) -> list[d
     for r in base_rows:
         uid = r["user_id"]
 
-        # 모듈 래핑(코어가 기대하는 속성만 제공)
+        # 근로모듈 래핑(코어가 기대하는 속성만 제공)
         mod = None
         if r.get("start_time") and r.get("end_time") and r.get("cat"):
             mod = SimpleNamespace(
@@ -267,7 +267,7 @@ def prepare_month(users: list[int], year: int, month: int):
     last = monthrange(year, month)[1]
     days = [date(year, month, d) for d in range(1, last + 1)]
 
-    # 2) 스케줄 bulk (d1_id ~ dN_id)
+    # 2) 근무표 bulk (d1_id ~ dN_id)
     cols = [f"d{d}_id" for d in range(1, last + 1)]
     sched_rows = (
         Schedule.objects
@@ -284,10 +284,10 @@ def prepare_month(users: list[int], year: int, month: int):
             if mid:
                 module_ids.add(mid)
 
-    # 3) 모듈 캐시
+    # 3) 근로모듈 캐시
     modules: dict[int, Module] = Module.objects.in_bulk(module_ids) if module_ids else {}
 
-    # 4) 로그 bulk
+    # 4) 근태기록 bulk
     works = (
         Work.objects
         .filter(user_id__in=users, record_day__year=year, record_day__month=month)
@@ -311,19 +311,8 @@ def prepare_month(users: list[int], year: int, month: int):
     return days, sched_map, modules, logs_map
 
 
+# 웹 근태기록-월간집계(전체)에서 활용. 전체 사용자 * 1개월
 def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, month: int) -> dict[int, dict]:
-    """
-    [웹 근태현황 요약표] 전체 사용자 × 1개월, 초(second) 단위 합계/횟수.
-    반환: {
-      user_id: {
-        late_count,     late_seconds,
-        early_count,    early_seconds,
-        overtime_count, overtime_seconds,
-        holiday_count,  holiday_seconds,
-        error_count,
-      }, ...
-    }
-    """
     if not users:
         return {}
 
@@ -351,13 +340,13 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
             checkin_dt = min(ins) if ins else None
             checkin_time = checkin_dt.strftime("%H:%M:%S") if checkin_dt else None
 
-            # --- 스케줄 종료 dt ---
+            # --- 근무표 종업 dt ---
             sched_end_hhmm = None
             if module and getattr(module, "end_time", None) and module.end_time != "-":
                 sched_end_hhmm = module.end_time
             sched_end_dt = to_dt(rd, sched_end_hhmm) if sched_end_hhmm else None
 
-            # --- 실제 퇴근 로그 dt ---
+            # --- 실제 근태기록상 퇴근 dt ---
             checkout_dt = max(outs) if outs else None
 
             # --- 공통 퇴근 보정 정책 적용 ---
@@ -393,6 +382,7 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
     return summary
 
 
+# 웹 근태기록-월간집계(지표별)에서 활용. 전체 사용자 * 1개월
 def build_monthly_metric_details_for_users(
     *, users: list[int], year: int, month: int, metric: str
 ) -> dict[int, dict]:
@@ -444,13 +434,13 @@ def build_monthly_metric_details_for_users(
             checkin_dt = min(ins) if ins else None
             checkin_time = checkin_dt.strftime("%H:%M:%S") if checkin_dt else None
 
-            # --- 스케줄 종료 dt ---
+            # --- 근무표 종업 dt ---
             sched_end_hhmm = None
             if module and getattr(module, "end_time", None) and module.end_time != "-":
                 sched_end_hhmm = module.end_time
             sched_end_dt = to_dt(rd, sched_end_hhmm) if sched_end_hhmm else None
 
-            # --- 실제 퇴근 로그 dt ---
+            # --- 실제 근태기록 퇴근 dt ---
             checkout_dt = max(outs) if outs else None
 
             # --- 공통 퇴근 보정 정책 적용 ---

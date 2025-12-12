@@ -63,15 +63,9 @@
             <th class="table-primary sortable" onClick="sort(0)">부서 {% if order == '0' %}▲{% elif order == '01' %}▼{% else %}↕{% endif %}</th>
             <th class="table-primary">직위</th>
             <th class="table-primary sortable" onClick="sort(2)">입사일 {% if order == '2' %}▲{% elif order == '21' %}▼{% else %}↕{% endif %}</th>
-            <th class="table-primary sortable" onClick="sort(3)">최종근무일 {% if order == '3' %}▲{% elif order == '31' %}▼{% else %}↕{% endif %}</th>
-<!--            <th class="table-primary" onClick="sortTable(0)">번호</th>-->
-<!--            <th class="table-primary" onClick="sortTable(1)">성명</th>-->
-<!--            <th class="table-primary" onClick="sortTable(2)">부서</th>-->
-<!--            <th class="table-primary" onClick="sortTable(3)">직위</th>-->
-<!--            <th class="table-primary" onClick="sortTable(4)">입사일</th>-->
-<!--            <th class="table-primary" onClick="sortTable(5)">최종근무일</th>-->
+            <th class="table-primary sortable" onClick="sort(3)">최종근로일 {% if order == '3' %}▲{% elif order == '31' %}▼{% else %}↕{% endif %}</th>
             <th class="table-secondary">기준일</th>
-            <th class="table-secondary">근무형태</th>
+            <th class="table-secondary">근로형태</th>
             <th class="table-secondary">근태확인</th>
             <th class="table-secondary">월</th>
             <th class="table-secondary">화</th>
@@ -234,7 +228,7 @@ function sortTable(n) {
   switching = true;
   // 정렬방향을 세팅 : 오름차순
   dir = "asc";
-  // 더 이상 정렬이 필요없을때까지 반복
+  // 더 이상 정렬이 필요 없을 때까지 반복
   while (switching) {
     switching = false;
     rows = table.rows;

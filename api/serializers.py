@@ -34,7 +34,7 @@ class MonthlyAttendanceDaySerializer(serializers.Serializer):
         child=serializers.CharField(), allow_empty=True
     )
 
-    # 모듈(스케줄) 정보
+    # 모듈(근무표) 정보
     work_cat = serializers.CharField(allow_null=True)
     work_name = serializers.CharField(allow_null=True)
     work_color_code = serializers.IntegerField(allow_null=True)
