@@ -278,7 +278,8 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
     presence_paid_seconds = intersection_seconds(checkin_dt, checkout_dt, paid_segments) if (has_checkin and has_checkout) else 0
 
     # 오늘 이후의 상태 판정을 위한 변수 설정
-    today = timezone.now().date()
+    now = timezone.now()
+    today = now.date()
     is_today = (record_day == today)
     is_future = (record_day > today)
 
@@ -305,10 +306,33 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
 
             else:
                 if is_today:
+                    # 오늘 + 시업시간이 이미 지났는데 출퇴근 기록이 전혀 없음 → ERROR
                     # 오늘: '명백히 잘못'이면 ERROR
-                    is_error = (
-                        (has_checkin and has_checkout and paid_total_seconds > 0 and presence_paid_seconds == 0)
+                    sched_start_hhmm = (
+                        module.start_time
+                        if (module.start_time and module.start_time != "-")
+                        else None
                     )
+                    sched_start_dt = (
+                        to_dt(record_day, sched_start_hhmm)
+                        if sched_start_hhmm
+                        else None
+                    )
+
+                    start_passed_no_check = (
+                            sched_start_dt is not None
+                            and now >= sched_start_dt
+                            and (not has_checkin and not has_checkout)
+                    )
+
+                    # ② 기존 “명백히 잘못 찍힌 경우” (체류∩유급 0)도 그대로 유지
+                    wrong_logs = (
+                            has_checkin and has_checkout
+                            and paid_total_seconds > 0
+                            and presence_paid_seconds == 0
+                    )
+
+                    is_error = start_passed_no_check or wrong_logs
                 else:
                     is_error = (
                         # (1) 출퇴근 기록 없음

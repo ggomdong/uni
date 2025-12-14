@@ -55,7 +55,7 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
             .get(user=user, year=str(year), month=f"{month:02d}")
         )
     except Schedule.DoesNotExist:
-        return []
+        schedule = None
 
     # 2. 근태기록 조회
     works = (
@@ -81,25 +81,33 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
 
     for day in range(1, days_in_month + 1):
         record_day = date(year, month, day)
-        module: Module = getattr(schedule, f"d{day}", None)
+        module: Module | None = getattr(schedule, f"d{day}", None) if schedule else None
 
         # 근태기록 목록 (이미 record_date 기준 정렬됨)
         ins = work_map.get(record_day, {}).get("I", [])
         outs = work_map.get(record_day, {}).get("O", [])
 
         # 출근 시각 (가장 이른 I)
-        checkin_dt = ins[0] if ins else None
-        checkin_time = checkin_dt.strftime("%H:%M:%S") if checkin_dt else None
+        checkin_dt: datetime | None = ins[0] if ins else None
+        checkin_time: str | None = (
+            checkin_dt.strftime("%H:%M:%S") if checkin_dt else None
+        )
 
         # 근무표 종업시각 파싱
-        sched_end_hhmm = module.end_time if (module and module.end_time and module.end_time != "-") else None
-        sched_end_dt = to_dt(record_day, sched_end_hhmm) if sched_end_hhmm else None
+        sched_end_hhmm: str | None = (
+            module.end_time
+            if (module and module.end_time and module.end_time != "-")
+            else None
+        )
+        sched_end_dt: datetime | None = (
+            to_dt(record_day, sched_end_hhmm) if sched_end_hhmm else None
+        )
 
         # 퇴근 datetime (가장 늦은 O)
-        checkout_dt = outs[-1] if outs else None
+        checkout_dt: datetime | None = outs[-1] if outs else None
 
         # 퇴근시각 결정 (공통 헬퍼 사용)
-        checkout_time = determine_checkout_time(
+        checkout_time: str | None = determine_checkout_time(
             checkout_dt=checkout_dt,
             record_day=record_day,
             checkin_dt=checkin_dt,
@@ -114,7 +122,7 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
         )
 
         # compute_seconds_status_for_day 로 초 단위 계산
-        res = compute_seconds_status_for_day(record_day, module, log)
+        metrics = compute_seconds_status_for_day(record_day, module, log)
 
         results.append({
             "record_day": record_day,
@@ -124,24 +132,24 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
             "checkout_time": checkout_time,
 
             # 상태(앱은 status_codes/labels 배열을 쓰면 됨)
-            "status": res.status,
-            "status_codes": res.status_codes,  # ["REGULAR","LATE",...]
-            "status_labels": res.status_labels,  # ["소정근로","지각",...]
+            "status": metrics.status,
+            "status_codes": metrics.status_codes,  # ["REGULAR","LATE",...]
+            "status_labels": metrics.status_labels,  # ["소정근로","지각",...]
 
             # 근로모듈
             "work_cat": module.cat if module else None,
             "work_name": module.name if module else None,
 
             # 초 단위 지표(휴게 반영)
-            "late_seconds": res.late_seconds,
-            "early_seconds": res.early_seconds,
-            "overtime_seconds": res.overtime_seconds,
-            "holiday_seconds": res.holiday_seconds,
+            "late_seconds": metrics.late_seconds,
+            "early_seconds": metrics.early_seconds,
+            "overtime_seconds": metrics.overtime_seconds,
+            "holiday_seconds": metrics.holiday_seconds,
 
             # 프런트 편의
-            "is_late": res.late_seconds > 0,
-            "is_early_checkout": res.early_seconds > 0,
-            "is_overtime": res.overtime_seconds > 0,
+            "is_late": metrics.late_seconds > 0,
+            "is_early_checkout": metrics.early_seconds > 0,
+            "is_overtime": metrics.overtime_seconds > 0,
         })
 
     return results
@@ -359,23 +367,23 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
             )
 
             # --- 코어 계산 ---
-            m = compute_seconds_status_for_day(
+            metrics = compute_seconds_status_for_day(
                 record_day=rd,
                 module=module,
                 log=LogsDay(checkin=checkin_time, checkout=checkout_time),
             )
 
-            if m.late_seconds     > 0: agg["late_count"]     += 1
-            if m.early_seconds    > 0: agg["early_count"]    += 1
-            if m.overtime_seconds > 0: agg["overtime_count"] += 1
-            if m.holiday_seconds  > 0: agg["holiday_count"]  += 1
-            if m.status_codes == ["ERROR"]:
+            if metrics.late_seconds     > 0: agg["late_count"]     += 1
+            if metrics.early_seconds    > 0: agg["early_count"]    += 1
+            if metrics.overtime_seconds > 0: agg["overtime_count"] += 1
+            if metrics.holiday_seconds  > 0: agg["holiday_count"]  += 1
+            if metrics.status_codes == ["ERROR"]:
                 agg["error_count"] += 1
 
-            agg["late_seconds"]     += m.late_seconds
-            agg["early_seconds"]    += m.early_seconds
-            agg["overtime_seconds"] += m.overtime_seconds
-            agg["holiday_seconds"]  += m.holiday_seconds
+            agg["late_seconds"]     += metrics.late_seconds
+            agg["early_seconds"]    += metrics.early_seconds
+            agg["overtime_seconds"] += metrics.overtime_seconds
+            agg["holiday_seconds"]  += metrics.holiday_seconds
 
         summary[uid] = agg
 
@@ -453,12 +461,12 @@ def build_monthly_metric_details_for_users(
             )
 
             # --- 코어 계산 ---
-            m = compute_seconds_status_for_day(
+            metrics = compute_seconds_status_for_day(
                 record_day=rd,
                 module=module,
                 log=LogsDay(checkin=checkin_time, checkout=checkout_time),
             )
-            seconds = getattr(m, key)
+            seconds = getattr(metrics, key)
             day_map[rd] = seconds
             if seconds > 0:
                 cnt += 1

@@ -5,6 +5,8 @@ from wtm.models import Work, Beacon
 
 class AttendanceSerializer(serializers.Serializer):
     emp_name = serializers.CharField()
+    module_cat = serializers.CharField()
+    module_name = serializers.CharField()
     work_start = serializers.CharField(allow_null=True)
     work_end = serializers.CharField(allow_null=True)
     checkin_time = serializers.DateTimeField(allow_null=True)

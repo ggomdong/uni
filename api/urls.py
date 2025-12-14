@@ -11,5 +11,10 @@ urlpatterns = [
     path('attendance/monthly', views.MonthlyAttendanceAPIView.as_view()),
     path('beacons/', views.BeaconListAPIView.as_view()),
     path('work/', views.WorkCreateAPIView.as_view()),
+    path(
+        "non-business-days/",
+        views.NonBusinessDayListAPIView.as_view(),
+        name="non-business-days",
+    ),
     path('profile/', views.ProfileAPIView.as_view()),
 ]
