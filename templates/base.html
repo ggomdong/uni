@@ -13,12 +13,16 @@
     <link rel="shortcut icon" href="{% static 'favicon.png' %}">
     <title>YOU&I 근태관리</title>
 </head>
-<body>
-<!-- 네비게이션바 -->
-{% include 'navbar.html' %}
-<!-- 개별 html Start -->
-{% block content %}
-{% endblock %}
+<body class="d-flex flex-column min-vh-100">
+    <!-- 네비게이션바 -->
+    {% include 'navbar.html' %}
+
+    <main class="flex-grow-1 app-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% include 'footer.html' %}
 <!-- 개별 html End -->
 {# Django messages → Bootstrap Toasts #}
 {% if messages %}

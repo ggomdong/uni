@@ -38,6 +38,28 @@ STATUS_LABELS = {
 }
 
 
+def footer_context(request):
+    """
+    footer에서 사용할 공통 컨텍스트.
+    - 로그인 상태면 지점명 표시
+    - 아니면 None
+    """
+    branch_name = None
+
+    user = getattr(request, "user", None)
+    if user and user.is_authenticated:
+        # user.branch 가 null일 수 있으니 방어
+        branch = getattr(user, "branch", None)
+        if branch:
+            branch_name = branch.name
+
+    return {
+        "footer_branch_name": branch_name,
+        "footer_vendor_name": "MoggLab",
+        "footer_product_name": "YOU&I 근태관리",
+    }
+
+
 def get_day_of_the_week(self):
     return {'day_of_the_week': day_of_the_week}
 

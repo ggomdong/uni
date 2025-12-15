@@ -17,18 +17,57 @@ body {
 }
 
 /* CSS for Bootstrap 5 Fixed Left Sidebar Navigation */
-@media(max-width:1920px){
+@media (max-width: 1919.98px) {
   body {
     padding-top: 65px;
-    padding-left: 0px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* 상단 네비 모드: body에서 이미 보정하므로 main은 추가 패딩 불필요 */
+  .app-content {
+    padding-top: 0;
+  }
+
+  /* footer 내용 폭을 '너무 가운데/너무 끝' 둘 다 아니게 조절 */
+  .footer-inner{
+    max-width: 1500px;   /* 현재 body 안에서 1500을 쓰고 있으니 일단 동일 */
+    margin: 0 auto;
+    padding-left: 24px;  /* 작은 화면에서 끝에 붙지 않게 */
+    padding-right: 24px;
   }
 }
 
-@media(min-width:1920px){
+@media (min-width: 1920px) {
   body {
-    padding-left: 300px;
-    padding-right: 60px;
-    padding-top: 0px;
+    padding-left: 240px; /* 300 → 240 (빈공간 줄이기) */
+    padding-right: 40px; /* 60 → 40 */
+    padding-top: 0;
+  }
+
+  /* 좌측 사이드바 모드: 상단 여백 최소 */
+  .app-content {
+    padding-top: 16px;
+  }
+
+  /* footer 배경/보더를 화면 좌우 끝까지 확장 */
+  .app-footer {
+    margin-left: -240px;   /* body padding-left와 동일 */
+    margin-right: -40px;   /* body padding-right와 동일 */
+  }
+
+  /* footer 내용은 다시 본문 정렬로 되돌림 */
+  .app-footer > .container-fluid {
+    padding-left: 240px;
+    padding-right: 40px;
+  }
+
+  /* footer-inner는 별도 폭 제한 없이 본문 흐름 */
+  .footer-inner {
+    max-width: none;
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   nav.navbar {
@@ -42,20 +81,18 @@ body {
     display: block;
     border-right: 1px solid #cecece;
   }
-  nav.navbar >.container-fluid {
+  nav.navbar > .container-fluid {
     flex-direction: column;
     padding: 0;
   }
   nav.navbar .navbar-nav {
     flex-direction: column;
+    width: 100%;
   }
   nav.navbar .navbar-collapse {
     width: 100%;
     padding-left: 50px;
     padding-top: 30px;
-  }
-  nav.navbar .navbar-nav {
-    width: 100%;
   }
 }
 
