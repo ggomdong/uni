@@ -207,8 +207,8 @@ def fetch_log_users_for_day(stand_day: str):
     """
     근태기록-일별상세 화면에서 사용할 '대상 직원 목록'을 RAW SQL로 조회.
     - contract.check_yn = 'Y'
-    - 해당 연월에 근무표 존재 + 그 날(dN)에 모듈 지정(s.dN_id IS NOT NULL)
-    - 재직자(입사/퇴사일 기준)
+    - 해당 연월에 근무표 존재
+    - 재직자
     - 부서/직위 order 순으로 정렬
     """
     # stand_day: 'YYYYMMDD'
@@ -220,7 +220,7 @@ def fetch_log_users_for_day(stand_day: str):
             u.emp_name,
             u.dept,
             u.position,
-            DATE_FORMAT(u.join_date, '%%Y%%m%%d') AS join_date,
+            DATE_FORMAT(u.join_date, '%Y%m%d') AS join_date,
             d.`order` AS dept_order,
             p.`order` AS position_order
         FROM common_user u
@@ -255,12 +255,11 @@ def fetch_log_users_for_day(stand_day: str):
           AND c.check_yn = 'Y'
           AND s.year  = '{stand_day[0:4]}'
           AND s.month = '{stand_day[4:6]}'
-          AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= '{stand_day}'
+          AND DATE_FORMAT(u.join_date, '%Y%m') <= '{stand_day[0:6]}'
           AND (
-                DATE_FORMAT(u.out_date, '%%Y%%m%%d') IS NULL
-             OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= '{stand_day}'
+                DATE_FORMAT(u.out_date, '%Y%m') IS NULL
+             OR DATE_FORMAT(u.out_date, '%Y%m') >= '{stand_day[0:6]}'
           )
-          AND s.d{day_no}_id IS NOT NULL
         ORDER BY dept_order, position_order, u.join_date
     """
 
