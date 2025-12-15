@@ -7,27 +7,27 @@
         <h4 class="page-title">직원정보 수정</h4>
     </div>
 
-    <form method="post" action="" id="userModifyForm">
+    <form method="post" action="" id="userModifyForm" class="small">
         {% csrf_token %}
         {% include 'form_errors.html' %}
         <div class="mb-3 col-md-4">
             <label class="form-label" for="username">ID(휴대폰 번호)</label>
-            <input type="text" class="form-control" name="username" id="username"
+            <input type="text" class="form-control form-control-sm" name="username" id="username"
                    value="{{ form.username.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="emp_name">직원명</label>
-            <input type="text" class="form-control" name="emp_name" id="emp_name"
+            <input type="text" class="form-control form-control-sm" name="emp_name" id="emp_name"
                    value="{{ form.emp_name.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="email">이메일</label>
-            <input type="text" class="form-control" name="email" id="email"
+            <input type="text" class="form-control form-control-sm" name="email" id="email"
                    value="{{ form.email.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="dept">부서명</label>
-            <select class="form-select" name="dept" id="dept">
+            <select class="form-select form-select-sm" name="dept" id="dept">
                 {% for dept in dept_list %}
                 <option value="{{dept}}" {% if form.dept.value == dept %} selected {% endif %}>{{dept}}</option>
                 {% endfor %}
@@ -35,7 +35,7 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="position">직위명</label>
-            <select class="form-select" name="position" id="position">
+            <select class="form-select form-select-sm" name="position" id="position">
                 {% for position in position_list %}
                 <option value="{{position}}" {% if form.position.value == position %} selected {% endif %}>{{position}}</option>
                 {% endfor %}
@@ -43,14 +43,14 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="join_date">입사일자</label>
-            <input type="date" class="form-control" name="join_date" id="join_date" max="9999-12-31"
+            <input type="date" class="form-control form-control-sm" name="join_date" id="join_date" max="9999-12-31"
                    value="{{ form.join_date.value|date:'Y-m-d'|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="out_date">최종근로일자</label>
             <button type="button" class="btn btn-danger" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;"
                     onclick="javascript:document.getElementById('out_date').value='';">삭제</button>
-            <input type="date" class="form-control" name="out_date" id="out_date" max="9999-12-31"
+            <input type="date" class="form-control form-control-sm" name="out_date" id="out_date" max="9999-12-31"
                    value="{{ form.out_date.value|date:'Y-m-d'|default_if_none:'' }}">
         </div>
     </form>

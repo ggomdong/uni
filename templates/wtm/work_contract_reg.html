@@ -8,36 +8,36 @@
     </div>
 
     <div class="mb-3 col-md-4">
-        <div class="alert alert-warning" role="alert">
+        <div class="alert alert-warning small mb-0" role="alert">
 <!--                <h5 class="alert-heading">근로계약 대상</h5>-->
             {{target_user.position}} {{target_user.emp_name}} ({{target_user.dept}})
         </div>
     </div>
-    <form method="post">
+    <form method="post" class="small">
         {% csrf_token %}
         {% include 'form_errors.html' %}
         <div class="mb-3 col-md-4">
             <label class="form-label" for="stand_date">기준일자</label>
-            <input type="date" class="form-control" name="stand_date" id="stand_date" max="9999-12-31"
+            <input type="date" class="form-control form-control-sm" name="stand_date" id="stand_date" max="9999-12-31"
                    value="{{ form.stand_date.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="type1">근로형태</label><br>
             <input type="radio" class="btn-check" name="type" id="type1" value="탄력"
                    {% if form.type.value == "탄력" %} checked {% endif %}">
-            <label class="btn btn-outline-info" for="type1">탄력</label>
+            <label class="btn btn-outline-info btn-sm" for="type1">탄력</label>
             <input type="radio" class="btn-check" name="type" id="type2" value="고정"
                    {% if form.type.value == "고정" %} checked {% endif %}">
-            <label class="btn btn-outline-danger" for="type2">고정</label>
+            <label class="btn btn-outline-danger btn-sm" for="type2">고정</label>
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="check_yn1">근태확인</label><br>
             <input type="radio" class="btn-check" name="check_yn" id="check_yn1" value="Y"
                    {% if form.check_yn.value == "Y" %} checked {% endif %}">
-            <label class="btn btn-outline-info" for="check_yn1">적용</label>
+            <label class="btn btn-outline-info btn-sm" for="check_yn1">적용</label>
             <input type="radio" class="btn-check" name="check_yn" id="check_yn2" value="N"
                    {% if form.check_yn.value == "N" %} checked {% endif %}">
-            <label class="btn btn-outline-danger" for="check_yn2">제외</label>
+            <label class="btn btn-outline-danger btn-sm" for="check_yn2">제외</label>
         </div>
         <div class="mb-3">
             <label class="form-label">근로요일 입력</label>
