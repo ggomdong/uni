@@ -120,7 +120,18 @@ def work_log_save(request):
     obj.save()
 
     messages.success(request, "근태기록이 저장되었습니다.")
-    return redirect('wtm:work_log', stand_day=stand_day)
+
+    # 어느 화면을 통해서 요청이 왔는지에 따라 리다이렉트 분기
+    from_index = request.POST.get("from_index") == "1"
+
+    print(from_index)
+
+    if from_index:
+        # Today 화면으로
+        return redirect('wtm:index', stand_day)
+    else:
+        # 근테기록-일별상세 화면으로
+        return redirect('wtm:work_log', stand_day)
 
 
 @login_required(login_url='common:login')

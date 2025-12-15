@@ -238,13 +238,14 @@
                 <button type="button"
                         class="list-group-item list-group-item-action"
                         data-action="log">
-                    근태기록 수정
+                    근태기록 등록
                 </button>
             </div>
         </div>
 
         {# 근무표 / 근태기록 모달 재사용 #}
         {% include 'wtm/modal_schedule.html' %}
+        {% include 'wtm/modal_log.html' %}
     </div>
 </div>
 {% endblock %}
@@ -390,23 +391,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const workCodeSel  = document.getElementById('logWorkCodeSelect');
         const recordTimeEl = document.getElementById('logRecordTimeInput');
         const standDayEl   = document.getElementById('logStandDayInput');
+        const fromIndexEl  = document.getElementById('logFromIndexInput');
 
         // 항상 새로 추가하는 느낌으로 열기 (등록 모드)
         if (modalTitle)  modalTitle.textContent = '근태기록 등록';
         if (logIdInput)  logIdInput.value = '';
+        if (standDayEl)  standDayEl.value = err.standDay || '';
+        if (fromIndexEl) fromIndexEl.value = "1";
 
+        // 직원: err 정보로 옵션 1개만 주입하고 잠금
         if (userSelect) {
-            userSelect.disabled = false;         // Today에서는 직원도 바꿀 수 있게 둘지, 잠그고 싶으면 true로
+            const label = `${err.dept} / ${err.position} / ${err.empName}`;
+            userSelect.innerHTML = `<option value="${err.userId}">${label}</option>`;
             userSelect.value = err.userId || '';
+            userSelect.disabled = false;
         }
 
-        if (workCodeSel)  workCodeSel.value  = '';   // 출근/퇴근은 사용자가 선택
-        if (recordTimeEl) recordTimeEl.value = '';   // 시간도 직접 입력
-
-        // stand_day는 오류가 난 날짜로 덮어쓰기
-        if (standDayEl && err.standDay) {
-            standDayEl.value = err.standDay;
-        }
+        // 출근/퇴근은 사용자가 선택(또는 원하면 기본값 I로)
+        if (workCodeSel)  workCodeSel.value  = '';
+        if (recordTimeEl) recordTimeEl.value = '';
 
         const bsModal = new bootstrap.Modal(modalEl);
         bsModal.show();
