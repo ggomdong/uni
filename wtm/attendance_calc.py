@@ -231,7 +231,6 @@ def compute_holiday_seconds(
     return total
 
 
-
 def compute_seconds_status_for_day(record_day: date, module: "Module | None", log: LogsDay) -> Metrics:
     """
     하루(record_day)에 대해 초(second) 지표 + 상태코드를 계산한다.
@@ -252,14 +251,32 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
     has_checkin = bool(checkin_dt)
     has_checkout = bool(checkout_dt)
 
+    # 실 체류 ∩ 유급
+    presence_paid_seconds = intersection_seconds(checkin_dt, checkout_dt, paid_segments) if (
+                has_checkin and has_checkout) else 0
+    has_paid_presence = (presence_paid_seconds > 0)
+
     ######### 시간 계산 ##########
 
     # 1) 지각/조퇴
     late_seconds = seconds_before(checkin_dt, paid_segments)
     early_seconds = seconds_after(checkout_dt, paid_segments)
+    # # 유급 구간에 실제로 머문 시간이 '있을 때만' 지각/조퇴를 계산한다.
+    # # (유급 교집합 0이면 근무 자체가 없으므로 마이너스 근태를 계산하지 않음)
+    # if has_paid_presence:
+    #     late_seconds = seconds_before(checkin_dt, paid_segments)
+    #     early_seconds = seconds_after(checkout_dt, paid_segments)
+    # else:
+    #     late_seconds = 0
+    #     early_seconds = 0
 
     # 2) 연장
     overtime_seconds = compute_overtime_seconds(checkin_dt, checkout_dt, paid_segments)
+    # 동일한 이유로 유급 교집합 0이면 연장도 0
+    # if has_paid_presence:
+    #     overtime_seconds = compute_overtime_seconds(checkin_dt, checkout_dt, paid_segments)
+    # else:
+    #     overtime_seconds = 0
 
     # 3) 휴일근로: 스케줄 유급시간(시업~종업 - 휴게), 지각/조퇴 미차감
     holiday_seconds = compute_holiday_seconds(
@@ -271,53 +288,37 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
 
     ######### 상태 정의 ##########
 
-    #=== 상태코드 조합 산출 ===
-    has_checkin = bool(checkin_dt)
-    has_checkout = bool(checkout_dt)
-    # 실 체류 ∩ 유급
-    presence_paid_seconds = intersection_seconds(checkin_dt, checkout_dt, paid_segments) if (has_checkin and has_checkout) else 0
-
     # 오늘 이후의 상태 판정을 위한 변수 설정
     now = timezone.now()
     today = now.date()
     is_today = (record_day == today)
     is_future = (record_day > today)
 
+    # 0) 근무표 자체가 없으면(기존 규칙 유지)
     if not module:
         status_codes = ["NOSCHEDULE"]
+
     else:
         cat = module.cat
 
-        # 1) 휴무/오프/근무표 있는 날 먼저 처리
-        if cat in ("유급휴무", "무급휴무", "OFF"):
-            # 휴무일에 출퇴근 기록 존재 → ERROR
-            if has_checkin or has_checkout:
-                status_codes = ["ERROR"]
-            else:
-                base_map = {"유급휴무": "PAY", "무급휴무": "NOPAY", "OFF": "OFF"}
-                status_codes = [base_map[cat]]
+        # 날짜(미래/오늘/과거) 무관: '출근시각' 없이 '퇴근시각'만 있으면 무조건 오류
+        if has_checkout and not has_checkin:
+            status_codes = ["ERROR"]
 
-        elif cat in ("소정근로", "휴일근로"):
-            if is_future:
-                # 미래: 휴일근로 외에는 아직 결정되지 않음(칩/점 미표시용으로 빈 배열)
-                status_codes = []
-                if cat == "휴일근로":
-                    status_codes.append("HOLIDAY")
-
-            else:
+        else:
+            def is_error_on_workday() -> bool:
+                """
+                오류 판정 로직 (기존 로직 유지)
+                - 오늘: 시업시간 지났는데 출퇴근 기록 전무 OR (체류∩유급 0)
+                - 과거: 출퇴근 기록 전무 OR (체류∩유급 0)
+                """
                 if is_today:
-                    # 오늘 + 시업시간이 이미 지났는데 출퇴근 기록이 전혀 없음 → ERROR
-                    # 오늘: '명백히 잘못'이면 ERROR
                     sched_start_hhmm = (
                         module.start_time
                         if (module.start_time and module.start_time != "-")
                         else None
                     )
-                    sched_start_dt = (
-                        to_dt(record_day, sched_start_hhmm)
-                        if sched_start_hhmm
-                        else None
-                    )
+                    sched_start_dt = to_dt(record_day, sched_start_hhmm) if sched_start_hhmm else None
 
                     start_passed_no_check = (
                             sched_start_dt is not None
@@ -325,47 +326,81 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
                             and (not has_checkin and not has_checkout)
                     )
 
-                    # ② 기존 “명백히 잘못 찍힌 경우” (체류∩유급 0)도 그대로 유지
                     wrong_logs = (
                             has_checkin and has_checkout
                             and paid_total_seconds > 0
                             and presence_paid_seconds == 0
                     )
+                    return start_passed_no_check or wrong_logs
 
-                    is_error = start_passed_no_check or wrong_logs
-                else:
-                    is_error = (
-                        # (1) 출퇴근 기록 없음
+                # 과거
+                return (
                         (not has_checkin and not has_checkout) or
-                        # (2) 유급 교집합 0
                         (paid_total_seconds > 0 and has_checkin and has_checkout and presence_paid_seconds == 0)
-                    )
+                )
 
-                if is_error:
-                    status_codes = ["ERROR"]
+            # =====================================================================
+            # 1) 소정근로
+            #    - 미래: NORMAL
+            #    - 오늘/과거: 오류 먼저, 아니면 LATE/EARLY/OVERTIME 조합, 없으면 NORMAL
+            # =====================================================================
+            if cat == "소정근로":
+                if is_future:
+                    status_codes = ["NORMAL"]
                 else:
-                    status_codes = []
-                    # 휴일근로면, "휴일근로" 상태 설정, 소정근로는 "소정근로"라고 설정하지 않음
-                    if cat == "휴일근로":
-                        status_codes.append("HOLIDAY")
+                    if is_error_on_workday():
+                        status_codes = ["ERROR"]
+                    else:
+                        status_codes = []
+                        # 지각, 조퇴, 지각+조퇴, 지각+연장 판정
+                        if late_seconds > 0:
+                            status_codes.append("LATE")
+                        if early_seconds > 0:
+                            status_codes.append("EARLY")
+                        if overtime_seconds > 0:
+                            status_codes.append("OVERTIME")
 
-                    # 모디파이어
-                    if late_seconds > 0:
-                        status_codes.append("LATE")
-                    if early_seconds > 0:
-                        status_codes.append("EARLY")
-                    if overtime_seconds > 0:
-                        status_codes.append("OVERTIME")
+                        if not status_codes:
+                            status_codes = ["NORMAL"]
 
-                    # 소정근로에서 '정상' 부여 규칙
-                    # - 지각/조퇴가 없으면 NORMAL 추가
-                    # - '정상 + 연장' 케이스 허용을 위해, 연장이 있더라도 NORMAL은 함께 둘 수 있음(이때 NORMAL을 앞으로 두어 정렬처리)
-                    if cat == "소정근로" and has_checkin and ("LATE" not in status_codes) and ("EARLY" not in status_codes):
-                        status_codes.insert(0, "NORMAL")
+            # =====================================================================
+            # 2) 휴일근로
+            #    - 미래: HOLIDAY
+            #    - 오늘/과거: 오류면 ERROR, 아니면 HOLIDAY 단일
+            # =====================================================================
+            elif cat == "휴일근로":
+                if is_future:
+                    status_codes = ["HOLIDAY"]
+                else:
+                    status_codes = ["ERROR"] if is_error_on_workday() else ["HOLIDAY"]
 
-        else:
-            # 카테고리 정의 외 방어
-            status_codes = ["NOSCHEDULE"]
+            # =====================================================================
+            # 3) OFF
+            #    - 기록 없음: OFF
+            #    - 기록 있음: ERROR
+            # =====================================================================
+            elif cat == "OFF":
+                status_codes = ["ERROR"] if (has_checkin or has_checkout) else ["OFF"]
+
+            # =====================================================================
+            # 4) 유급휴무
+            #    - 기록 없음: PAY
+            #    - 기록 있음: ERROR
+            # =====================================================================
+            elif cat == "유급휴무":
+                status_codes = ["ERROR"] if (has_checkin or has_checkout) else ["PAY"]
+
+            # =====================================================================
+            # 5) 무급휴무
+            #    - 기록 없음: NOPAY
+            #    - 기록 있음: ERROR
+            # =====================================================================
+            elif cat == "무급휴무":
+                status_codes = ["ERROR"] if (has_checkin or has_checkout) else ["NOPAY"]
+
+            # 기타 방어
+            else:
+                status_codes = ["NOSCHEDULE"]
 
     # 라벨(사람 읽기용)
     status_label = "+".join(STATUS_LABELS.get(c, c) for c in status_codes)
