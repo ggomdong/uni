@@ -24,7 +24,7 @@ module_colors = {
     }
 
 STATUS_LABELS = {
-    "NORMAL": "소정근로",
+    "NORMAL": "정상",
     "HOLIDAY": "휴일근로",
     "LATE": "지각",
     "EARLY": "조퇴",
