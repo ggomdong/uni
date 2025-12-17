@@ -430,13 +430,6 @@ select[readonly] {
   background-color: #f2fbfc;
 }
 
-/* 상태 pill */
-.index-status-pill {
-  font-size: 0.78rem;
-  padding: 0.18rem 0.55rem;
-  background-color: #f8f9fa;
-}
-
 /* 오류 버튼: 행 높이 튀지 않도록 슬림하게 */
 .index-att-table .att-error-btn {
   padding: 0.2rem 0.5rem;  /* 기본 btn-sm 보다 더 얇게 */
