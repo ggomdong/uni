@@ -1,77 +1,76 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
 {% block content %}
+
 <div class="container my-3">
-    <div class="page-header">
-        <h4 class="page-title">코드관리</h4>
-    </div>
+  <div class="page-header">
+    <h4 class="page-title">코드관리</h4>
+  </div>
 
-    {% include 'form_errors.html' %}
+  {% include 'form_errors.html' %}
 
-    <table class="table sticky-top">
-        <thead>
-        <tr>
-            <th colspan="3">
-                <form id="searchForm" method="get">
-                {% csrf_token %}
-                <div class="col-2">
-                    <select class="form-select" name="search" id="search">
-                        <option value="전체" {% if search == '전체' %} selected {% endif %}>전체</option>
-                        {% for code_name in code_name_list %}
-                        <option value="{{code_name}}" {% if search == code_name %} selected {% endif %}>{{code_name}}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                </form>
-            </th>
-            <th class="text-end">
-                <form id="codeForm" method="post">
-                {% csrf_token %}
-                <div class="text-end">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-save2-fill" viewBox="0 0 16 16">
-                      <path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v6h-2a.5.5 0 0 0-.354.854l2.5 2.5a.5.5 0 0 0 .708 0l2.5-2.5A.5.5 0 0 0 10.5 7.5h-2v-6z"/>
-                    </svg>
-                    저장하기
-                    </button>
-                </div>
-            </th>
+  <!-- 상단 컨트롤 바: 검색(좌) + 저장(우) -->
+  <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+    <form id="searchForm" method="get" class="settings-form d-flex align-items-center gap-2">
+      <div style="min-width: 180px;">
+        <select class="form-select form-select-sm" name="search" id="search">
+          <option value="전체" {% if search == '전체' %} selected {% endif %}>전체</option>
+          {% for code_name in code_name_list %}
+            <option value="{{code_name}}" {% if search == code_name %} selected {% endif %}>{{code_name}}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    <button type="submit" form="codeForm" class="btn btn-sm btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+           class="bi bi-save2-fill" viewBox="0 0 16 16">
+        <path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v6h-2a.5.5 0 0 0-.354.854l2.5 2.5a.5.5 0 0 0 .708 0l2.5-2.5A.5.5 0 0 0 10.5 7.5h-2v-6z"/>
+      </svg>
+      저장하기
+    </button>
+  </div>
+
+  <form id="codeForm" method="post" class="settings-form">
+    {% csrf_token %}
+
+    <table class="table sticky-top settings-table">
+      <thead>
+        <tr class="text-center table-light">
+          <th>코드명</th>
+          <th>코드값</th>
+          <th style="width:120px;">출력순서</th>
+          <th class="text-danger" style="width:80px;">삭제</th>
         </tr>
-        <tr class="text-center table-dark">
-            <th>코드명</th>
-            <th>코드값</th>
-            <th>출력순서</th>
-            <th class="text-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
-                  <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
-                </svg>
-                삭제
-            </th>
-        </tr>
-        </thead>
-        <tbody>
+      </thead>
+
+      <tbody>
         {{ formset.management_form }}
+
         {% for form in formset %}
-            {% for hidden in form.hidden_fields %}
-                {{ hidden }}
-            {% endfor %}
-        <tr class="text-center align-middle">
-            <td>{{ form.code_name }}</td>
-            <td>{{ form.value }}</td>
+          {% for hidden in form.hidden_fields %}
+            {{ hidden }}
+          {% endfor %}
+
+          <tr class="text-center align-middle">
+            <td class="text-start">{{ form.code_name }}</td>
+            <td class="text-start">{{ form.value }}</td>
             <td>{{ form.order }}</td>
             <td>{{ form.DELETE }}</td>
-        </tr>
+          </tr>
         {% endfor %}
-        </tbody>
+      </tbody>
     </table>
-    </form>
+  </form>
 </div>
+
 {% endblock %}
+
 {% block script %}
 <script type="text/javascript">
-const selectedSearch = document.getElementById("search");
-selectedSearch.addEventListener('change', function() {
-    document.getElementById('searchForm').submit();
-});
+  const selectedSearch = document.getElementById("search");
+  selectedSearch.addEventListener("change", function() {
+    document.getElementById("searchForm").submit();
+  });
 </script>
 {% endblock %}

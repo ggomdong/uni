@@ -8,7 +8,7 @@
 
     {% include 'form_errors.html' %}
     
-    <form id="positionForm" method="post">
+    <form id="positionForm" method="post" class="small settings-form">
     {% csrf_token %}
 
     <table class="table sticky-top">
@@ -25,7 +25,7 @@
                 </div>
             </th>
         </tr>
-        <tr class="text-center table-dark">
+        <tr class="text-center table-light">
             <th>직위명</th>
             <th>출력순서</th>
             <th class="text-danger">

@@ -244,28 +244,22 @@ select[readonly] {
 /* TODAY
 /****************************************************************/
 
-.mm-hdr-gray  { background:#D9D9D9 !important; color:#000 !important; }
-.mm-hdr-brown { background:#7E350E !important;  color:#fff !important; }
-.mm-hdr-blue  { background:#215C98 !important;  color:#fff !important; }
-
-.today th {
-  border: 1px solid white;
-  background-color: #595959;
-  font-size: 13px;
-  color: white;
+/* 중립 컬럼 – 기본 헤더톤보다 살짝만 진한 회색 */
+.mm-hdr-gray  {
+  background: #E9ECEF !important;  /* 밝은 회색 */
+  color: #343A40 !important;       /* 진한 회색 텍스트 */
 }
 
-.today td {
-  border: 1px solid white;
-  background-color: #eeeeee;
-  font-size: 13px;
-  height: 30px;
+/* 지각/조퇴 – 브라운 대신 살짝 누른 살구/오렌지 톤 */
+.mm-hdr-brown {
+  background: #FBE5D6 !important;  /* 아주 연한 살구색 */
+  color: #8A3C1C !important;       /* 기존 브라운보다 한 톤 밝은 갈색 */
 }
 
-.today-2 th {
-  background-color: #595959;
-  font-size: 13px;
-  color: white;
+/* 연장/휴일 – 브랜드 티얼(#02b3bb)에서 많이 희석한 톤 */
+.mm-hdr-blue  {
+  background: #E0F4F6 !important;  /* 티얼을 많이 섞은 연한 파랑/민트 */
+  color: #05636A !important;       /* #02b3bb보다 살짝 어두운 텍스트 */
 }
 
 /* TODAY, 근무로그 등 일 캘린더 스타일 */
@@ -307,6 +301,154 @@ select[readonly] {
   display: none;
 }
 
+/**************************************************************/
+/* TODAY index 전용 – 부서 카드 + 상세 테이블 */
+/**************************************************************/
+
+.index-page {
+  font-size: 0.9rem;
+}
+
+/* 부서 카드 */
+.index-dept-card {
+  border-radius: 0.9rem;
+  border: 1px solid #dde3ec;
+  box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.04);
+}
+
+/* 카드 헤더 – 살짝 티얼톤 */
+.index-dept-card-header {
+  padding: 0.45rem 0.8rem;
+  border-radius: 0.9rem 0.9rem 0 0;
+  background: linear-gradient(135deg, #02b3bb, #00a0a7);
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.index-dept-name {
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.index-dept-counts {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.index-count-chip {
+  border-radius: 999px;
+  padding: 0.08rem 0.5rem;
+  font-size: 0.7rem;
+  background-color: rgba(255, 255, 255, 0.18);
+  white-space: nowrap;
+}
+
+/* 카드 바디 */
+.index-dept-card-body {
+  padding: 0.3rem 0.8rem 0.5rem;
+  max-height: none;
+  overflow-y: visible;
+}
+
+/* 카드 안 테이블 */
+.index-dept-table {
+  font-size: 0.78rem;
+}
+
+.index-dept-table thead th {
+  padding: 0.18rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid #e5e9ef;
+  color: #6c757d;
+  font-weight: 500;
+  background-color: transparent;
+}
+
+.index-dept-table tbody td {
+  padding: 0.18rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid #f0f2f6;
+}
+
+/* AM/PM 점 */
+.index-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background-color: #e2e6ea;
+}
+.index-dot-on {
+  background-color: #02b3bb;
+}
+
+/* 하단 상세 테이블 – 정보 밀도 높게 */
+.index-att-table {
+  font-size: 0.86rem;
+  table-layout: auto;
+}
+
+.index-att-table th,
+.index-att-table td {
+  padding: 0.18rem 0.28rem;
+  white-space: nowrap;
+}
+
+/* index 하단 상세 테이블 헤더 색상 */
+.index-att-table thead th {
+  background-color: #f5f5f5;   /* 기본 연한 회색 */
+  color: #495057;
+  font-weight: 600;
+}
+
+/* 부서 구분용 group-divider 행: 티얼 컬러 바 형태로 강조 */
+.index-att-table .table-group-divider td {
+  padding: 0;
+  border: 0;
+  line-height: 0;
+}
+
+/* 전체 폭을 채우는 컬러 바 */
+.index-att-table .table-group-divider td::before {
+  content: "";
+  display: block;
+  height: 1px;  /* 바 두께 – 4~8px 선에서 취향대로 조절 가능 */
+  background: linear-gradient(
+    to right,
+    rgba(2, 179, 187, 0.2),
+    rgba(2, 179, 187, 0.25),
+    rgba(2, 179, 187, 0.2)
+  );
+}
+
+/* hover 색 */
+.index-att-table tbody tr:hover {
+  background-color: #f2fbfc;
+}
+
+/* 상태 pill */
+.index-status-pill {
+  font-size: 0.78rem;
+  padding: 0.18rem 0.55rem;
+  background-color: #f8f9fa;
+}
+
+/* 오류 버튼: 행 높이 튀지 않도록 슬림하게 */
+.index-att-table .att-error-btn {
+  padding: 0.2rem 0.5rem;  /* 기본 btn-sm 보다 더 얇게 */
+  font-size: 0.78rem;
+  line-height: 1;
+  margin: 0;                 /* 혹시 모를 여백 제거 */
+}
+
+/* 혹시 기본 align이 깨진 경우를 대비해 한 번 더 명시 */
+.index-att-table td {
+  vertical-align: middle;
+}
 
 /****************************************************************/
 /* 근무표
@@ -364,11 +506,11 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 }
 
 /****************************************************************/
-/* 근태현황
+/* 근태기록
 /****************************************************************/
 
 /********
- * 근태현황 - 전체 요약 테이블
+ * 근태기록-월간집계(전체)
  ********/
 
 .status-table-wrapper.table-responsive {
@@ -394,7 +536,7 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 }
 
 /********
- * 근태현황 - 지각/조퇴/연장/휴일 상세 테이블
+ * 근태기록-월간집계 - 지각/조퇴/연장/휴일 상세 테이블
  ********/
 .metric-table-wrapper {
   margin-top: 0.5rem;
@@ -416,7 +558,7 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   white-space: nowrap;      /* 줄바꿈 방지 */
 }
 
-/* 근태현황 - 지각/조퇴/연장/휴일 상세 테이블 세로 가운데 정렬 */
+/* 근태기록-월간집계 - 지각/조퇴/연장/휴일 상세 테이블 세로 가운데 정렬 */
 .work-metric-table th {
   vertical-align: middle !important;
 }
@@ -433,7 +575,7 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   width: 100%;
 }
 
-/* 근태현황 상단 필터 버튼: 슬림 + 동일 폭 */
+/* 근태기록-월간집계 상단 필터 버튼: 슬림 + 동일 폭 */
 .metric-filter.btn-group .btn {
   padding: 0.2rem 0.4rem;   /* 기본 btn-sm 보다 조금 더 작게 */
   font-size: 0.8rem;        /* 글자 크기도 살짝 줄이기 */
@@ -480,7 +622,7 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 
 .contract-workday-wrapper {
   display: inline-block;
-  flex-direction: column;  /* 🔹 위→아래로 ①선택, ②입력 */
+  flex-direction: column;  /* 위→아래로 ①선택, ②입력 */
   gap: 4px;                /* 두 박스 사이 간격 */
   align-items: flex-start; /* 내용 폭만큼만 사용 */
 }
@@ -507,4 +649,55 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 .contract-workday-section td,
 .contract-workday-section th {
   background-color: #ffffff;
+}
+
+/****************************************************************/
+/* 설정
+/****************************************************************/
+
+/* 설정(부서/직위/...) 공통 폼: small이 input에 안 먹는 문제 해결 */
+.settings-form,
+.settings-form .table {
+  font-size: 0.86rem;
+}
+
+.settings-form .form-control,
+.settings-form .form-select,
+.settings-form input,
+.settings-form select,
+.settings-form textarea {
+  font-size: 0.86rem !important;
+}
+
+/* (선택) 컴팩트한 행 높이 */
+.settings-form .form-control,
+.settings-form .form-select {
+  padding: 0.25rem 0.4rem;
+  height: 30px;
+}
+
+/* (선택) 체크박스/라디오 정리 */
+.settings-form .form-check-input {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* 근로모듈 관리: 테이블 폰트/행 높이 컴팩트 */
+.settings-table {
+  font-size: 0.86rem;
+}
+.settings-table th,
+.settings-table td {
+  padding: 0.25rem 0.4rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* 버튼/링크도 같이 축소(테이블 안에 있는 것만) */
+.settings-table .btn {
+  font-size: 0.86rem;
+  padding: 0.2rem 0.4rem;
+}
+.settings-table a {
+  font-size: 0.86rem;
 }

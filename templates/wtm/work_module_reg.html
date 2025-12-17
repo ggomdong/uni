@@ -6,12 +6,12 @@
         <h4 class="page-title">근로모듈 관리</h4>
     </div>
 
-    <form method="post">
+    <form method="post" class="small">
         {% csrf_token %}
         {% include 'form_errors.html' %}
         <div class="mb-3 col-md-4">
             <label class="form-label" for="cat">구분</label>
-            <select class="form-select" name="cat" id="cat" onchange="selectCategory()">
+            <select class="form-select form-select-sm" name="cat" id="cat" onchange="selectCategory()">
                 {% for cat in categories %}
                 <option value="{{cat}}" {% if form.cat.value == cat %}selected{% endif %}>{{cat}}</option>
                 {% endfor %}
@@ -19,7 +19,7 @@
         </div>
         <div class="mb-3 col-md-4">
             <label class="form-label" for="name">근로명</label>
-            <input type="text" class="form-control" name="name" id="name"
+            <input type="text" class="form-control form-control-sm" name="name" id="name"
                    value="{{ form.name.value|default_if_none:'' }}">
         </div>
         <div class="mb-3 row g-2">
@@ -28,7 +28,7 @@
                 <!-- 많은 시행착오 끝에, 시간 컬럼은 CharField로 하기로 했음.
                  <input type='time'>이면 브라우저 설정을 따르기 때문에 24시간제로 하기 어렵고,
                  시간 list를 미리 만들고 <select>로 하면 DB의 TimeField를 불러올때 '오전', '오후' 값이 포함되어서 비교가 힘듬-->
-                <select class="form-select" name="start_time" id="start_time">
+                <select class="form-select form-select-sm" name="start_time" id="start_time">
                     <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.start_time.value == time %} selected {% endif %}>{{time}}</option>
@@ -37,7 +37,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="end_time">근로시간(종업)</label>
-                <select class="form-select" name="end_time" id="end_time">
+                <select class="form-select form-select-sm" name="end_time" id="end_time">
                     <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.end_time.value == time %} selected {% endif %}>{{time}}</option>
@@ -48,7 +48,7 @@
         <div class="mb-3 row g-2">
             <div class="col-md-2">
                 <label class="form-label" for="rest1_start_time">휴게시간1(시작)</label>
-                <select class="form-select" name="rest1_start_time" id="rest1_start_time">
+                <select class="form-select form-select-sm" name="rest1_start_time" id="rest1_start_time">
                     <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest1_start_time.value == time %} selected {% endif %}>{{time}}</option>
@@ -57,7 +57,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="rest1_end_time">휴게시간1(종료)</label>
-                <select class="form-select" name="rest1_end_time" id="rest1_end_time">
+                <select class="form-select form-select-sm" name="rest1_end_time" id="rest1_end_time">
                     <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest1_end_time.value == time %} selected {% endif %}>{{time}}</option>
@@ -68,7 +68,7 @@
         <div class="mb-3 row g-2">
             <div class="col-md-2">
                 <label class="form-label" for="rest2_start_time">휴게시간2(시작)</label>
-                <select class="form-select" name="rest2_start_time" id="rest2_start_time">
+                <select class="form-select form-select-sm" name="rest2_start_time" id="rest2_start_time">
                     <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest2_start_time.value == time %} selected {% endif %}>{{time}}</option>
@@ -77,7 +77,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="rest2_end_time">휴게시간2(종료)</label>
-                <select class="form-select" name="rest2_end_time" id="rest2_end_time">
+                <select class="form-select form-select-sm" name="rest2_end_time" id="rest2_end_time">
                     <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest2_end_time.value == time %} selected {% endif %}>{{time}}</option>

@@ -7,7 +7,7 @@
         <h4 class="page-title">근로모듈 관리</h4>
     </div>
 
-    <table class="table sticky-top">
+    <table class="table sticky-top settings-table">
         <thead>
         <tr>
             <th colspan="100%">
@@ -21,7 +21,7 @@
                 </div>
             </th>
         </tr>
-        <tr class="text-center table-dark">
+        <tr class="text-center table-light">
             <th>번호</th>
             <th>표시</th>
             <th>구분</th>
@@ -44,7 +44,7 @@
                 <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
                     {% if module.cat == '휴일근로' %}
                     <font color="blue">
-                        {{ module.start_time }}
+                        {{ module.start_time }}<br>
                         {{ module.end_time }}
                     </font>
                     {% elif module.cat == '유급휴무' %}
@@ -58,7 +58,7 @@
                     {% elif module.cat == 'OFF' %}
                         -
                     {% else %}
-                        {{ module.start_time }}
+                        {{ module.start_time }}<br>
                         {{ module.end_time }}
                     {% endif %}
                 </div>
