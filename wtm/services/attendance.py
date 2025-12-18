@@ -79,13 +79,25 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
     days_in_month = monthrange(year, month)[1]
     today = timezone.now().date()
 
+    # 최종근로일자 이후는 NOSCHEDULE로 처리
+    out_date = getattr(user, "out_date", None)
+
     for day in range(1, days_in_month + 1):
         record_day = date(year, month, day)
-        module: Module | None = getattr(schedule, f"d{day}", None) if schedule else None
+
+        # 최종근로일자 다음날부터는 근무표/로그 무시하고 NOSCHEDULE 로 처리하기 위한 작업을 cutoff를 통해 수행
+        cutoff = (out_date is not None and record_day > out_date)
+
+        module: Module | None = None
+        if not cutoff and schedule:
+            module = getattr(schedule, f"d{day}", None)
 
         # 근태기록 목록 (이미 record_date 기준 정렬됨)
-        ins = work_map.get(record_day, {}).get("I", [])
-        outs = work_map.get(record_day, {}).get("O", [])
+        if cutoff:
+            ins, outs = [], []
+        else:
+            ins = work_map.get(record_day, {}).get("I", [])
+            outs = work_map.get(record_day, {}).get("O", [])
 
         # 출근 시각 (가장 이른 I)
         checkin_dt: datetime | None = ins[0] if ins else None
