@@ -24,7 +24,7 @@
         </div>
         <div class="mb-3 row g-2">
             <div class="col-md-2">
-                <label class="form-label" for="start_time">근로시간(시업)</label>
+                <label class="form-label" for="start_time">시업시각</label>
                 <!-- 많은 시행착오 끝에, 시간 컬럼은 CharField로 하기로 했음.
                  <input type='time'>이면 브라우저 설정을 따르기 때문에 24시간제로 하기 어렵고,
                  시간 list를 미리 만들고 <select>로 하면 DB의 TimeField를 불러올때 '오전', '오후' 값이 포함되어서 비교가 힘듬-->
@@ -36,7 +36,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label" for="end_time">근로시간(종업)</label>
+                <label class="form-label" for="end_time">종업시각</label>
                 <select class="form-select form-select-sm" name="end_time" id="end_time">
                     <option></option>
                     {% for time in times %}
@@ -47,7 +47,7 @@
         </div>
         <div class="mb-3 row g-2">
             <div class="col-md-2">
-                <label class="form-label" for="rest1_start_time">휴게시간1(시작)</label>
+                <label class="form-label" for="rest1_start_time">휴게1(시작시각)</label>
                 <select class="form-select form-select-sm" name="rest1_start_time" id="rest1_start_time">
                     <option></option>
                     {% for time in times %}
@@ -56,7 +56,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label" for="rest1_end_time">휴게시간1(종료)</label>
+                <label class="form-label" for="rest1_end_time">휴게1(종료시각)</label>
                 <select class="form-select form-select-sm" name="rest1_end_time" id="rest1_end_time">
                     <option></option>
                     {% for time in times %}
@@ -67,7 +67,7 @@
         </div>
         <div class="mb-3 row g-2">
             <div class="col-md-2">
-                <label class="form-label" for="rest2_start_time">휴게시간2(시작)</label>
+                <label class="form-label" for="rest2_start_time">휴게2(시작시각)</label>
                 <select class="form-select form-select-sm" name="rest2_start_time" id="rest2_start_time">
                     <option></option>
                     {% for time in times %}
@@ -76,13 +76,35 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label" for="rest2_end_time">휴게시간2(종료)</label>
+                <label class="form-label" for="rest2_end_time">휴게2(종료시각)</label>
                 <select class="form-select form-select-sm" name="rest2_end_time" id="rest2_end_time">
                     <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest2_end_time.value == time %} selected {% endif %}>{{time}}</option>
                     {% endfor %}
                 </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="id_meal_amount">식대</label>
+
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <div class="input-group input-group-sm">
+                        <input
+                        type="number"
+                        name="meal_amount"
+                        id="id_meal_amount"
+                        class="form-control form-control-sm text-end shadow-none"
+                        min="0"
+                        step="1000"
+                        inputmode="numeric"
+                        placeholder="예: 12000"
+                        value="{{ form.meal_amount.value|default_if_none:'' }}"
+                        />
+                        <span class="input-group-text bg-body text-muted">원</span>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="mb-3">

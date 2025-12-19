@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
+{% load humanize %}
 {% block content %}
 <div class="container my-3">
 
@@ -26,10 +27,11 @@
             <th>표시</th>
             <th>구분</th>
             <th>근로명</th>
-            <th>시업</th>
-            <th>종업</th>
+            <th>시업시각</th>
+            <th>종업시각</th>
             <th>휴게시간1</th>
             <th>휴게시간2</th>
+            <th>식대</th>
             <th></th>
         </tr>
         </thead>
@@ -79,6 +81,13 @@
             <td>
                 {% if module.rest2_start_time != '-' %}
                 {{module.rest2_start_time}}~{{module.rest2_end_time}}
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            <td class="text-end">
+                {% if module.meal_amount %}
+                    {{ module.meal_amount|intcomma }}<span class="text-muted small ms-1">원</span>
                 {% else %}
                 -
                 {% endif %}

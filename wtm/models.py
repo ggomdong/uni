@@ -8,14 +8,15 @@ from common.models import Branch, User
 
 # 근로모듈
 class Module(models.Model):
-    cat = models.CharField(max_length=20)
-    name = models.CharField(max_length=50)
-    start_time = models.CharField(max_length=5)
-    end_time = models.CharField(max_length=5)
-    rest1_start_time = models.CharField(max_length=5)
-    rest1_end_time = models.CharField(max_length=5)
-    rest2_start_time = models.CharField(max_length=5)
-    rest2_end_time = models.CharField(max_length=5)
+    cat = models.CharField("구분", max_length=20)
+    name = models.CharField("근로명", max_length=50)
+    start_time = models.CharField("시업시각", max_length=5)
+    end_time = models.CharField("종업시각", max_length=5)
+    rest1_start_time = models.CharField("휴게1시작시각", max_length=5)
+    rest1_end_time = models.CharField("휴게1종료시각", max_length=5)
+    rest2_start_time = models.CharField("휴게2시작시각", max_length=5)
+    rest2_end_time = models.CharField("휴게2종료시각", max_length=5)
+    meal_amount = models.PositiveIntegerField("식대(원)", null=True, blank=True)
     color = models.IntegerField()
     reg_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='reg_id')
     reg_date = models.DateTimeField()

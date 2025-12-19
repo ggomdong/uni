@@ -6,7 +6,7 @@ class ModuleForm(forms.ModelForm):
     class Meta:
         model = Module
         fields = ['cat', 'name', 'start_time', 'end_time', 'rest1_start_time', 'rest1_end_time',
-                  'rest2_start_time', 'rest2_end_time', 'color']
+                  'rest2_start_time', 'rest2_end_time', 'meal_amount', 'color']
 
         labels = {
             'cat': '구분',
@@ -17,6 +17,7 @@ class ModuleForm(forms.ModelForm):
             'rest1_end_time': '휴게시간1(종료)',
             'rest2_start_time': '휴게시간2(시작)',
             'rest2_end_time': '휴게시간2(종료)',
+            'meal_amount': '식대',
             'color': '색상',
         }
 
