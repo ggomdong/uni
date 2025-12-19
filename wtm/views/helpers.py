@@ -127,7 +127,7 @@ def fetch_base_users_for_month(stand_ym: str, *, is_contract_checked: bool = Tru
         contract_params = [last_day, last_day]
 
     sql = f"""
-            SELECT u.id, u.dept, u.position, u.emp_name
+            SELECT u.id, u.dept, u.position, u.emp_name, DATE_FORMAT(u.out_date, '%%Y%%m%%d') AS out_ymd
               FROM common_user u
               LEFT JOIN wtm_schedule s ON s.user_id = u.id
              WHERE u.is_employee = TRUE
@@ -153,7 +153,7 @@ def fetch_base_users_for_month(stand_ym: str, *, is_contract_checked: bool = Tru
     with connection.cursor() as cur:
         cur.execute(sql, params)
         return [
-            {"user_id": r[0], "dept": r[1] or "", "position": r[2] or "", "emp_name": r[3] or ""}
+            {"user_id": r[0], "dept": r[1] or "", "position": r[2] or "", "emp_name": r[3] or "", "out_ymd":  r[4] or None,}
             for r in cur.fetchall()
         ]
 
