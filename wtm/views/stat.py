@@ -22,43 +22,44 @@ from .helpers import sec_to_hhmmss, fetch_base_users_for_month
 def build_work_status_rows(stand_ym: str | None):
     """
     근태기록-월간집계(전체)에서 사용하는 rows 공통 빌더.
-    - stand_ym: 'YYYYMM' 형식 또는 None
-    - return: (정규화된 stand_ym, rows 리스트)
     """
     stand_ym = stand_ym or timezone.now().strftime("%Y%m")
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
-    # 1) 대상자 추출
     base_users = fetch_base_users_for_month(stand_ym)
-
     if not base_users:
         return stand_ym, []
 
-    # 2) 월 요약 계산(초 단위)
     uid_list = [u["user_id"] for u in base_users]
-    summary_map = build_monthly_attendance_summary_for_users(
-        users=uid_list,
-        year=year,
-        month=month,
-    )
+    summary_map = build_monthly_attendance_summary_for_users(users=uid_list, year=year, month=month)
 
-    # 3) rows 구성
     rows = []
     for u in base_users:
         s = summary_map.get(u["user_id"], {})
         rows.append({
-            "dept":         u["dept"],
-            "position":     u["position"],
-            "emp_name":     u["emp_name"],
-            "error_cnt":    s.get("error_count", 0),
-            "late_cnt":     s.get("late_count", 0),
-            "late_sec":     s.get("late_seconds", 0),
-            "early_cnt":    s.get("early_count", 0),
-            "early_sec":    s.get("early_seconds", 0),
-            "overtime_cnt": s.get("overtime_count", 0),
-            "overtime_sec": s.get("overtime_seconds", 0),
-            "holiday_cnt":  s.get("holiday_count", 0),
-            "holiday_sec":  s.get("holiday_seconds", 0),
+            "dept": u["dept"],
+            "position": u.get("position"),
+            "emp_name": u["emp_name"],
+
+            "error_cnt": s.get("error_count", 0),
+
+            "reg_late_cnt": s.get("reg_late_count", 0),
+            "reg_late_sec": s.get("reg_late_seconds", 0),
+            "reg_early_cnt": s.get("reg_early_count", 0),
+            "reg_early_sec": s.get("reg_early_seconds", 0),
+            "reg_overtime_cnt": s.get("reg_overtime_count", 0),
+            "reg_overtime_sec": s.get("reg_overtime_seconds", 0),
+
+            "total_sec": s.get("hol_total_seconds", 0),
+
+            "hol_work_cnt": s.get("hol_work_count", 0),
+            "hol_work_sec": s.get("hol_work_seconds", 0),
+            "hol_late_cnt": s.get("hol_late_count", 0),
+            "hol_late_sec": s.get("hol_late_seconds", 0),
+            "hol_early_cnt": s.get("hol_early_count", 0),
+            "hol_early_sec": s.get("hol_early_seconds", 0),
+            "hol_overtime_cnt": s.get("hol_overtime_count", 0),
+            "hol_overtime_sec": s.get("hol_overtime_seconds", 0),
         })
 
     return stand_ym, rows
@@ -79,109 +80,128 @@ def work_status(request, stand_ym: str | None = None):
 # 근태기록-월간집계(전체) 엑셀 다운로드
 @login_required(login_url="common:login")
 def work_status_excel(request, stand_ym: str | None = None):
-
-    # 공통 빌더로 데이터 얻기
+    """
+    근태기록-월간집계(전체) 엑셀 다운로드
+    - 3단 헤더(병합) 적용
+    - HTML 상세표(소정/휴일 분리 + TOTAL) 기준 18컬럼(A~R)
+    """
     stand_ym, rows = build_work_status_rows(stand_ym)
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
-    # 정렬 방식 정의
-    align_center = Alignment(horizontal="center")
-    align_left = Alignment(horizontal="left")
-    align_right = Alignment(horizontal="right")
-
-    # 1) 워크북/시트 생성
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "근태기록"
 
-    # 2) 제목 (1행)
+    align_center = Alignment(horizontal="center", vertical="center")
+    align_right = Alignment(horizontal="right", vertical="center")
+
+    # 제목(1행)
     ws["A1"] = f"{year}년 {month}월 근태기록 월간집계(전체)"
     ws["A1"].font = Font(size=10, bold=True)
+    ws.merge_cells("A1:R1")
 
-    # 3) 헤더 (2행)
-    headers = [
-        "부서",
-        "직위",
-        "성명",
-        "오류(일수)",
-        "지각(횟수)",
-        "지각(시간)",
-        "조퇴(횟수)",
-        "조퇴(시간)",
-        "연장근로(횟수)",
-        "연장근로(시간)",
-        "휴일근로(횟수)",
-        "휴일근로(시간)",
-    ]
-    ws.append(headers)
+    # 3단 헤더(2~4행)
+    ws["A2"] = "부서"
+    ws["B2"] = "성명"
+    ws["C2"] = "오류\n(일수)"
+    ws["D2"] = "소정근로"
+    ws["J2"] = "TOTAL\n(시간)"
+    ws["K2"] = "휴일근로"
 
-    # 4) 데이터 행 (3행부터)
+    ws.merge_cells("A2:A4")
+    ws.merge_cells("B2:B4")
+    ws.merge_cells("C2:C4")
+    ws.merge_cells("D2:I2")
+    ws.merge_cells("J2:J4")
+    ws.merge_cells("K2:R2")
+
+    ws["D3"] = "지각"
+    ws["F3"] = "조퇴"
+    ws["H3"] = "연장근로"
+
+    ws["K3"] = "근무"
+    ws["M3"] = "지각"
+    ws["O3"] = "조퇴"
+    ws["Q3"] = "연장근로"
+
+    ws.merge_cells("D3:E3")
+    ws.merge_cells("F3:G3")
+    ws.merge_cells("H3:I3")
+
+    ws.merge_cells("K3:L3")
+    ws.merge_cells("M3:N3")
+    ws.merge_cells("O3:P3")
+    ws.merge_cells("Q3:R3")
+
+    ws["D4"] = "횟수"; ws["E4"] = "시간"
+    ws["F4"] = "횟수"; ws["G4"] = "시간"
+    ws["H4"] = "횟수"; ws["I4"] = "시간"
+
+    ws["K4"] = "횟수"; ws["L4"] = "시간"
+    ws["M4"] = "횟수"; ws["N4"] = "시간"
+    ws["O4"] = "횟수"; ws["P4"] = "시간"
+    ws["Q4"] = "횟수"; ws["R4"] = "시간"
+
+    header_fill = PatternFill(fill_type="solid", start_color="FF02B3BB", end_color="FF02B3BB")
+    header_font = Font(size=10, bold=True, color="FFFFFFFF")
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    for rr in range(2, 5):
+        ws.row_dimensions[rr].height = 24
+        for cell in ws[rr]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_align
+
+    def _t(sec: int) -> str:
+        return "" if not sec else sec_to_hhmmss(sec)
+
     for r in rows:
         ws.append([
-            r["dept"],
-            r["position"],
-            r["emp_name"],
-            r["error_cnt"],
-            r["late_cnt"],
-            sec_to_hhmmss(r["late_sec"]),
-            r["early_cnt"],
-            sec_to_hhmmss(r["early_sec"]),
-            r["overtime_cnt"],
-            sec_to_hhmmss(r["overtime_sec"]),
-            r["holiday_cnt"],
-            sec_to_hhmmss(r["holiday_sec"]),
+            r.get("dept") or "",
+            r.get("emp_name") or "",
+            r.get("error_cnt") or "",
+
+            r.get("reg_late_cnt") or "", _t(r.get("reg_late_sec") or 0),
+            r.get("reg_early_cnt") or "", _t(r.get("reg_early_sec") or 0),
+            r.get("reg_overtime_cnt") or "", _t(r.get("reg_overtime_sec") or 0),
+
+            _t(r.get("total_sec") or 0),
+
+            r.get("hol_work_cnt") or "", _t(r.get("hol_work_sec") or 0),
+            r.get("hol_late_cnt") or "", _t(r.get("hol_late_sec") or 0),
+            r.get("hol_early_cnt") or "", _t(r.get("hol_early_sec") or 0),
+            r.get("hol_overtime_cnt") or "", _t(r.get("hol_overtime_sec") or 0),
         ])
 
-    # ===== 헤더 스타일(색 + 볼드 + 정렬) =====
-    header_fill = PatternFill(
-        fill_type="solid",
-        start_color="FF02B3BB",
-        end_color="FF02B3BB",
-    )
-    header_font = Font(size=10, bold=True, color="FFFFFFFF")  # 흰색 글자
-    header_align = Alignment(horizontal="center", vertical="center")
-
-    # 2행이 헤더 행
-    ws.row_dimensions[2].height = 20  # 선택 사항: 헤더 행 높이
-    for cell in ws[2]:
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = header_align
-
-    # 본문(3행~끝)
-    # 1~3열(부서, 직위, 성명)은 가운데 정렬, 나머지 숫자/시간 열은 오른쪽 정렬
-    for row in ws.iter_rows(min_row=3, max_row=ws.max_row, min_col=1, max_col=12):
+    for row in ws.iter_rows(min_row=5, max_row=ws.max_row, min_col=1, max_col=18):
         for cell in row:
             cell.font = Font(size=10)
-            if cell.column in (1, 2, 3):  # 부서/직위/성명
+            if cell.column in (1, 2):
                 cell.alignment = align_center
-            else:  # 오류·지각·조퇴·연장·휴일
+            else:
                 cell.alignment = align_right
 
-    # ===== 컬럼 폭 고정 =====
-    # A:부서, B:직위, C:성명, D~L: 숫자/시간
-    ws.column_dimensions["A"].width = 15  # 부서
-    ws.column_dimensions["B"].width = 15  # 직위
-    ws.column_dimensions["C"].width = 15  # 성명
+    ws.column_dimensions["A"].width = 15
+    ws.column_dimensions["B"].width = 12
+    ws.column_dimensions["C"].width = 10
 
-    ws.column_dimensions["D"].width = 12  # 오류(일수)
-    ws.column_dimensions["E"].width = 12  # 지각(횟수)
-    ws.column_dimensions["F"].width = 14  # 지각(시간)
-    ws.column_dimensions["G"].width = 12  # 조퇴(횟수)
-    ws.column_dimensions["H"].width = 14  # 조퇴(시간)
-    ws.column_dimensions["I"].width = 14  # 연장근로(횟수)
-    ws.column_dimensions["J"].width = 14  # 연장근로(시간)
-    ws.column_dimensions["K"].width = 14  # 휴일근로(횟수)
-    ws.column_dimensions["L"].width = 14  # 휴일근로(시간)
+    ws.column_dimensions["D"].width = 8;  ws.column_dimensions["E"].width = 12
+    ws.column_dimensions["F"].width = 8;  ws.column_dimensions["G"].width = 12
+    ws.column_dimensions["H"].width = 8;  ws.column_dimensions["I"].width = 12
 
-    # 6) HTTP 응답으로 xlsx 전송
+    ws.column_dimensions["J"].width = 12
+
+    ws.column_dimensions["K"].width = 8;  ws.column_dimensions["L"].width = 12
+    ws.column_dimensions["M"].width = 8;  ws.column_dimensions["N"].width = 12
+    ws.column_dimensions["O"].width = 8;  ws.column_dimensions["P"].width = 12
+    ws.column_dimensions["Q"].width = 8;  ws.column_dimensions["R"].width = 12
+
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    # 한글처리를 위해 quote()로 감싸기
     filename = quote(f"근태기록-월간집계(전체)_{stand_ym}.xlsx")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
     wb.save(response)
     return response
 

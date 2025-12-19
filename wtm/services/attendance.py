@@ -333,27 +333,47 @@ def prepare_month(users: list[int], year: int, month: int):
 
 # 웹 근태기록-월간집계(전체)에서 활용. 전체 사용자 * 1개월
 def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, month: int) -> dict[int, dict]:
+    """
+    웹 근태기록-월간집계(전체)에서 활용. 전체 사용자 * 1개월
+    - 기존 집계 키 유지(하위호환)
+    - 추가로 소정/휴일 분해 + TOTAL(연장 누계) 제공
+    """
     if not users:
         return {}
 
     today = timezone.now().date()
-
     days, sched_map, modules, logs_map = prepare_month(users, year, month)
 
     summary: dict[int, dict] = {}
     for uid in users:
         agg = {
+            # ===== 기존 합계 키(하위호환) =====
             "late_count": 0, "late_seconds": 0,
             "early_count": 0, "early_seconds": 0,
             "overtime_count": 0, "overtime_seconds": 0,
             "holiday_count": 0, "holiday_seconds": 0,
             "error_count": 0,
+
+            # ===== 추가: 소정근로 =====
+            "reg_late_count": 0, "reg_late_seconds": 0,
+            "reg_early_count": 0, "reg_early_seconds": 0,
+            "reg_overtime_count": 0, "reg_overtime_seconds": 0,
+
+            # ===== 추가: 휴일근로 =====
+            "hol_work_count": 0, "hol_work_seconds": 0,   # holiday_seconds 누적
+            "hol_late_count": 0, "hol_late_seconds": 0,
+            "hol_early_count": 0, "hol_early_seconds": 0,
+            "hol_overtime_count": 0, "hol_overtime_seconds": 0,
+
+            # ===== 추가: 휴일 TOTAL(근로-지각-조퇴+연장) =====
+            "hol_total_seconds": 0,
         }
+
         for rd in days:
             mid = sched_map.get(uid, {}).get(rd)
             module = modules.get(mid) if mid else None
 
-            ins  = logs_map.get(uid, {}).get(rd, {}).get("I", [])
+            ins = logs_map.get(uid, {}).get(rd, {}).get("I", [])
             outs = logs_map.get(uid, {}).get(rd, {}).get("O", [])
 
             # --- 출근 dt / 시간 ---
@@ -385,17 +405,62 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
                 log=LogsDay(checkin=checkin_time, checkout=checkout_time),
             )
 
-            if metrics.late_seconds     > 0: agg["late_count"]     += 1
-            if metrics.early_seconds    > 0: agg["early_count"]    += 1
-            if metrics.overtime_seconds > 0: agg["overtime_count"] += 1
-            if metrics.holiday_seconds  > 0: agg["holiday_count"]  += 1
+            # 1) 기존 합계(하위호환)
+            if metrics.late_seconds > 0:
+                agg["late_count"] += 1
+            if metrics.early_seconds > 0:
+                agg["early_count"] += 1
+            if metrics.overtime_seconds > 0:
+                agg["overtime_count"] += 1
+            if metrics.holiday_seconds > 0:
+                agg["holiday_count"] += 1
             if metrics.status_codes == ["ERROR"]:
                 agg["error_count"] += 1
 
-            agg["late_seconds"]     += metrics.late_seconds
-            agg["early_seconds"]    += metrics.early_seconds
+            agg["late_seconds"] += metrics.late_seconds
+            agg["early_seconds"] += metrics.early_seconds
             agg["overtime_seconds"] += metrics.overtime_seconds
-            agg["holiday_seconds"]  += metrics.holiday_seconds
+            agg["holiday_seconds"] += metrics.holiday_seconds
+
+            # 2) 분해 누적(소정근로/휴일근로 기준)
+            cat = module.cat if module else None
+
+            if cat == "소정근로":
+                if metrics.late_seconds > 0:
+                    agg["reg_late_count"] += 1
+                if metrics.early_seconds > 0:
+                    agg["reg_early_count"] += 1
+                if metrics.overtime_seconds > 0:
+                    agg["reg_overtime_count"] += 1
+
+                agg["reg_late_seconds"] += metrics.late_seconds
+                agg["reg_early_seconds"] += metrics.early_seconds
+                agg["reg_overtime_seconds"] += metrics.overtime_seconds
+
+            elif cat == "휴일근로":
+                # 휴일 "근로"는 holiday_seconds(휴일근로 인정시간)
+                if metrics.holiday_seconds > 0:
+                    agg["hol_work_count"] += 1
+                agg["hol_work_seconds"] += metrics.holiday_seconds
+
+                if metrics.late_seconds > 0:
+                    agg["hol_late_count"] += 1
+                if metrics.early_seconds > 0:
+                    agg["hol_early_count"] += 1
+                if metrics.overtime_seconds > 0:
+                    agg["hol_overtime_count"] += 1
+
+                agg["hol_late_seconds"] += metrics.late_seconds
+                agg["hol_early_seconds"] += metrics.early_seconds
+                agg["hol_overtime_seconds"] += metrics.overtime_seconds
+
+            # 3) 휴일 TOTAL(시간): (근로-지각-조퇴)+연장근로
+            if cat == "휴일근로":
+                # 휴일 TOTAL = (근로-지각-조퇴) + 연장근로
+                base = metrics.holiday_seconds - metrics.late_seconds - metrics.early_seconds
+                if base < 0:
+                    base = 0
+                agg["hol_total_seconds"] += (base + metrics.overtime_seconds)
 
         summary[uid] = agg
 

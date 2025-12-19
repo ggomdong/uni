@@ -13,7 +13,7 @@
     <div class="row align-items-center mb-3 g-2">
         {# 왼쪽: 날짜 네비 #}
         <div class="col-lg-5 col-md-6 col-12">
-            <div class="d-flex ‣ gap-2 flex-wrap fs-4">
+            <div class="d-flex gap-2 flex-wrap fs-4">
                 <a href="{% url 'wtm:work_status' stand_ym|get_month:-1 %}">
                     <button type="button" class="btn-hover">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -88,58 +88,95 @@
         <table class="table table-sm table-bordered align-middle text-center work-status-table">
             <colgroup>
               <col style="width:10%;">  <!-- 부서 -->
-              <col style="width:9%;">  <!-- 성명 -->
-              <col style="width:9%;">   <!-- 오류(일수) -->
-              <!-- 지각/조퇴/연장/휴일 × [횟수,시간] 8개 -->
-              <col style="width:9%;">
-              <col style="width:9%;">
-              <col style="width:9%;">
-              <col style="width:9%;">
-              <col style="width:9%;">
-              <col style="width:9%;">
-              <col style="width:9%;">
-              <col style="width:9%;">
+              <col style="width:9%;">   <!-- 성명 -->
+              <col style="width:6%;">   <!-- 오류(일수) -->
+
+              <!-- 소정근로: 지각/조퇴/연장근로 × (횟수,시간) = 6 -->
+              <col style="width:5%;"><col style="width:8%;">
+              <col style="width:5%;"><col style="width:8%;">
+              <col style="width:5%;"><col style="width:8%;">
+
+              <col style="width:8%;">   <!-- TOTAL(시간) -->
+
+              <!-- 휴일근로: 근로/지각/조퇴/연장근로 × (횟수,시간) = 8 -->
+              <col style="width:5%;"><col style="width:8%;">
+              <col style="width:5%;"><col style="width:8%;">
+              <col style="width:5%;"><col style="width:8%;">
+              <col style="width:5%;"><col style="width:8%;">
             </colgroup>
+
             <thead>
                 <tr class="table-light">
-                    <th rowspan="2">부서</th>
-<!--                    <th rowspan="2">직위</th>-->
-                    <th rowspan="2">성명</th>
-                    <th rowspan="2">오류<br>(일수)</th>
+                    <th rowspan="3">부서</th>
+                    <th rowspan="3">성명</th>
+                    <th rowspan="2">오류</th>
+
+                    <th colspan="6">소정근로</th>
+
+                    <th rowspan="3">휴일 TOTAL<br>(시간)</th>
+
+                    <th colspan="8">휴일근로</th>
+                </tr>
+                <tr class="table-light">
                     <th colspan="2">지각</th>
                     <th colspan="2">조퇴</th>
                     <th colspan="2">연장근로</th>
-                    <th colspan="2">휴일근로</th>
+
+                    <th colspan="2">근로</th>
+                    <th colspan="2">지각</th>
+                    <th colspan="2">조퇴</th>
+                    <th colspan="2">연장근로</th>
                 </tr>
                 <tr class="table-light">
+                    <th>(일수)</th>
+
+                    <th>횟수</th><th>시간</th>
+                    <th>횟수</th><th>시간</th>
+                    <th>횟수</th><th>시간</th>
+
                     <th>횟수</th><th>시간</th>
                     <th>횟수</th><th>시간</th>
                     <th>횟수</th><th>시간</th>
                     <th>횟수</th><th>시간</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for r in rows %}
                 <tr>
                     <td class="text-nowrap">{{ r.dept }}</td>
-<!--                    <td class="text-nowrap">{{ r.position }}</td>-->
                     <td class="text-nowrap">{{ r.emp_name }}</td>
-                    <td>{{ r.error_cnt|default:"" }}</td>
 
-                    <td>{{ r.late_cnt|default:"" }}</td>
-                    <td>{{ r.late_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.error_cnt|default_if_none:""|default:"" }}</td>
 
-                    <td>{{ r.early_cnt|default:"" }}</td>
-                    <td>{{ r.early_sec|ss_to_hhmmss }}</td>
+                    {# ===== 소정근로 ===== #}
+                    <td>{{ r.reg_late_cnt|default_if_none:""|default:"" }}</td>
+                    <td>{% if r.reg_late_sec %}{{ r.reg_late_sec|ss_to_hhmmss }}{% endif %}</td>
 
-                    <td>{{ r.overtime_cnt|default:"" }}</td>
-                    <td>{{ r.overtime_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.reg_early_cnt|default_if_none:""|default:"" }}</td>
+                    <td>{% if r.reg_early_sec %}{{ r.reg_early_sec|ss_to_hhmmss }}{% endif %}</td>
 
-                    <td>{{ r.holiday_cnt|default:"" }}</td>
-                    <td>{{ r.holiday_sec|ss_to_hhmmss }}</td>
+                    <td>{{ r.reg_overtime_cnt|default_if_none:""|default:"" }}</td>
+                    <td>{% if r.reg_overtime_sec %}{{ r.reg_overtime_sec|ss_to_hhmmss }}{% endif %}</td>
+
+                    {# ===== TOTAL(시간) ===== #}
+                    <td>{% if r.total_sec %}{{ r.total_sec|ss_to_hhmmss }}{% endif %}</td>
+
+                    {# ===== 휴일근로 ===== #}
+                    <td>{{ r.hol_work_cnt|default_if_none:""|default:"" }}</td>
+                    <td>{% if r.hol_work_sec %}{{ r.hol_work_sec|ss_to_hhmmss }}{% endif %}</td>
+
+                    <td>{{ r.hol_late_cnt|default_if_none:""|default:"" }}</td>
+                    <td>{% if r.hol_late_sec %}{{ r.hol_late_sec|ss_to_hhmmss }}{% endif %}</td>
+
+                    <td>{{ r.hol_early_cnt|default_if_none:""|default:"" }}</td>
+                    <td>{% if r.hol_early_sec %}{{ r.hol_early_sec|ss_to_hhmmss }}{% endif %}</td>
+
+                    <td>{{ r.hol_overtime_cnt|default_if_none:""|default:"" }}</td>
+                    <td>{% if r.hol_overtime_sec %}{{ r.hol_overtime_sec|ss_to_hhmmss }}{% endif %}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="12" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
+                <tr><td colspan="18" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -149,7 +186,7 @@
 <script type="text/javascript">
 const selectYM = document.getElementById("selectYM");
 selectYM.addEventListener('change', function() {
-  target = selectYM.value.replace('-', '');
+  const target = selectYM.value.replace('-', '');
   location.href = target;
 });
 </script>
