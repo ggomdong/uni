@@ -119,6 +119,8 @@
 
         <div class="card-body p-0">
             <div class="table-responsive">
+                {% now "Ymd" as today_ymd %}
+                {% now "Hi" as now_hi %}
                 <table class="table table-sm table-hover table-bordered align-middle text-center index-att-table mb-0">
                     <colgroup>
                         <col style="width:6%;">   {# 부서 #}
@@ -173,11 +175,15 @@
                         <td>{{ work.end_time }}</td>
 
                         <td class="
-                {% if work.cat == 'OFF' and work.checkin_time %} bg-warning-subtle{% endif %}
-                {% if work.cat == '소정근로' or work.cat == '휴일근로' %}
-                  {% if not work.checkin_time %} bg-warning-subtle{% endif %}
-                {% endif %}
-              ">
+                            {% if work.cat == 'OFF' and work.checkin_time %} bg-warning-subtle{% endif %}
+                            {% if work.cat == '소정근로' or work.cat == '휴일근로' %}
+                              {% if stand_day == today_ymd and not work.checkin_time %}
+                                  {% with start_hi=work.start_time|default:''|cut:':' %}
+                                      {% if start_hi and now_hi >= start_hi %}bg-warning-subtle{% endif %}
+                                  {% endwith %}
+                              {% endif %}
+                            {% endif %}
+                        ">
                             {{ work.checkin_time|default_if_none:"" }}
                         </td>
 
