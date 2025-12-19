@@ -29,6 +29,8 @@ from wtm.views.log import (
     work_log_save,
     work_log_delete,
 )
+from wtm.views.meal import work_meal_status
+
 from wtm.views.etc import work_privacy
 
 app_name = 'wtm'
@@ -62,5 +64,7 @@ urlpatterns = [
     path('log/<int:log_id>/delete/', work_log_delete, name='work_log_delete'),
     path('meal/', work_meal, name='work_meal'),
     path('meal/<str:stand_year>', work_meal, name='work_meal'),
+    path('meal_status/', work_meal_status, name='work_meal_status'),
+    path('meal_status/<str:stand_ym>', work_meal_status, name='work_meal_status'),
     path('privacy/', work_privacy, name='work_privacy'),
 ]

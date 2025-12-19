@@ -15,8 +15,53 @@ from django.utils import timezone
 
 from common.models import Holiday
 from common import context_processors
-from wtm.services.attendance import build_monthly_metric_details_for_users
-from .helpers import sec_to_hhmmss, build_work_status_rows, fetch_base_users_for_month
+from wtm.services.attendance import build_monthly_attendance_summary_for_users, build_monthly_metric_details_for_users
+from .helpers import sec_to_hhmmss, fetch_base_users_for_month
+
+
+def build_work_status_rows(stand_ym: str | None):
+    """
+    근태기록-월간집계(전체)에서 사용하는 rows 공통 빌더.
+    - stand_ym: 'YYYYMM' 형식 또는 None
+    - return: (정규화된 stand_ym, rows 리스트)
+    """
+    stand_ym = stand_ym or timezone.now().strftime("%Y%m")
+    year, month = int(stand_ym[:4]), int(stand_ym[4:6])
+
+    # 1) 대상자 추출
+    base_users = fetch_base_users_for_month(stand_ym)
+
+    if not base_users:
+        return stand_ym, []
+
+    # 2) 월 요약 계산(초 단위)
+    uid_list = [u["user_id"] for u in base_users]
+    summary_map = build_monthly_attendance_summary_for_users(
+        users=uid_list,
+        year=year,
+        month=month,
+    )
+
+    # 3) rows 구성
+    rows = []
+    for u in base_users:
+        s = summary_map.get(u["user_id"], {})
+        rows.append({
+            "dept":         u["dept"],
+            "position":     u["position"],
+            "emp_name":     u["emp_name"],
+            "error_cnt":    s.get("error_count", 0),
+            "late_cnt":     s.get("late_count", 0),
+            "late_sec":     s.get("late_seconds", 0),
+            "early_cnt":    s.get("early_count", 0),
+            "early_sec":    s.get("early_seconds", 0),
+            "overtime_cnt": s.get("overtime_count", 0),
+            "overtime_sec": s.get("overtime_seconds", 0),
+            "holiday_cnt":  s.get("holiday_count", 0),
+            "holiday_sec":  s.get("holiday_seconds", 0),
+        })
+
+    return stand_ym, rows
 
 
 # 근태기록-월간집계(전체)

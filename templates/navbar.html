@@ -21,31 +21,31 @@
                 </li>
                 {% if user.is_authenticated %}
                 <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle {% if url_name == 'log' or url_name == 'status' %}ci{% endif %}" href="#" id="Dropdown1" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <a class="nav-link dropdown-toggle {% if url_name == 'log' or url_name == 'status' %}ci{% endif %}" href="#" id="DropdownLog" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     근태기록
                   </a>
-                  <div class="dropdown-menu" aria-labelledby="Dropdown1">
+                  <div class="dropdown-menu" aria-labelledby="DropdownLog">
                     <a class="dropdown-item" href="{% url 'wtm:work_log' %}">일별상세</a>
                     <a class="dropdown-item" href="{% url 'wtm:work_status' %}">월간집계</a>
                   </div>
                 </li>
-<!--                <li class="nav-item">-->
-<!--                    <a class="nav-link {% if url_name == 'work_status' %}ci{% endif %}" href="{% url 'wtm:work_status' %}">근태현황</a>-->
-<!--                </li>-->
-<!--                <li class="nav-item">-->
-<!--                    <a class="nav-link {% if url_name == 'work_log' %}ci{% endif %}" href="{% url 'wtm:work_log' %}">근무로그</a>-->
-<!--                </li>-->
-<!--                <li class="nav-item">-->
-<!--                    <a class="nav-link {% if url_name == 'work_meal' %}ci{% endif %}" href="{% url 'wtm:work_meal' %}">식대관리</a>-->
-<!--                </li>-->
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle {% if url_name == 'meal_status' or url_name == 'meal_status' %}ci{% endif %}" href="#" id="DropdownMeal" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    식대관리
+                  </a>
+                  <div class="dropdown-menu" aria-labelledby="DropdownMeal">
+                    <a class="dropdown-item" href="{% url 'wtm:work_meal_status' %}">일별상세</a>
+                    <a class="dropdown-item" href="{% url 'wtm:work_meal_status' %}">월간집계</a>
+                  </div>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link {% if url_name == 'user_list' %}ci{% endif %}" href="{% url 'common:user_list' %}">직원관리</a>
                 </li>
                 <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle {% if url_name == 'dept' or url_name == 'position' or url_name == 'work_module' or url_name == 'holiday' or url_name == 'business' or url_name == 'code' %}ci{% endif %}" href="#" id="Dropdown2" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <a class="nav-link dropdown-toggle {% if url_name == 'dept' or url_name == 'position' or url_name == 'work_module' or url_name == 'holiday' or url_name == 'business' or url_name == 'code' %}ci{% endif %}" href="#" id="DropdownSettings" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     설정
                   </a>
-                  <div class="dropdown-menu" aria-labelledby="Dropdown2">
+                  <div class="dropdown-menu" aria-labelledby="DropdownSettings">
                     <a class="dropdown-item" href="{% url 'common:dept' %}">부서관리</a>
                     <a class="dropdown-item" href="{% url 'common:position' %}">직위관리</a>
                     <hr class="dropdown-divider">

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% load humanize %}
+{% block content %}
+<div class="container-fluid my-3 px-4">
+
+    <div class="page-header">
+        <h4 class="page-title">식대관리 ▸ 월간집계</h4>
+    </div>
+
+    {# ------------------------------------------------------------------ #}
+    {# 상단 컨트롤 바: 날짜 네비 + 지표 네비 + 엑셀                             #}
+    {# ------------------------------------------------------------------ #}
+    <div class="row align-items-center mb-3 g-2">
+        {# 왼쪽: 날짜 네비 #}
+        <div class="col-lg-5 col-md-6 col-12">
+            <div class="d-flex ‣ gap-2 flex-wrap fs-4">
+                <a href="{% url 'wtm:work_meal_status' stand_ym|get_month:-1 %}">
+                    <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-left text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                        </svg>
+                    </button>
+                </a>
+                <a href="{% url 'wtm:work_meal_status' stand_ym|get_month:1 %}">
+                    <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-right text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                        </svg>
+                    </button>
+                </a>
+
+                <span class="nativeDatePicker">
+                    <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
+                    value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
+                </span>
+            </div>
+        </div>
+
+        <!-- 오른쪽: Excel 버튼 -->
+        <div class="col-lg-7 col-md-6 col-12 text-md-end text-start mt-2 mt-md-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-md-end">
+
+                {% if user.is_authenticated %}
+                <div class="btn-group">
+                    <a href="{% url 'wtm:work_status_excel' stand_ym %}" class="btn btn-sm btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
+                          <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
+                          <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
+                        </svg>
+                        Excel
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="table-responsive status-table-wrapper">
+        <table class="table table-sm table-bordered align-middle text-center work-status-table">
+            <colgroup>
+                <col style="width:10%;">  <!-- 부서 -->
+                <col style="width:10%;">  <!-- 성명 -->
+                <col style="width:25%;">   <!-- 발생 -->
+                <col style="width:25%;">   <!-- 사용 -->
+                <col style="width:25%;">   <!-- 잔액 -->
+            </colgroup>
+            <thead>
+                <tr class="table-light">
+                    <th>부서</th>
+<!--                    <th>직위</th>-->
+                    <th>성명</th>
+                    <th>발생</th>
+                    <th>사용</th>
+                    <th>잔액</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="text-nowrap">{{ r.dept }}</td>
+<!--                    <td class="text-nowrap">{{ r.position }}</td>-->
+                    <td class="text-nowrap">{{ r.emp_name }}</td>
+                    <td class="text-end">
+                        {% if r.total_amount %}
+                            {{ r.total_amount|intcomma }}<span class="text-muted small ms-1">원</span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>{{ r.used_amount|default:"-" }}</td>
+                    <td>{{ r.balance|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="12" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript">
+const selectYM = document.getElementById("selectYM");
+selectYM.addEventListener('change', function() {
+  target = selectYM.value.replace('-', '');
+  location.href = target;
+});
+</script>
+{% endblock %}
