@@ -77,21 +77,19 @@ def work_meal_status(request, stand_ym: str | None = None):
 # 엑셀에서 가져갈 수 있도록 JSON 형태로 내려줌 -> 향후 제거 예정
 def work_meal_json(request, stand_ym: str | None = None):
     stand_ym = stand_ym or request.GET.get("stand_ym") or timezone.now().strftime("%Y%m")
+
+    # 기존 로직 재사용 (dept/position 등 포함된 rows를 만들어 주는 함수)
     stand_ym, rows = build_meal_status_rows(stand_ym)
 
-    # 엑셀(Power Query 등)은 숫자형이 편하니 None -> 0 정규화 권장
-    excel_rows = []
+    # 요청 형태로 단순화: [{"emp_name": "...", "total_amount": 123}, ...]
+    simple_rows = []
     for r in rows:
-        rr = dict(r)
-        rr["total_amount"] = rr["total_amount"] or 0
-        rr["used_amount"] = rr["used_amount"] or 0
-        rr["balance"] = rr["balance"] or 0
-        excel_rows.append(rr)
+        simple_rows.append({
+            "emp_name": r.get("emp_name"),
+            "total_amount": r.get("total_amount") or 0,
+        })
 
-    resp = JsonResponse(
-        {"stand_ym": stand_ym, "rows": excel_rows},
-        json_dumps_params={"ensure_ascii": False},
-    )
+    resp = JsonResponse(simple_rows, safe=False, json_dumps_params={"ensure_ascii": False})
 
     # 필요 시 파일 다운로드 형태
     if request.GET.get("download") == "1":
