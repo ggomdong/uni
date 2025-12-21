@@ -78,7 +78,7 @@ def work_meal_status(request, stand_ym: str | None = None):
 def work_meal_json(request, stand_ym: str | None = None):
     stand_ym = stand_ym or request.GET.get("stand_ym") or timezone.now().strftime("%Y%m")
 
-    # 기존 로직 재사용 (dept/position 등 포함된 rows를 만들어 주는 함수)
+    # dept/position 등 포함된 rows를 만들어 주는 함수
     stand_ym, rows = build_meal_status_rows(stand_ym)
 
     # 요청 형태로 단순화: [{"emp_name": "...", "total_amount": 123}, ...]

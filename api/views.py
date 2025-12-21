@@ -19,6 +19,21 @@ _TEST_MODE = False
 _TEST_TODAY = datetime(2025, 12, 5).date()
 _TEST_NOW = datetime.combine(_TEST_TODAY, datetime.strptime("08:35", "%H:%M").time())
 
+
+def ensure_active_employee_or_403(user):
+    """
+    퇴사자면 403 Response를 반환하고,
+    재직자면 None을 반환한다.
+    """
+    today = timezone.now().date()
+    if getattr(user, "out_date", None) and user.out_date < today:
+        return Response(
+            {"error": "out_user", "message": "퇴사자는 사용할 수 없습니다."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return None
+
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         username = attrs.get('username')
@@ -55,7 +70,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         is_out = User.objects.filter(
             username=username,
             out_date__isnull=False,
-            out_date__lte=today
+            out_date__lt=today
         ).exists()
 
         if is_out:
@@ -118,6 +133,11 @@ class AttendanceAPIView(APIView):
 
     def get(self, request):
         user = request.user
+
+        # 재직자 여부 가드
+        resp = ensure_active_employee_or_403(user)
+        if resp is not None:
+            return resp
 
         TEST_MODE = _TEST_MODE
 
@@ -188,6 +208,12 @@ class MonthlyAttendanceAPIView(APIView):
 
     def get(self, request):
         user = request.user
+
+        # 재직자 여부 가드
+        resp = ensure_active_employee_or_403(user)
+        if resp is not None:
+            return resp
+
         now = timezone.now()
 
         try:
@@ -248,6 +274,12 @@ class WorkCreateAPIView(APIView):
     def post(self, request):
 
         user = request.user
+
+        # 재직자 여부 가드
+        resp = ensure_active_employee_or_403(user)
+        if resp is not None:
+            return resp
+
         now = timezone.now()
         today = now.date()
 
@@ -390,5 +422,11 @@ class ProfileAPIView(APIView):
 
     def get(self, request):
         user = request.user
+
+        # 재직자 여부 가드
+        resp = ensure_active_employee_or_403(user)
+        if resp is not None:
+            return resp
+
         serializer = UserProfileSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)

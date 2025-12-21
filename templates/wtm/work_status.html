@@ -96,9 +96,8 @@
               <col style="width:5%;"><col style="width:8%;">
               <col style="width:5%;"><col style="width:8%;">
 
-              <col style="width:8%;">   <!-- TOTAL(시간) -->
-
               <!-- 휴일근로: 근로/지각/조퇴/연장근로 × (횟수,시간) = 8 -->
+              <col style="width:8%;">   <!-- TOTAL(시간) -->
               <col style="width:5%;"><col style="width:8%;">
               <col style="width:5%;"><col style="width:8%;">
               <col style="width:5%;"><col style="width:8%;">
@@ -109,27 +108,23 @@
                 <tr class="table-light">
                     <th rowspan="3">부서</th>
                     <th rowspan="3">성명</th>
-                    <th rowspan="2">오류</th>
+                    <th rowspan="3">오류<br>(일수)</th>
 
                     <th colspan="6">소정근로</th>
-
-                    <th rowspan="3">휴일 TOTAL<br>(시간)</th>
-
-                    <th colspan="8">휴일근로</th>
+                    <th colspan="9">휴일근로</th>
                 </tr>
                 <tr class="table-light">
                     <th colspan="2">지각</th>
                     <th colspan="2">조퇴</th>
                     <th colspan="2">연장근로</th>
 
+                    <th rowspan="2">TOTAL<br>(시간)</th>
                     <th colspan="2">근로</th>
                     <th colspan="2">지각</th>
                     <th colspan="2">조퇴</th>
                     <th colspan="2">연장근로</th>
                 </tr>
                 <tr class="table-light">
-                    <th>(일수)</th>
-
                     <th>횟수</th><th>시간</th>
                     <th>횟수</th><th>시간</th>
                     <th>횟수</th><th>시간</th>
@@ -159,10 +154,9 @@
                     <td>{{ r.reg_overtime_cnt|default_if_none:""|default:"" }}</td>
                     <td>{% if r.reg_overtime_sec %}{{ r.reg_overtime_sec|ss_to_hhmmss }}{% endif %}</td>
 
-                    {# ===== TOTAL(시간) ===== #}
+                    {# ===== 휴일근로 ===== #}
                     <td>{% if r.total_sec %}{{ r.total_sec|ss_to_hhmmss }}{% endif %}</td>
 
-                    {# ===== 휴일근로 ===== #}
                     <td>{{ r.hol_work_cnt|default_if_none:""|default:"" }}</td>
                     <td>{% if r.hol_work_sec %}{{ r.hol_work_sec|ss_to_hhmmss }}{% endif %}</td>
 

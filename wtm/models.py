@@ -22,6 +22,15 @@ class Module(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='mod_id')
     mod_date = models.DateTimeField()
+    order = models.PositiveIntegerField(default=0, db_index=True)
+
+    def save(self, *args, **kwargs):
+        # 신규 등록이거나 sort_order가 0이면 맨 뒤로 붙이기
+        if not self.order:
+            from django.db.models import Max
+            max_order = Module.objects.aggregate(m=Max('order'))['m'] or 0
+            self.order = max_order + 1
+        super().save(*args, **kwargs)
 
 
 # 근로계약

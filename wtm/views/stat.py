@@ -1,6 +1,5 @@
 import openpyxl
-from openpyxl.utils import get_column_letter
-from openpyxl.styles import Alignment, PatternFill, Font
+from openpyxl.styles import Alignment, PatternFill, Font, Border, Side
 from urllib.parse import quote
 
 from datetime import datetime, date
@@ -82,9 +81,12 @@ def work_status(request, stand_ym: str | None = None):
 def work_status_excel(request, stand_ym: str | None = None):
     """
     근태기록-월간집계(전체) 엑셀 다운로드
-    - 3단 헤더(병합) 적용
-    - HTML 상세표(소정/휴일 분리 + TOTAL) 기준 18컬럼(A~R)
+    - HTML 최신 레이아웃과 동일:
+      [부서, 성명, 오류] +
+      [소정근로: 지각/조퇴/연장근로(횟수,시간)] +
+      [휴일근로: TOTAL(시간) + 근로/지각/조퇴/연장근로(횟수,시간)]
     """
+    # 공통 빌더로 데이터 얻기
     stand_ym, rows = build_work_status_rows(stand_ym)
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
@@ -95,53 +97,53 @@ def work_status_excel(request, stand_ym: str | None = None):
     align_center = Alignment(horizontal="center", vertical="center")
     align_right = Alignment(horizontal="right", vertical="center")
 
-    # 제목(1행)
+    # ===== 제목 (1행) =====
     ws["A1"] = f"{year}년 {month}월 근태기록 월간집계(전체)"
     ws["A1"].font = Font(size=10, bold=True)
-    ws.merge_cells("A1:R1")
+    ws.merge_cells("A1:R1")  # 18열(A~R)
 
-    # 3단 헤더(2~4행)
+    # ===== 3단 헤더 (2~4행) =====
+    # Row2 (최상단 그룹)
     ws["A2"] = "부서"
     ws["B2"] = "성명"
     ws["C2"] = "오류\n(일수)"
     ws["D2"] = "소정근로"
-    ws["J2"] = "TOTAL\n(시간)"
-    ws["K2"] = "휴일근로"
+    ws["J2"] = "휴일근로"
 
     ws.merge_cells("A2:A4")
     ws.merge_cells("B2:B4")
     ws.merge_cells("C2:C4")
-    ws.merge_cells("D2:I2")
-    ws.merge_cells("J2:J4")
-    ws.merge_cells("K2:R2")
+    ws.merge_cells("D2:I2")   # 소정근로 6열
+    ws.merge_cells("J2:R2")   # 휴일근로 9열
 
-    ws["D3"] = "지각"
-    ws["F3"] = "조퇴"
-    ws["H3"] = "연장근로"
+    # Row3 (중간 그룹)
+    # 소정근로
+    ws["D3"] = "지각";     ws.merge_cells("D3:E3")
+    ws["F3"] = "조퇴";     ws.merge_cells("F3:G3")
+    ws["H3"] = "연장근로"; ws.merge_cells("H3:I3")
 
-    ws["K3"] = "근무"
-    ws["M3"] = "지각"
-    ws["O3"] = "조퇴"
-    ws["Q3"] = "연장근로"
+    # 휴일근로
+    ws["J3"] = "TOTAL\n(시간)"
+    ws.merge_cells("J3:J4")  # TOTAL은 단일 컬럼(ROWSPAN 2)
 
-    ws.merge_cells("D3:E3")
-    ws.merge_cells("F3:G3")
-    ws.merge_cells("H3:I3")
+    ws["K3"] = "근로";     ws.merge_cells("K3:L3")
+    ws["M3"] = "지각";     ws.merge_cells("M3:N3")
+    ws["O3"] = "조퇴";     ws.merge_cells("O3:P3")
+    ws["Q3"] = "연장근로"; ws.merge_cells("Q3:R3")
 
-    ws.merge_cells("K3:L3")
-    ws.merge_cells("M3:N3")
-    ws.merge_cells("O3:P3")
-    ws.merge_cells("Q3:R3")
-
+    # Row4 (리프 헤더)
+    # 소정근로 leaf
     ws["D4"] = "횟수"; ws["E4"] = "시간"
     ws["F4"] = "횟수"; ws["G4"] = "시간"
     ws["H4"] = "횟수"; ws["I4"] = "시간"
 
+    # 휴일근로 leaf (TOTAL은 병합되어 있으므로 제외)
     ws["K4"] = "횟수"; ws["L4"] = "시간"
     ws["M4"] = "횟수"; ws["N4"] = "시간"
     ws["O4"] = "횟수"; ws["P4"] = "시간"
     ws["Q4"] = "횟수"; ws["R4"] = "시간"
 
+    # ===== 헤더 스타일 =====
     header_fill = PatternFill(fill_type="solid", start_color="FF02B3BB", end_color="FF02B3BB")
     header_font = Font(size=10, bold=True, color="FFFFFFFF")
     header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -156,6 +158,13 @@ def work_status_excel(request, stand_ym: str | None = None):
     def _t(sec: int) -> str:
         return "" if not sec else sec_to_hhmmss(sec)
 
+    # ===== 데이터 (5행부터) =====
+    # A dept
+    # B emp_name
+    # C error_cnt
+    # D~I 소정근로: 지각/조퇴/연장근로 (횟수,시간)
+    # J 휴일근로 TOTAL(시간)
+    # K~R 휴일근로: 근로/지각/조퇴/연장근로 (횟수,시간)
     for r in rows:
         ws.append([
             r.get("dept") or "",
@@ -174,34 +183,47 @@ def work_status_excel(request, stand_ym: str | None = None):
             r.get("hol_overtime_cnt") or "", _t(r.get("hol_overtime_sec") or 0),
         ])
 
+    # ===== 본문 스타일 =====
     for row in ws.iter_rows(min_row=5, max_row=ws.max_row, min_col=1, max_col=18):
         for cell in row:
             cell.font = Font(size=10)
-            if cell.column in (1, 2):
+            if cell.column in (1, 2):   # 부서/성명
                 cell.alignment = align_center
             else:
                 cell.alignment = align_right
 
-    ws.column_dimensions["A"].width = 15
-    ws.column_dimensions["B"].width = 12
-    ws.column_dimensions["C"].width = 10
+    # ===== 컬럼 폭 =====
+    ws.column_dimensions["A"].width = 15  # 부서
+    ws.column_dimensions["B"].width = 12  # 성명
+    ws.column_dimensions["C"].width = 10  # 오류
 
     ws.column_dimensions["D"].width = 8;  ws.column_dimensions["E"].width = 12
     ws.column_dimensions["F"].width = 8;  ws.column_dimensions["G"].width = 12
     ws.column_dimensions["H"].width = 8;  ws.column_dimensions["I"].width = 12
 
-    ws.column_dimensions["J"].width = 12
+    ws.column_dimensions["J"].width = 14  # TOTAL(시간)
 
     ws.column_dimensions["K"].width = 8;  ws.column_dimensions["L"].width = 12
     ws.column_dimensions["M"].width = 8;  ws.column_dimensions["N"].width = 12
     ws.column_dimensions["O"].width = 8;  ws.column_dimensions["P"].width = 12
     ws.column_dimensions["Q"].width = 8;  ws.column_dimensions["R"].width = 12
 
+    # ===== 전체 테두리(기본 thin) 적용 =====
+    thin_side = Side(style="thin")
+    thin_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+
+    # 표 영역 전체(A~R, 2행~마지막행) 테두리
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=18):
+        for cell in row:
+            cell.border = thin_border
+
+    # ===== 응답 =====
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     filename = quote(f"근태기록-월간집계(전체)_{stand_ym}.xlsx")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
     wb.save(response)
     return response
 

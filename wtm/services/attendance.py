@@ -347,7 +347,7 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
     summary: dict[int, dict] = {}
     for uid in users:
         agg = {
-            # ===== 기존 합계 키(하위호환) =====
+            # ===== 합계 키(하위호환) =====
             "late_count": 0, "late_seconds": 0,
             "early_count": 0, "early_seconds": 0,
             "overtime_count": 0, "overtime_seconds": 0,

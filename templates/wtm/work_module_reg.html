@@ -11,7 +11,7 @@
         {% include 'form_errors.html' %}
         <div class="mb-3 col-md-4">
             <label class="form-label" for="cat">구분</label>
-            <select class="form-select form-select-sm" name="cat" id="cat" onchange="selectCategory()">
+            <select class="form-select form-select-sm" name="cat" id="cat" onchange="selectCategory(false)">
                 {% for cat in categories %}
                 <option value="{{cat}}" {% if form.cat.value == cat %}selected{% endif %}>{{cat}}</option>
                 {% endfor %}
@@ -49,7 +49,6 @@
             <div class="col-md-2">
                 <label class="form-label" for="rest1_start_time">휴게1(시작시각)</label>
                 <select class="form-select form-select-sm" name="rest1_start_time" id="rest1_start_time">
-                    <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest1_start_time.value == time %} selected {% endif %}>{{time}}</option>
                     {% endfor %}
@@ -58,7 +57,6 @@
             <div class="col-md-2">
                 <label class="form-label" for="rest1_end_time">휴게1(종료시각)</label>
                 <select class="form-select form-select-sm" name="rest1_end_time" id="rest1_end_time">
-                    <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest1_end_time.value == time %} selected {% endif %}>{{time}}</option>
                     {% endfor %}
@@ -69,7 +67,6 @@
             <div class="col-md-2">
                 <label class="form-label" for="rest2_start_time">휴게2(시작시각)</label>
                 <select class="form-select form-select-sm" name="rest2_start_time" id="rest2_start_time">
-                    <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest2_start_time.value == time %} selected {% endif %}>{{time}}</option>
                     {% endfor %}
@@ -78,7 +75,6 @@
             <div class="col-md-2">
                 <label class="form-label" for="rest2_end_time">휴게2(종료시각)</label>
                 <select class="form-select form-select-sm" name="rest2_end_time" id="rest2_end_time">
-                    <option></option>
                     {% for time in times %}
                     <option value="{{time}}" {% if form.rest2_end_time.value == time %} selected {% endif %}>{{time}}</option>
                     {% endfor %}
@@ -135,7 +131,7 @@
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
-function selectCategory() {
+function selectCategory(isInit = false) {
     // 구분(category)의 값을 가져옴
     const selVal = document.querySelector("select#cat option:checked").value;
 
@@ -157,71 +153,87 @@ function selectCategory() {
     const color11 = document.querySelector("input#color11");
     const colors = document.querySelectorAll("input[name='color']");
 
-
-    if (selVal == '소정근로') {
-        // 모든 DOM객체(i=0부터 시작)를 Editable하게 초기화
-        for (let i=0; i < itemList.length; i++) {
-            itemList[i].value = '';
-            itemList[i].style.cssText = 'background-color: #ff; pointer-events: auto;';
-        }
-
-        color11.checked = false;
+    // 공통 유틸: 색상 잠금/해제
+    function unlockColors() {
         for (const color of colors) {
-            color.onclick = function() { };
-        }
-    } else if (selVal == '휴일근로') {
-        // 모든 DOM객체(i=0부터 시작)를 Editable하게 초기화
-        for (let i=0; i < itemList.length; i++) {
-            itemList[i].value = '';
-            itemList[i].style.cssText = 'background-color: #ff; pointer-events: auto;';
-        }
-
-        color11.checked = true;
-        for (const color of colors) {
-            if (!color.checked) color.onclick = function() { return(false) };
-        }
-    } else if (selVal == '유급휴무') {
-        // 근로명을 제외한 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
-        for (let i=1; i < itemList.length; i++) {
-            itemList[i].value = '-';
-            itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';
-        }
-
-        itemList[0].value = '';
-        itemList[0].style.cssText = 'background-color: #ff; pointer-events: auto;';
-
-        color11.checked = true;
-        for (const color of colors) {
-            if (!color.checked) color.onclick = function() { return(false) };
-        }
-    } else if (selVal == '무급휴무') {
-        // 근로명을 제외한 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
-        for (let i=1; i < itemList.length; i++) {
-            itemList[i].value = '-';
-            itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';
-        }
-
-        itemList[0].value = '';
-        itemList[0].style.cssText = 'background-color: #ff; pointer-events: auto;';
-
-        color11.checked = true;
-        for (const color of colors) {
-            if (!color.checked) color.onclick = function() { return(false) };
-        }
-    } else if (selVal == 'OFF') {
-        // 근로명은 'OFF'로, 그 외 DOM객체(i=1부터 시작)를 Edit가 불가능하게 세팅하고, 색상은 color11(흰색)으로 고정한다.
-        for (let i=0; i < itemList.length; i++) {
-            itemList[i].value = '-';
-            itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';
-        }
-
-        itemList[0].value = 'OFF';
-
-        color11.checked = true;
-        for (const color of colors) {
-            if (!color.checked) color.onclick = function() { return(false) };
+            color.onclick = null;           // 클릭 방해 해제
+            color.disabled = false;         // 혹시 disabled 썼던 경우 대비
         }
     }
+
+    function lockToWhite() {
+        color11.checked = true;
+        for (const color of colors) {
+            if (!color.checked) {
+                // 클릭 차단 + 비활성화(더 확실)
+                color.onclick = function() { return false; };
+                color.disabled = true;
+            } else {
+                color.disabled = false;
+            }
+        }
+    }
+
+    // 공통 유틸: 입력 활성/비활성
+    function enableAllInputs(resetValues) {
+        for (let i = 0; i < itemList.length; i++) {
+            if (resetValues) itemList[i].value = '';
+            itemList[i].style.cssText = 'background-color: #fff; pointer-events: auto;';
+        }
+    }
+
+    function disableTimeInputsKeepName(resetValuesForDisabled) {
+        // name(0) 제외한 나머지(1~) 비활성화
+        for (let i = 1; i < itemList.length; i++) {
+            if (resetValuesForDisabled) itemList[i].value = '-';
+            itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';
+        }
+        // name은 활성
+        itemList[0].style.cssText = 'background-color: #fff; pointer-events: auto;';
+        if (resetValuesForDisabled) itemList[0].value = '';
+    }
+
+    function setRestDefaultsIfEmpty() {
+        const restSelects = [rest1_start_time, rest1_end_time, rest2_start_time, rest2_end_time];
+        for (const el of restSelects) {
+            if (!el.value) el.value = '-';
+        }
+    }
+
+    // ===== 정책 적용 =====
+    if (selVal == '소정근로' || selVal == '휴일근로') {
+        // 수정 화면 초기 로딩(isInit=true)에서는 기존 값 유지
+        // 사용자가 구분을 바꾼 경우(isInit=false)에는 기존 동작처럼 초기화
+        enableAllInputs(!isInit);
+
+        // 소정근로/휴일근로는 색상 선택 가능
+        unlockColors();
+
+        // 휴게 기본값 보장
+        setRestDefaultsIfEmpty();
+    }
+    else if (selVal == '유급휴무' || selVal == '무급휴무') {
+        // 시간은 비활성(초기 로딩에서도 정책 강제하려면 값 '-' 세팅)
+        disableTimeInputsKeepName(true);
+
+        // 흰색 고정
+        lockToWhite();
+    }
+    else if (selVal == 'OFF') {
+        // 전부 비활성화 + OFF 강제
+        for (let i = 0; i < itemList.length; i++) {
+            itemList[i].style.cssText = 'background-color: #ddd; pointer-events: none;';
+            itemList[i].value = '-';
+        }
+        itemList[0].value = 'OFF';
+
+        // 흰색 고정
+        lockToWhite();
+    }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+  selectCategory(true); // 초기 로딩: 기존 값 유지하면서 잠금 정책만 적용
+});
 </script>
 {% endblock %}

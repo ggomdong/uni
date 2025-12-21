@@ -52,7 +52,7 @@ def work_schedule(request, stand_ym=None):
         )
         schedule_date = next_ym + str(6 - last_day_weekday).zfill(2)
 
-    # 대상 직원을 추출하여 schedule_list에 저장 (기존 raw 유지)
+    # 대상 직원을 추출하여 schedule_list에 저장
     query_user = f'''
             SELECT u.id, u.emp_name, u.dept, u.position,
                     DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
@@ -130,7 +130,7 @@ def work_schedule(request, stand_ym=None):
                     module_id = getattr(next_sched, f"d{i}_id", None)
                     row[f"n{i}"] = module_str_map.get(module_id) if module_id else None
 
-        # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅 (기존 로직 그대로)
+        # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅
         row['dept_diff'] = ('N' if pre_dept == row['dept'] else 'Y')
         pre_dept = row['dept']
 
@@ -256,7 +256,7 @@ def work_schedule_reg(request, stand_ym):
             return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
         # -----------------------------
-        # 2. 기존 근무표 중복 체크 (기존 로직 유지)
+        # 2. 기존 근무표 중복 체크
         # -----------------------------
         existing_users_this_month = set(
             Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])

@@ -95,7 +95,7 @@
                             </td>
                         </tr>
                         {% if forloop.last %}
-                        {# 기존 로직 유지: 최대 인원수에 맞춰 빈 행 채우기 #}
+                        {# 최대 인원수에 맞춰 빈 행 채우기 #}
                         {% with max_workers|get_range:forloop.counter as range %}
                         {% for i in range %}
                         <tr>
@@ -123,8 +123,8 @@
                 {% now "Hi" as now_hi %}
                 <table class="table table-sm table-hover table-bordered align-middle text-center index-att-table mb-0">
                     <colgroup>
-                        <col style="width:6%;">   {# 부서 #}
-                        <col style="width:8%;">   {# 직위 #}
+                        <col style="width:6%;">  {# 부서 #}
+                        <col style="width:8%;">  {# 직위 #}
                         <col style="width:8%;">  {# 성명 #}
                         <col style="width:10%;">  {# 근로구분 #}
                         <col style="width:5%;">  {# 시업 #}
@@ -177,7 +177,7 @@
                         <td class="
                             {% if work.cat == 'OFF' and work.checkin_time %} bg-warning-subtle{% endif %}
                             {% if work.cat == '소정근로' or work.cat == '휴일근로' %}
-                              {% if stand_day == today_ymd and not work.checkin_time %}
+                              {% if stand_day <= today_ymd and not work.checkin_time %}
                                   {% with start_hi=work.start_time|default:''|cut:':' %}
                                       {% if start_hi and now_hi >= start_hi %}bg-warning-subtle{% endif %}
                                   {% endwith %}
@@ -191,45 +191,26 @@
                             {{ work.checkout_time|default_if_none:"" }}
                         </td>
 
-                        {% if work.status %}
                         <td>
                             {% if work.status_codes %}
-                            {% if 'ERROR' in work.status_codes %}
-                            <button type="button"
-                                    class="btn btn-sm btn-danger att-error-btn"
-                                    data-user-id="{{ work.user_id }}"
-                                    data-emp-name="{{ work.emp_name }}"
-                                    data-dept="{{ work.dept }}"
-                                    data-position="{{ work.position }}"
-                                    data-stand-day="{{ stand_day }}"
-                                    data-module-id="{{ work.module_id|default_if_none:'' }}">
-                                오류
-                            </button>
-                            {% else %}
-<!--                            <span class="badge rounded-pill bg-light text-dark border index-status-pill">-->
-                              {{ work.status }}
-<!--                            </span>-->
-                            {% endif %}
-                            {% else %}
-                            {% if work.status == '오류' or work.status|upper == 'ERROR' %}
-                            <button type="button"
-                                    class="btn btn-sm btn-danger att-error-btn"
-                                    data-user-id="{{ work.user_id }}"
-                                    data-emp-name="{{ work.emp_name }}"
-                                    data-dept="{{ work.dept }}"
-                                    data-position="{{ work.position }}"
-                                    data-stand-day="{{ stand_day }}"
-                                    data-module-id="{{ work.module_id|default_if_none:'' }}">
-                                오류
-                            </button>
-                            {% else %}
-<!--                            <span class="badge rounded-pill bg-light text-dark border index-status-pill">-->
-                              {{ work.status }}
-<!--                            </span>-->
-                            {% endif %}
+                                {% if 'ERROR' in work.status_codes %}
+                                <button type="button"
+                                        class="btn btn-sm btn-danger att-error-btn"
+                                        data-user-id="{{ work.user_id }}"
+                                        data-emp-name="{{ work.emp_name }}"
+                                        data-dept="{{ work.dept }}"
+                                        data-position="{{ work.position }}"
+                                        data-stand-day="{{ stand_day }}"
+                                        data-module-id="{{ work.module_id|default_if_none:'' }}">
+                                    오류
+                                </button>
+                                {% elif 'PAY' in work.status_codes or 'NOPAY' in work.status_codes or 'OFF' in work.status_codes %}
+                                -
+                                {% else %}
+                                  {{ work.status }}
+                                {% endif %}
                             {% endif %}
                         </td>
-                        {% endif %}
 
                         <td class="{% if work.late_seconds %}text-danger fw-semibold{% endif %}">
                             {% if work.late_seconds %}{{ work.late_seconds|ss_to_hhmmss }}{% endif %}

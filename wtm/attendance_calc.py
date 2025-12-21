@@ -294,7 +294,7 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
     is_today = (record_day == today)
     is_future = (record_day > today)
 
-    # 0) 근무표 자체가 없으면(기존 규칙 유지)
+    # 0) 근무표 자체가 없으면
     if not module:
         status_codes = ["NOSCHEDULE"]
 
@@ -308,7 +308,7 @@ def compute_seconds_status_for_day(record_day: date, module: "Module | None", lo
         else:
             def is_error_on_workday() -> bool:
                 """
-                오류 판정 로직 (기존 로직 유지)
+                오류 판정 로직
                 - 오늘: 시업시간 지났는데 출퇴근 기록 전무 OR (체류∩유급 0)
                 - 과거: 출퇴근 기록 전무 OR (체류∩유급 0)
                 """

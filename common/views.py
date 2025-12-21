@@ -19,7 +19,7 @@ def page_not_found(request, exception):
 
 
 class WebLoginView(LoginView):
-    template_name = "common/login.html"  # 기존 login 템플릿 재사용
+    template_name = "common/login.html"
 
     def form_valid(self, form):
         """
