@@ -1,5 +1,8 @@
+import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 
@@ -9,10 +12,34 @@ from ..forms import ModuleForm
 
 @login_required(login_url='common:login')
 def work_module(request):
-    obj = Module.objects.all()
+    obj = Module.objects.all().order_by('order', 'id')
 
     context = {'work_module': obj}
     return render(request, 'wtm/work_module.html', context)
+
+
+@login_required(login_url='common:login')
+def work_module_reorder(request):
+    payload = json.loads(request.body.decode('utf-8'))
+    ids = payload.get('ids', [])
+
+    if not isinstance(ids, list) or not ids:
+        return JsonResponse({'ok': False, 'msg': 'invalid ids'}, status=400)
+
+    with transaction.atomic():
+        qs = Module.objects.select_for_update().filter(id__in=ids)
+
+        # 멀티테넌시/사업장 범위가 있으면 반드시 제한
+        # qs = qs.filter(branch=request.user.branch)
+
+        found = set(qs.values_list('id', flat=True))
+        if len(found) != len(ids):
+            return JsonResponse({'ok': False, 'msg': 'some ids not found'}, status=400)
+
+        for idx, mid in enumerate(ids, start=1):
+            Module.objects.filter(id=mid).update(order=idx)
+
+    return JsonResponse({'ok': True})
 
 
 @login_required(login_url='common:login')

@@ -23,6 +23,7 @@
             </th>
         </tr>
         <tr class="text-center table-light">
+            <th></th>
             <th>번호</th>
             <th>표시</th>
             <th>구분</th>
@@ -32,15 +33,22 @@
             <th>휴게시간1</th>
             <th>휴게시간2</th>
             <th>식대</th>
-            <th></th>
+            <th>삭제</th>
         </tr>
         </thead>
-        <tbody>
+        <tbody id="module-tbody">
         {% if work_module %}
         {% for module in work_module %}
-        <tr class="text-center">
+        <tr class="text-center" data-id="{{ module.id }}">
+            <td class="text-center">
+                <span class="drag-handle" title="드래그하여 순서 변경" aria-label="순서 변경">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-grip-vertical" viewBox="0 0 16 16">
+                      <path d="M7 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0M7 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0M7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                    </svg>
+                </span>
+            </td>
             <td>
-                {{ forloop.counter }}
+                {{ module.order }}
             </td>
             <td align="center">
                 <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
@@ -113,6 +121,7 @@
 </div>
 {% endblock %}
 {% block script %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script type="text/javascript">
 const delete_elements = document.getElementsByClassName("delete");
 Array.from(delete_elements).forEach(function(element) {
@@ -121,6 +130,43 @@ Array.from(delete_elements).forEach(function(element) {
             location.href = this.dataset.uri;
         };
     });
+});
+
+function getCookie(name) {
+  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return v ? v.pop() : '';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const tbody = document.getElementById('module-tbody');
+  if (!tbody) return;
+
+  const csrftoken = getCookie('csrftoken');
+
+  new Sortable(tbody, {
+    animation: 150,
+    handle: '.drag-handle',
+    draggable: 'tr',
+
+    onEnd: async function () {
+      const ids = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.id);
+
+      const res = await fetch("{% url 'wtm:work_module_reorder' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken,
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (res.ok) location.reload();
+
+      if (!res.ok) {
+        alert('순서 저장에 실패했습니다.');
+      }
+    },
+  });
 });
 </script>
 {% endblock %}

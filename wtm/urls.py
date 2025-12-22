@@ -7,6 +7,7 @@ from wtm.views.stat import (
 )
 from wtm.views.module import (
     work_module,
+    work_module_reorder,
     work_module_reg,
     work_module_modify,
     work_module_delete,
@@ -38,6 +39,7 @@ urlpatterns = [
     path('index/', index, name='index'),
     path('index/<str:stand_day>', index, name='index'),
     path('module/', work_module, name='work_module'),
+    path('work/module/reorder/', work_module_reorder, name='work_module_reorder'),
     path('module_reg/', work_module_reg, name='work_module_reg'),
     path('module_modify/<int:module_id>/', work_module_modify, name='work_module_modify'),
     path('module_delete/<int:module_id>/', work_module_delete, name='work_module_delete'),
