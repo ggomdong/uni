@@ -13,6 +13,13 @@
         <tr>
             <th colspan="100%">
                 <div class="col-12 text-end">
+                    <button type="button" id="btn-save-order" class="btn btn-sm btn-success" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
+                          <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
+                          <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
+                        </svg>
+                        <span class="btn-label">저장</span>
+                    </button>
                     <a href="{% url 'wtm:work_module_reg' %}" class="btn btn-sm btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock-fill" viewBox="0 0 16 16">
                           <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
@@ -47,7 +54,7 @@
                     </svg>
                 </span>
             </td>
-            <td>
+            <td class="row-no">
                 {{ module.order }}
             </td>
             <td align="center">
@@ -133,40 +140,89 @@ Array.from(delete_elements).forEach(function(element) {
 });
 
 function getCookie(name) {
-  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-  return v ? v.pop() : '';
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+}
+
+function collectIds(tbody) {
+    return Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.id);
+}
+
+function renumberRows(tbody) {
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.forEach((tr, idx) => {
+        const noCell = tr.querySelector('.row-no'); // 번호 셀에 클래스 달아두면 즉시 갱신 가능
+        if (noCell) noCell.textContent = String(idx + 1);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const tbody = document.getElementById('module-tbody');
-  if (!tbody) return;
+    const tbody = document.getElementById('module-tbody');
+    const btnSave = document.getElementById('btn-save-order');
+    if (!tbody || !btnSave) return;
 
-  const csrftoken = getCookie('csrftoken');
+    const csrftoken = getCookie('csrftoken');
 
-  new Sortable(tbody, {
-    animation: 150,
-    handle: '.drag-handle',
-    draggable: 'tr',
+    let dirty = false;
 
-    onEnd: async function () {
-      const ids = Array.from(tbody.querySelectorAll('tr')).map(tr => tr.dataset.id);
+    function setDirty(flag) {
+        dirty = flag;
+        btnSave.disabled = !dirty;
+    }
 
-      const res = await fetch("{% url 'wtm:work_module_reorder' %}", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrftoken,
+    // 드래그 앤 드롭: 순서만 바꾸고 저장은 안 함
+    new Sortable(tbody, {
+        animation: 150,
+        handle: '.drag-handle',
+        draggable: 'tr',
+        onEnd: function () {
+          setDirty(true);
         },
-        body: JSON.stringify({ ids }),
-      });
+    });
 
-      if (res.ok) location.reload();
+    // 저장 버튼 클릭 시에만 서버 반영
+    btnSave.addEventListener('click', async function () {
+        const ids = collectIds(tbody);
 
-      if (!res.ok) {
-        alert('순서 저장에 실패했습니다.');
-      }
-    },
-  });
+        const btnLabel = btnSave.querySelector('.btn-label');
+
+        btnSave.disabled = true;
+        btnLabel.textContent = '저장 중...';
+
+        try {
+            const res = await fetch("{% url 'wtm:work_module_reorder' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                },
+                body: JSON.stringify({ ids }),
+            });
+
+            if (!res.ok) {
+                showToast('순서 저장에 실패했습니다.', 'error');
+                setDirty(true);
+                return;
+            }
+
+            setDirty(false);
+            renumberRows(tbody);
+            showToast('저장되었습니다.', 'success');
+        } catch (e) {
+            showToast('네트워크 오류로 저장에 실패했습니다.', 'error');
+            setDirty(true);
+        } finally {
+            btnLabel.textContent = '저장';
+            btnSave.disabled = !dirty;
+        }
+    });
+
+    // 저장 안 하고 나가려 할 때 경고(원하면)
+    window.addEventListener('beforeunload', function (e) {
+        if (!dirty) return;
+        e.preventDefault();
+        e.returnValue = '';
+    });
 });
 </script>
 {% endblock %}
