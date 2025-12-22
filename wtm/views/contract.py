@@ -27,7 +27,7 @@ def work_contract_reg(request, user_id):
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     target_user = get_object_or_404(User, pk=user_id)  # 근로계약 대상 표시를 위함
-    module_list = Module.objects.all()  # 근로모듈을 요일별로 입력하기 위함
+    module_list = Module.objects.all().order_by('order', 'id')  # 근로모듈을 요일별로 입력하기 위함
     context = {'form': form, 'target_user': target_user, 'module_list': module_list}
     return render(request, 'wtm/work_contract_reg.html', context)
 

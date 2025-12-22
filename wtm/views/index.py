@@ -144,7 +144,7 @@ def index(request, stand_day=None):
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')
 
-    module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
+    module_list = Module.objects.all().order_by('order', 'id')  # 근로모듈을 입력하기 위함
 
     context = {'stand_day': stand_day, 'days': days, 'user_list': user_list, 'work_list': work_list,
                'max_workers': max_workers, 'module_list': module_list}

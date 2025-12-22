@@ -503,7 +503,7 @@ def work_schedule_reg(request, stand_ym):
                             target_date = datetime.strptime(next_ym + key.zfill(2), "%Y%m%d").date()
                             user["n" + key] = get_contract_module_id(contracts, target_date, value)
 
-    module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
+    module_list = Module.objects.all().order_by('order', 'id')  # 근로모듈을 입력하기 위함
 
     context = {'stand_ym': stand_ym, 'day_list': day_list, 'user_list': user_list, 'module_list': module_list,
                'holiday_list': holiday_list, 'next_day_list': next_day_list, 'next_holiday_list': next_holiday_list,
@@ -917,7 +917,7 @@ def work_schedule_modify(request, stand_ym):
 
                         user["n" + key] = (None if r == None else r[0])
 
-    module_list = Module.objects.all()  # 근로모듈을 입력하기 위함
+    module_list = Module.objects.all().order_by('order', 'id')  # 근로모듈을 입력하기 위함
     context = {'stand_ym': stand_ym, 'day_list': day_list, 'user_list': user_list, 'module_list': module_list,
                'holiday_list': holiday_list, 'next_day_list': next_day_list, 'next_holiday_list': next_holiday_list,
                'next_ym': next_ym}
