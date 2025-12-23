@@ -274,154 +274,152 @@
 {% endblock %}
 
 {% block script %}
+{% load static %}
+<script src="{% static 'modal_log.js' %}"></script>
 <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function () {
-      const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+document.addEventListener('DOMContentLoaded', function () {
+  const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
 
-      const selectDay = document.getElementById("selectDay");
-      if (selectDay) {
-        selectDay.addEventListener('change', function() {
-          const target = this.value.replace(/-/gi, '');
-          if (target) {
-            location.href = target;
-          }
-        });
-      }
-
-      const errorButtons = document.querySelectorAll('.att-error-btn');
-      const menu         = document.getElementById('errorInlineMenu');
-      let currentError   = null;
-
-      function hideMenu() {
-        if (!menu) return;
-        menu.classList.add('d-none');
-      }
-      function showMenuAt(x, y) {
-        if (!menu) return;
-        menu.style.left = x + 'px';
-        menu.style.top  = (y + 4) + 'px';
-        menu.classList.remove('d-none');
-      }
-
-      errorButtons.forEach(function (btn) {
-        btn.style.cursor = isAuthenticated ? 'pointer' : 'default';
-        btn.addEventListener('click', function (e) {
-          if (!isAuthenticated) return;
-          e.stopPropagation();
-
-          currentError = {
-            userId:    this.dataset.userId,
-            empName:   this.dataset.empName || '',
-            dept:      this.dataset.dept || '',
-            position:  this.dataset.position || '',
-            standDay:  this.dataset.standDay,
-            moduleId:  this.dataset.moduleId || ''
-          };
-
-          const rect = this.getBoundingClientRect();
-          const x = rect.right + window.scrollX + 8;
-          const y = rect.top + window.scrollY - 6;
-          showMenuAt(x, y);
-        });
-      });
-
-      document.addEventListener('click', function () {
-        hideMenu();
-      });
-
-      if (menu) {
-        menu.addEventListener('click', function (e) {
-          e.stopPropagation();
-        });
-
-        const scheduleBtn = menu.querySelector('[data-action="schedule"]');
-        const logBtn      = menu.querySelector('[data-action="log"]');
-
-        if (scheduleBtn) {
-          scheduleBtn.addEventListener('click', function () {
-            if (!currentError) return;
-            hideMenu();
-            openScheduleModal(currentError);
-          });
-        }
-        if (logBtn) {
-          logBtn.addEventListener('click', function () {
-            if (!currentError) return;
-            hideMenu();
-            openLogModal(currentError);
-          });
-        }
-      }
-
-      function openScheduleModal(err) {
-        const modalEl = document.getElementById('scheduleModal');
-        if (!modalEl) {
-          alert('근무표 수정 모달(scheduleModal)이 이 화면에 포함되어 있지 않습니다.');
-          return;
-        }
-
-        const userInput   = modalEl.querySelector("input[name='user_id']");
-        const dateInput   = modalEl.querySelector("input[name='stand_date']");
-        const moduleInput = modalEl.querySelector("input[name='module_id']");
-        const fromIndexInput = modalEl.querySelector("input[name='from_index']");
-        const infoDiv     = modalEl.querySelector('#module_info');
-
-        if (userInput)   userInput.value   = err.userId || '';
-        if (dateInput)   dateInput.value   = err.standDay || '';
-        if (moduleInput) moduleInput.value = err.moduleId || '';
-        if (fromIndexInput) fromIndexInput.value = "1";
-
-        if (err.moduleId) {
-          const radio = modalEl.querySelector(
-            "input[type='radio'][name='module'][value='" + err.moduleId + "']"
-          );
-          if (radio) radio.checked = true;
-        }
-
-        if (infoDiv) {
-          const y = err.standDay.substring(0,4);
-          const m = err.standDay.substring(4,6);
-          const d = err.standDay.substring(6,8);
-          infoDiv.textContent = err.position + ' ' + err.empName + '(' + err.dept + '), ' + y + '-' + m + '-' + d;
-        }
-
-        const bsModal = new bootstrap.Modal(modalEl);
-        bsModal.show();
-      }
-
-      function openLogModal(err) {
-        const modalEl = document.getElementById('logModal');
-        if (!modalEl) {
-          alert('근태기록 모달(logModal)이 이 화면에 포함되어 있지 않습니다.');
-          return;
-        }
-
-        const modalTitle   = modalEl.querySelector('.modal-title');
-        const logIdInput   = document.getElementById('logIdInput');
-        const userSelect   = document.getElementById('logUserSelect');
-        const workCodeSel  = document.getElementById('logWorkCodeSelect');
-        const recordTimeEl = document.getElementById('logRecordTimeInput');
-        const standDayEl   = document.getElementById('logStandDayInput');
-        const fromIndexEl  = document.getElementById('logFromIndexInput');
-
-        if (modalTitle)  modalTitle.textContent = '근태기록 등록';
-        if (logIdInput)  logIdInput.value = '';
-        if (standDayEl)  standDayEl.value = err.standDay || '';
-        if (fromIndexEl) fromIndexEl.value = "1";
-
-        if (userSelect) {
-          const label = `${err.dept} / ${err.position} / ${err.empName}`;
-          userSelect.innerHTML = `<option value="${err.userId}">${label}</option>`;
-          userSelect.value = err.userId || '';
-          userSelect.disabled = false;
-        }
-
-        if (workCodeSel)  workCodeSel.value  = '';
-        if (recordTimeEl) recordTimeEl.value = '';
-
-        const bsModal = new bootstrap.Modal(modalEl);
-        bsModal.show();
+  const selectDay = document.getElementById("selectDay");
+  if (selectDay) {
+    selectDay.addEventListener('change', function() {
+      const target = this.value.replace(/-/gi, '');
+      if (target) {
+        location.href = target;
       }
     });
+  }
+
+  const errorButtons = document.querySelectorAll('.att-error-btn');
+  const menu         = document.getElementById('errorInlineMenu');
+  let currentError   = null;
+
+  function hideMenu() {
+    if (!menu) return;
+    menu.classList.add('d-none');
+  }
+  function showMenuAt(x, y) {
+    if (!menu) return;
+    menu.style.left = x + 'px';
+    menu.style.top  = (y + 4) + 'px';
+    menu.classList.remove('d-none');
+  }
+
+  errorButtons.forEach(function (btn) {
+    btn.style.cursor = isAuthenticated ? 'pointer' : 'default';
+    btn.addEventListener('click', function (e) {
+      if (!isAuthenticated) return;
+      e.stopPropagation();
+
+      currentError = {
+        userId:    this.dataset.userId,
+        empName:   this.dataset.empName || '',
+        dept:      this.dataset.dept || '',
+        position:  this.dataset.position || '',
+        standDay:  this.dataset.standDay,
+        moduleId:  this.dataset.moduleId || ''
+      };
+
+      const rect = this.getBoundingClientRect();
+      const x = rect.right + window.scrollX + 8;
+      const y = rect.top + window.scrollY - 6;
+      showMenuAt(x, y);
+    });
+  });
+
+  document.addEventListener('click', function () {
+    hideMenu();
+  });
+
+  if (menu) {
+    menu.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+
+    const scheduleBtn = menu.querySelector('[data-action="schedule"]');
+    const logBtn      = menu.querySelector('[data-action="log"]');
+
+    if (scheduleBtn) {
+      scheduleBtn.addEventListener('click', function () {
+        if (!currentError) return;
+        hideMenu();
+        openScheduleModal(currentError);
+      });
+    }
+    if (logBtn) {
+      logBtn.addEventListener('click', function () {
+        if (!currentError) return;
+        hideMenu();
+        openLogModal(currentError);
+      });
+    }
+  }
+
+  function openScheduleModal(err) {
+    const modalEl = document.getElementById('scheduleModal');
+    if (!modalEl) {
+      alert('근무표 수정 모달(scheduleModal)이 이 화면에 포함되어 있지 않습니다.');
+      return;
+    }
+
+    const userInput   = modalEl.querySelector("input[name='user_id']");
+    const dateInput   = modalEl.querySelector("input[name='stand_date']");
+    const moduleInput = modalEl.querySelector("input[name='module_id']");
+    const fromIndexInput = modalEl.querySelector("input[name='from_index']");
+    const infoDiv     = modalEl.querySelector('#module_info');
+
+    if (userInput)   userInput.value   = err.userId || '';
+    if (dateInput)   dateInput.value   = err.standDay || '';
+    if (moduleInput) moduleInput.value = err.moduleId || '';
+    if (fromIndexInput) fromIndexInput.value = "1";
+
+    if (err.moduleId) {
+      const radio = modalEl.querySelector(
+        "input[type='radio'][name='module'][value='" + err.moduleId + "']"
+      );
+      if (radio) radio.checked = true;
+    }
+
+    if (infoDiv) {
+      const y = err.standDay.substring(0,4);
+      const m = err.standDay.substring(4,6);
+      const d = err.standDay.substring(6,8);
+      infoDiv.textContent = err.position + ' ' + err.empName + '(' + err.dept + '), ' + y + '-' + m + '-' + d;
+    }
+
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+  }
+
+  function openLogModal(err) {
+      const modalEl = document.getElementById('logModal');
+      if (!modalEl) return;
+
+      // 공용 JS(show.bs.modal)에서 읽을 데이터만 적재
+      modalEl.dataset.mode = 'create';
+      modalEl.dataset.userId = err.userId || '';
+      // 등록은 id/workCode/recordTime 비움
+      modalEl.dataset.id = '';
+      modalEl.dataset.workCode = '';
+      modalEl.dataset.recordTime = '';
+
+      // stand_day/from_index는 지금처럼 직접 세팅(이건 페이지 맥락 값이니까)
+      const standDayEl  = document.getElementById('logStandDayInput');
+      const fromIndexEl = document.getElementById('logFromIndexInput');
+      if (standDayEl)  standDayEl.value = err.standDay || '';
+      if (fromIndexEl) fromIndexEl.value = "1";
+
+      // userSelect 옵션을 1개로 바꿔 끼우던 로직은 그대로 유지하거나,
+      // userSelect가 전체 user_list를 이미 가지고 있으면 생략해도 됨.
+      const userSelect = document.getElementById('logUserSelect');
+      if (userSelect) {
+        const label = `${err.dept} / ${err.position} / ${err.empName}`;
+        userSelect.innerHTML = `<option value="${err.userId}">${label}</option>`;
+        userSelect.value = err.userId || '';
+      }
+
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+});
 </script>
 {% endblock %}

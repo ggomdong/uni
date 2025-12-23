@@ -168,6 +168,8 @@
 {% endblock %}
 
 {% block script %}
+{% load static %}
+<script src="{% static 'modal_log.js' %}"></script>
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function () {
     // 근태기록 기준 URL (예: /wtm/log/20250101 → /wtm/log/ 로 prefix 추출)

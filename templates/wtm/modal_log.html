@@ -27,22 +27,26 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="logWorkCodeSelect" class="form-label">구분</label>
-                        <select id="logWorkCodeSelect" name="work_code" class="form-select form-select-sm" required>
-                            <option value="">선택하세요</option>
-                            <option value="I">출근</option>
-                            <option value="O">퇴근</option>
-                        </select>
+                        <label class="form-label d-block">구분</label>
+
+                        <input type="radio" class="btn-check"
+                            name="work_code" id="workCodeI" value="I" required>
+                        <label class="btn btn-outline-primary btn-sm" for="workCodeI">출근</label>
+
+                        <input type="radio" class="btn-check"
+                            name="work_code" id="workCodeO" value="O" required>
+                        <label class="btn btn-outline-danger btn-sm" for="workCodeO">퇴근</label>
                     </div>
 
                     <div class="mb-0">
                         <label for="logRecordTimeInput" class="form-label">시각</label>
-                        <input type="time"
-                               id="logRecordTimeInput"
-                               name="record_time"
-                               step="1"
-                               class="form-control form-control-sm"
-                               required>
+                        <input type="text"
+                           id="logRecordTimeInput"
+                           name="record_time"
+                           class="form-control form-control-sm"
+                           autocomplete="off"
+                           inputmode="numeric"
+                           required>
                     </div>
                 </div>
 
