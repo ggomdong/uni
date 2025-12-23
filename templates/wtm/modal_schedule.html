@@ -57,7 +57,7 @@
                         <tr>
                             {% for module in module_list %}
                             <th style="width: 50px; font-weight: normal; font-size: 10px">
-                                {{ module.name }}
+                                {{ module.name|pretty_module_name }}
                             </th>
                             {% endfor %}
                         </tr>
