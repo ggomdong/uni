@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from wtm.models import Schedule  # Schedule에 d1~d31 FK가 있다고 가정
-from .helpers import sec_to_hhmmss, fetch_base_users_for_month
+from .helpers import fetch_base_users_for_month
 
 
 def build_meal_status_rows(stand_ym: str | None):

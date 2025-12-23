@@ -97,7 +97,7 @@ def fetch_base_users_for_month(stand_ym: str, *, is_contract_checked: bool = Tru
     월 단위 대상 직원 리스트 조회
     - 근태확인(check_yn='Y') 여부는 is_contract_checked
     - 근무표 존재하는 사람만
-    - 부서/직위 order + 입사일 순으로 정렬
+    - 부서/직위 order + 입사일, 이름 순으로 정렬
     """
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
     first_day = f"{year:04d}{month:02d}01"
@@ -139,7 +139,8 @@ def fetch_base_users_for_month(stand_ym: str, *, is_contract_checked: bool = Tru
             GROUP BY u.id, u.dept, u.position, u.emp_name
             ORDER BY (SELECT `order` FROM common_dept     d WHERE d.dept_name     = u.dept),
                      (SELECT `order` FROM common_position p WHERE p.position_name = u.position),
-                     u.join_date
+                     u.join_date,
+                     u.emp_name
         """
 
     params = [

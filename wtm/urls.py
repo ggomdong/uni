@@ -31,6 +31,8 @@ from wtm.views.log import (
 )
 from wtm.views.meal import work_meal_status, work_meal_json
 
+from wtm.views.vacation import work_vacation_json
+
 from wtm.views.etc import work_privacy
 
 app_name = 'wtm'
@@ -67,5 +69,6 @@ urlpatterns = [
     path('meal/<str:stand_ym>', work_meal_json, name='work_meal_json'),
     path('meal_status/', work_meal_status, name='work_meal_status'),
     path('meal_status/<str:stand_ym>', work_meal_status, name='work_meal_status'),
+    path("vacation/<str:year>/", work_vacation_json, name="work_vacation_json"),
     path('privacy/', work_privacy, name='work_privacy'),
 ]
