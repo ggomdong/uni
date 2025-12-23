@@ -15,20 +15,23 @@
         <thead>
         <tr>
             <th colspan="100%">
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-save2-fill" viewBox="0 0 16 16">
-                          <path d="M8.5 1.5A1.5 1.5 0 0 1 10 0h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h6c-.314.418-.5.937-.5 1.5v6h-2a.5.5 0 0 0-.354.854l2.5 2.5a.5.5 0 0 0 .708 0l2.5-2.5A.5.5 0 0 0 10.5 7.5h-2v-6z"/>
+                <div class="col-12 text-end d-flex justify-content-end gap-2">
+                    <button type="submit" id="btn-save-dept" class="btn btn-sm btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
+                          <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
+                          <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
                         </svg>
-                        저장하기
+                        <span class="btn-label">저장</span>
                     </button>
                 </div>
             </th>
         </tr>
+
         <tr class="text-center table-light">
+            <th style="width: 44px;"></th>  {# 드래그 핸들 #}
+            <th style="width: 90px;">순서</th>
             <th>부서명</th>
-            <th>출력순서</th>
-            <th class="text-danger">
+            <th class="text-danger" style="width: 70px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
                   <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
                 </svg>
@@ -36,24 +39,125 @@
             </th>
         </tr>
         </thead>
-        <tbody>
+
+        <tbody id="dept-tbody">
         {{ formset.management_form }}
         {% for form in formset %}
             {% for hidden in form.hidden_fields %}
                 {{ hidden }}
             {% endfor %}
-        <tr class="text-center align-middle">
-            <td>{{ form.dept_name }}</td>
-            <td>{{ form.order }}</td>
-            <td>{{ form.DELETE }}</td>
-        </tr>
+
+            {% if form.instance.pk %}
+            <tr class="text-center align-middle" data-id="{{ form.instance.pk }}">
+            {% else %}
+            <tr class="text-center align-middle is-new-row">
+            {% endif %}
+                <td class="text-center align-middle">
+                    <span class="drag-handle" title="드래그로 순서 변경" style="cursor: grab;">
+                        <svg width="20px" height="20px" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M9.5 8C10.3284 8 11 7.32843 11 6.5C11 5.67157 10.3284 5 9.5 5C8.67157 5 8 5.67157 8 6.5C8 7.32843 8.67157 8 9.5 8ZM9.5 14C10.3284 14 11 13.3284 11 12.5C11 11.6716 10.3284 11 9.5 11C8.67157 11 8 11.6716 8 12.5C8 13.3284 8.67157 14 9.5 14ZM11 18.5C11 19.3284 10.3284 20 9.5 20C8.67157 20 8 19.3284 8 18.5C8 17.6716 8.67157 17 9.5 17C10.3284 17 11 17.6716 11 18.5ZM15.5 8C16.3284 8 17 7.32843 17 6.5C17 5.67157 16.3284 5 15.5 5C14.6716 5 14 5.67157 14 6.5C14 7.32843 14.6716 8 15.5 8ZM17 12.5C17 13.3284 16.3284 14 15.5 14C14.6716 14 14 13.3284 14 12.5C14 11.6716 14.6716 11 15.5 11C16.3284 11 17 11.6716 17 12.5ZM15.5 20C16.3284 20 17 19.3284 17 18.5C17 17.6716 16.3284 17 15.5 17C14.6716 17 14 17.6716 14 18.5C14 19.3284 14.6716 20 15.5 20Z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                </td>
+
+                <td>
+                    <span class="row-no">{{ forloop.counter }}</span>
+                    {# order는 화면 입력 대신 hidden 유지 #}
+                    {{ form.order.as_hidden }}
+                </td>
+
+                <td>{{ form.dept_name }}</td>
+                <td>{{ form.DELETE }}</td>
+            </tr>
         {% endfor %}
         </tbody>
     </table>
     </form>
 </div>
 {% endblock %}
+
 {% block script %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script type="text/javascript">
+function syncHiddenOrders(tbody) {
+    const rows = Array.from(tbody.querySelectorAll('tr'))
+        .filter(tr => !tr.classList.contains('is-new-row'));
+
+    rows.forEach((tr, idx) => {
+        const orderInput = tr.querySelector('input[name$="-order"]');
+    if (orderInput) orderInput.value = String(idx + 1);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('deptForm');
+    let isSubmitting = false;
+
+    const tbody = document.getElementById('dept-tbody');
+    const btnSave = document.getElementById('btn-save-dept');
+    if (!tbody) return;
+
+    let dirty = false;
+
+    function setDirty() {
+        if (dirty) return; // 최초 1회만
+        dirty = true;
+
+        if (btnSave) {
+        btnSave.classList.remove('btn-primary');
+        btnSave.classList.add('btn-warning'); // 변경됨 표시
+        btnSave.setAttribute('data-dirty', '1');
+
+        // 버튼 텍스트에만 살짝 표시(아이콘/레이아웃은 그대로)
+        const label = btnSave.querySelector('.btn-label');
+        if (label) label.textContent = '저장*';
+        else btnSave.innerHTML = btnSave.innerHTML.replace('저장', '저장*');
+        }
+    }
+
+    syncHiddenOrders(tbody);
+
+    new Sortable(tbody, {
+        animation: 150,
+        handle: '.drag-handle',
+        draggable: 'tr',
+        filter: '.is-new-row',
+        preventOnFilter: false,
+        onEnd: function () {
+            syncHiddenOrders(tbody);
+            setDirty();
+        },
+    });
+
+    if (form) {
+        form.addEventListener('submit', function () {
+            isSubmitting = true;
+
+            // 신규 행 중 dept_name이 입력된 것만 마지막 순번으로 order 채우기
+            const existingRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => !tr.classList.contains('is-new-row'));
+            let nextOrder = existingRows.length;
+
+            const newRows = Array.from(tbody.querySelectorAll('tr.is-new-row'));
+            newRows.forEach(tr => {
+                const nameInput = tr.querySelector('input[name$="-dept_name"]');
+                const orderInput = tr.querySelector('input[name$="-order"]');
+                if (nameInput && nameInput.value.trim() && orderInput && !orderInput.value) {
+                    nextOrder += 1;
+                    orderInput.value = String(nextOrder);
+                }
+            });
+
+            dirty = false;
+        });
+    }
+
+    // 저장 안 하고 이탈 시 경고(원하면 유지)
+    window.addEventListener('beforeunload', function (e) {
+        if (!dirty || isSubmitting) return;
+        e.preventDefault();
+        e.returnValue = '';
+    });
+});
 </script>
+
 {% endblock %}

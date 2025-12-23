@@ -1,3 +1,4 @@
+import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
@@ -5,8 +6,9 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth import logout
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models.functions import ExtractYear
-from django.db import connection
+from django.db import connection, transaction
 from django.forms import modelformset_factory
+from django.http import JsonResponse
 from django.utils import timezone
 from datetime import datetime
 from .forms import UserForm, UserModifyForm, PasswordChangeForm, DeptForm, PositionForm, HolidayForm, BusinessForm, CodeForm
@@ -257,7 +259,13 @@ def dept(request):
             for obj in formset.deleted_objects:
                 obj.delete()
 
+            posted_max = max([d.order for d in depts if d.order is not None] or [0])
+
             for dept in depts:
+                if dept.order is None:
+                    posted_max += 1
+                    dept.order = posted_max
+
                 dept.reg_id = request.user
                 dept.reg_date = timezone.now()
                 dept.mod_id = request.user
@@ -290,7 +298,13 @@ def position(request):
             for obj in formset.deleted_objects:
                 obj.delete()
 
+            posted_max = max([p.order for p in positions if p.order is not None] or [0])
+
             for position in positions:
+                if position.order is None:
+                    posted_max += 1
+                    position.order = posted_max
+
                 position.reg_id = request.user
                 position.reg_date = timezone.now()
                 position.mod_id = request.user
