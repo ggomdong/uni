@@ -63,7 +63,7 @@ def work_schedule(request, stand_ym=None):
             WHERE is_employee = TRUE
                 and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
                 and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
-            ORDER BY do, po, join_date
+            ORDER BY do, po, join_date, emp_name
             '''
 
     with connection.cursor() as cursor:
@@ -406,7 +406,7 @@ def work_schedule_reg(request, stand_ym):
         WHERE is_employee = TRUE
             and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
             and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
-        ORDER BY do, po, join_date
+        ORDER BY do, po, join_date, emp_name
         '''
     with connection.cursor() as cursor:
         cursor.execute(query_user)
@@ -741,7 +741,7 @@ def work_schedule_modify(request, stand_ym):
         WHERE is_employee = TRUE
             and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
             and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
-        ORDER BY do, po, join_date
+        ORDER BY do, po, join_date, emp_name
         '''
     with connection.cursor() as cursor:
         cursor.execute(query_user)

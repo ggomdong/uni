@@ -39,7 +39,7 @@ def index(request, stand_day=None):
           and s.month = '{stand_day[4:6]}'
           and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
           and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
-        ORDER BY do, po, join_date
+        ORDER BY do, po, join_date, emp_name
         '''
     # print(query)
     try:
@@ -130,7 +130,7 @@ def index(request, stand_day=None):
               and c.check_yn = 'Y'
               and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
               and (DATE_FORMAT(u.out_date, '%Y%m%d') is null OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
-            ORDER BY do, po, join_date
+            ORDER BY do, po, join_date, emp_name
             '''
 
     try:
