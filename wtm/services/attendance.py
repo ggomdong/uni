@@ -332,7 +332,10 @@ def prepare_month(users: list[int], year: int, month: int):
 
 
 # 웹 근태기록-월간집계(전체)에서 활용. 전체 사용자 * 1개월
-def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, month: int) -> dict[int, dict]:
+def build_monthly_attendance_summary_for_users(
+    *, users: list[int], year: int, month: int,
+    out_ymd_map: dict[int, str | None] | None = None,
+) -> dict[int, dict]:
     """
     웹 근태기록-월간집계(전체)에서 활용. 전체 사용자 * 1개월
     - 기존 집계 키 유지(하위호환)
@@ -340,6 +343,10 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
     """
     if not users:
         return {}
+
+    out_ymd_map = out_ymd_map or {}
+    stand_ym = f"{year:04d}{month:02d}"
+    last_day_num = monthrange(year, month)[1]
 
     today = timezone.now().date()
     days, sched_map, modules, logs_map = prepare_month(users, year, month)
@@ -359,17 +366,27 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
             "reg_early_count": 0, "reg_early_seconds": 0,
             "reg_overtime_count": 0, "reg_overtime_seconds": 0,
 
+            # ===== 추가: 휴일 TOTAL(근로-지각-조퇴+연장) =====
+            "hol_total_seconds": 0,
+
             # ===== 추가: 휴일근로 =====
             "hol_work_count": 0, "hol_work_seconds": 0,   # holiday_seconds 누적
             "hol_late_count": 0, "hol_late_seconds": 0,
             "hol_early_count": 0, "hol_early_seconds": 0,
             "hol_overtime_count": 0, "hol_overtime_seconds": 0,
 
-            # ===== 추가: 휴일 TOTAL(근로-지각-조퇴+연장) =====
-            "hol_total_seconds": 0,
+            # ===== 무급휴무(횟수만) =====
+            "nopay_count": 0,
         }
 
-        for rd in days:
+        # out_date가 해당 월에 있으면 그 날짜까지만 합산
+        end_day = last_day_num
+        out_ymd = out_ymd_map.get(uid)  # 'YYYYMMDD' or None
+        if out_ymd and out_ymd[:6] == stand_ym:
+            out_day = int(out_ymd[6:8])
+            end_day = min(end_day, out_day)
+
+        for rd in days[:end_day]:
             mid = sched_map.get(uid, {}).get(rd)
             module = modules.get(mid) if mid else None
 
@@ -438,6 +455,12 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
                 agg["reg_overtime_seconds"] += metrics.overtime_seconds
 
             elif cat == "휴일근로":
+                # 휴일 TOTAL = (근로-지각-조퇴) + 연장근로
+                base = metrics.holiday_seconds - metrics.late_seconds - metrics.early_seconds
+                if base < 0:
+                    base = 0
+                agg["hol_total_seconds"] += (base + metrics.overtime_seconds)
+
                 # 휴일 "근로"는 holiday_seconds(휴일근로 인정시간)
                 if metrics.holiday_seconds > 0:
                     agg["hol_work_count"] += 1
@@ -454,13 +477,10 @@ def build_monthly_attendance_summary_for_users(*, users: list[int], year: int, m
                 agg["hol_early_seconds"] += metrics.early_seconds
                 agg["hol_overtime_seconds"] += metrics.overtime_seconds
 
-            # 3) 휴일 TOTAL(시간): (근로-지각-조퇴)+연장근로
-            if cat == "휴일근로":
-                # 휴일 TOTAL = (근로-지각-조퇴) + 연장근로
-                base = metrics.holiday_seconds - metrics.late_seconds - metrics.early_seconds
-                if base < 0:
-                    base = 0
-                agg["hol_total_seconds"] += (base + metrics.overtime_seconds)
+                # ===== 무급휴무 3종 횟수 =====
+            elif cat == "무급휴무":
+                agg["nopay_count"] += 1
+
 
         summary[uid] = agg
 

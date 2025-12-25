@@ -30,7 +30,15 @@ def build_work_status_rows(stand_ym: str | None):
         return stand_ym, []
 
     uid_list = [u["user_id"] for u in base_users]
-    summary_map = build_monthly_attendance_summary_for_users(users=uid_list, year=year, month=month)
+    # 퇴사일자 이후의 근무표는 무시하기 위해 해당 정보를 전달
+    out_ymd_map = {u["user_id"]: u.get("out_ymd") for u in base_users}
+
+    summary_map = build_monthly_attendance_summary_for_users(
+        users=uid_list,
+        year=year,
+        month=month,
+        out_ymd_map=out_ymd_map,
+    )
 
     rows = []
     for u in base_users:
@@ -59,6 +67,8 @@ def build_work_status_rows(stand_ym: str | None):
             "hol_early_sec": s.get("hol_early_seconds", 0),
             "hol_overtime_cnt": s.get("hol_overtime_count", 0),
             "hol_overtime_sec": s.get("hol_overtime_seconds", 0),
+
+            "nopay_cnt": s.get("nopay_count", 0),
         })
 
     return stand_ym, rows
@@ -100,7 +110,7 @@ def work_status_excel(request, stand_ym: str | None = None):
     # ===== 제목 (1행) =====
     ws["A1"] = f"{year}년 {month}월 근태기록 월간집계(전체)"
     ws["A1"].font = Font(size=10, bold=True)
-    ws.merge_cells("A1:R1")  # 18열(A~R)
+    ws.merge_cells("A1:S1")  # 19열(A~R)
 
     # ===== 3단 헤더 (2~4행) =====
     # Row2 (최상단 그룹)
@@ -109,12 +119,14 @@ def work_status_excel(request, stand_ym: str | None = None):
     ws["C2"] = "오류\n(일수)"
     ws["D2"] = "소정근로"
     ws["J2"] = "휴일근로"
+    ws["S2"] = "무급휴무"
 
     ws.merge_cells("A2:A4")
     ws.merge_cells("B2:B4")
     ws.merge_cells("C2:C4")
     ws.merge_cells("D2:I2")   # 소정근로 6열
     ws.merge_cells("J2:R2")   # 휴일근로 9열
+    ws.merge_cells("S2:S4")   # 무급휴무 1열
 
     # Row3 (중간 그룹)
     # 소정근로
@@ -165,6 +177,7 @@ def work_status_excel(request, stand_ym: str | None = None):
     # D~I 소정근로: 지각/조퇴/연장근로 (횟수,시간)
     # J 휴일근로 TOTAL(시간)
     # K~R 휴일근로: 근로/지각/조퇴/연장근로 (횟수,시간)
+    # S 무급휴무
     for r in rows:
         ws.append([
             r.get("dept") or "",
@@ -181,10 +194,12 @@ def work_status_excel(request, stand_ym: str | None = None):
             r.get("hol_late_cnt") or "", _t(r.get("hol_late_sec") or 0),
             r.get("hol_early_cnt") or "", _t(r.get("hol_early_sec") or 0),
             r.get("hol_overtime_cnt") or "", _t(r.get("hol_overtime_sec") or 0),
+
+            r.get("nopay_cnt") or "",
         ])
 
     # ===== 본문 스타일 =====
-    for row in ws.iter_rows(min_row=5, max_row=ws.max_row, min_col=1, max_col=18):
+    for row in ws.iter_rows(min_row=5, max_row=ws.max_row, min_col=1, max_col=19):
         for cell in row:
             cell.font = Font(size=10)
             if cell.column in (1, 2):   # 부서/성명
@@ -208,12 +223,14 @@ def work_status_excel(request, stand_ym: str | None = None):
     ws.column_dimensions["O"].width = 8;  ws.column_dimensions["P"].width = 12
     ws.column_dimensions["Q"].width = 8;  ws.column_dimensions["R"].width = 12
 
+    ws.column_dimensions["S"].width = 10
+
     # ===== 전체 테두리(기본 thin) 적용 =====
     thin_side = Side(style="thin")
     thin_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
 
     # 표 영역 전체(A~R, 2행~마지막행) 테두리
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=18):
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=19):
         for cell in row:
             cell.border = thin_border
 

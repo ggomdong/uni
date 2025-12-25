@@ -87,21 +87,24 @@
     <div class="table-responsive status-table-wrapper">
         <table class="table table-sm table-bordered align-middle text-center work-status-table">
             <colgroup>
-              <col style="width:10%;">  <!-- 부서 -->
-              <col style="width:9%;">   <!-- 성명 -->
-              <col style="width:6%;">   <!-- 오류(일수) -->
+                <col style="width:10%;">  <!-- 부서 -->
+                <col style="width:9%;">   <!-- 성명 -->
+                <col style="width:6%;">   <!-- 오류(일수) -->
 
-              <!-- 소정근로: 지각/조퇴/연장근로 × (횟수,시간) = 6 -->
-              <col style="width:5%;"><col style="width:8%;">
-              <col style="width:5%;"><col style="width:8%;">
-              <col style="width:5%;"><col style="width:8%;">
+                <!-- 소정근로: 지각/조퇴/연장근로 × (횟수,시간) = 6 -->
+                <col style="width:5%;"><col style="width:8%;">
+                <col style="width:5%;"><col style="width:8%;">
+                <col style="width:5%;"><col style="width:8%;">
 
-              <!-- 휴일근로: 근로/지각/조퇴/연장근로 × (횟수,시간) = 8 -->
-              <col style="width:8%;">   <!-- TOTAL(시간) -->
-              <col style="width:5%;"><col style="width:8%;">
-              <col style="width:5%;"><col style="width:8%;">
-              <col style="width:5%;"><col style="width:8%;">
-              <col style="width:5%;"><col style="width:8%;">
+                <!-- 휴일근로: 근로/지각/조퇴/연장근로 × (횟수,시간) = 8 -->
+                <col style="width:8%;">   <!-- TOTAL(시간) -->
+                <col style="width:5%;"><col style="width:8%;">
+                <col style="width:5%;"><col style="width:8%;">
+                <col style="width:5%;"><col style="width:8%;">
+                <col style="width:5%;"><col style="width:8%;">
+
+                <!-- 무급휴무 -->
+                <col style="width:6%;">
             </colgroup>
 
             <thead>
@@ -112,6 +115,7 @@
 
                     <th colspan="6">소정근로</th>
                     <th colspan="9">휴일근로</th>
+                    <th rowspan="3">무급휴무<br>(일수)</th>
                 </tr>
                 <tr class="table-light">
                     <th colspan="2">지각</th>
@@ -168,9 +172,11 @@
 
                     <td>{{ r.hol_overtime_cnt|default_if_none:""|default:"" }}</td>
                     <td>{% if r.hol_overtime_sec %}{{ r.hol_overtime_sec|ss_to_hhmmss }}{% endif %}</td>
+
+                    <td>{{ r.nopay_cnt|default_if_none:""|default:"" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="18" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
+                <tr><td colspan="19" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
