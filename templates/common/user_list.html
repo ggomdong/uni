@@ -3,67 +3,104 @@
 {% load static %}
 {% block content %}
 
-<div class="container my-3">
-<form id="searchForm" method="get" action="{% url 'common:user_list' %}">
-{% csrf_token %}
-    <div>
+<div class="container my-3 user-list-page">
+  <form id="searchForm" method="get" action="{% url 'common:user_list' %}">
+    {% csrf_token %}
 
-    <div class="page-header">
-        <h4 class="page-title">직원관리</h4>
+    <div class="page-header d-flex justify-content-between align-items-center">
+      <h4 class="page-title">직원관리</h4>
+
+      <a href="{% url 'common:signup' %}" class="btn btn-sm btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+             class="bi bi-person-fill-add" viewBox="0 0 16 16">
+          <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0Zm-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+          <path d="M2 13c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Z"/>
+        </svg>
+        직원 등록
+      </a>
     </div>
 
-    <table class="main table sticky-top">
+    <!-- 정렬값 유지 -->
+    <input type="hidden" id="order" name="order" value="{{order|default_if_none:'0'}}">
+
+    <!-- 필터 카드(기존 thead 첫 줄에서 이동) -->
+    <div class="card user-filter-card mb-3">
+      <div class="card-body py-2">
+        <div class="row g-2 align-items-center">
+          <div class="col-lg-2 col-md-4 col-12">
+            <select class="form-select form-select-sm" name="work" id="work">
+              <option value="전체" {% if search_work == '전체' %} selected {% endif %}>전체(재직여부)</option>
+              <option value="재직자" {% if search_work == '재직자' %} selected {% endif %}>재직자</option>
+              <option value="퇴사자" {% if search_work == '퇴사자' %} selected {% endif %}>퇴사자</option>
+            </select>
+          </div>
+
+          <div class="col-lg-2 col-md-4 col-12">
+            <select class="form-select form-select-sm" name="dept" id="dept">
+              <option value="전체" {% if search_dept == '전체' %} selected {% endif %}>전체(부서)</option>
+              {% for dept in dept_list %}
+                <option value="{{dept}}" {% if search_dept == dept %} selected {% endif %}>{{dept}}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-lg-2 col-md-4 col-12">
+            <select class="form-select form-select-sm" name="position" id="position">
+              <option value="전체" {% if search_position == '전체' %} selected {% endif %}>전체(직위)</option>
+              {% for position in position_list %}
+                <option value="{{position}}" {% if search_position == position %} selected {% endif %}>{{position}}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-lg-6 col-12 text-end">
+            <span class="text-muted small"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 테이블은 반응형 래퍼로(이미 적용하셨다고 했으니 유지) -->
+    <div class="table-responsive user-list-table-wrap">
+      <table class="main table sticky-top">
+          <colgroup>
+              <!-- 기본정보(6) -->
+              <col style="width:4%">
+              <col style="width:10%">
+              <col style="width:10%">
+              <col style="width:10%">
+              <col style="width:10%">
+              <col style="width:10%">
+
+              <!-- 근로계약(3) -->
+              <col style="width:9%">
+              <col style="width:8%">
+              <col style="width:8%">
+
+              <!-- 근로모듈(월~일 7칸) -->
+              <col span="7" style="width:3%">
+            </colgroup>
         <thead>
-        <tr>
-            <th colspan="100%">
-                <div class="row my-3">
-                    <div class="col-2">
-                        <select class="form-select" name="work" id="work">
-                            <option value="전체" {% if search_work == '전체' %} selected {% endif %}>전체(재직여부)</option>
-                            <option value="재직자" {% if search_work == '재직자' %} selected {% endif %}>재직자</option>
-                            <option value="퇴사자" {% if search_work == '퇴사자' %} selected {% endif %}>퇴사자</option>
-                        </select>
-                    </div>
-                    <div class="col-2">
-                        <select class="form-select" name="dept" id="dept">
-                            <option value="전체" {% if search_dept == '전체' %} selected {% endif %}>전체(부서)</option>
-                            {% for dept in dept_list %}
-                            <option value="{{dept}}" {% if search_dept == dept %} selected {% endif %}>{{dept}}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-2">
-                        <select class="form-select" name="position" id="position">
-                            <option value="전체" {% if search_position == '전체' %} selected {% endif %}>전체(직위)</option>
-                            {% for position in position_list %}
-                            <option value="{{position}}" {% if search_position == position %} selected {% endif %}>{{position}}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-6 text-end">
-                        <a href="{% url 'common:signup' %}" class="btn btn-sm btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-add" viewBox="0 0 16 16">
-                              <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0Zm-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-                              <path d="M2 13c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Z"/>
-                            </svg>
-                            직원 등록
-                        </a>
-                    </div>
-                </div>
-            </th>
-        </tr>
-        <tr class="text-center">
-            <th class="table-primary" colspan="6">기본정보</th>
-            <th class="table-secondary" colspan="12">근로계약</th>
-        </tr>
-        <tr class="text-center">
-            <input type="hidden" id="order" name="order" value="{{order|default_if_none:'0'}}">
+          <tr class="text-center">
+            <th colspan="6">기본정보</th>
+            <th colspan="10">근로계약</th>
+          </tr>
+
+          <tr class="text-center">
             <th class="table-primary">번호</th>
-            <th class="table-primary sortable" onClick="sort(1)">성명 {% if order == '1' %}▲{% elif order == '11' %}▼{% else %}↕{% endif %}</th>
-            <th class="table-primary sortable" onClick="sort(0)">부서 {% if order == '0' %}▲{% elif order == '01' %}▼{% else %}↕{% endif %}</th>
+            <th class="table-primary sortable" onClick="sort(1)">
+              성명 {% if order == '1' %}▲{% elif order == '11' %}▼{% else %}↕{% endif %}
+            </th>
+            <th class="table-primary sortable" onClick="sort(0)">
+              부서 {% if order == '0' %}▲{% elif order == '01' %}▼{% else %}↕{% endif %}
+            </th>
             <th class="table-primary">직위</th>
-            <th class="table-primary sortable" onClick="sort(2)">입사일 {% if order == '2' %}▲{% elif order == '21' %}▼{% else %}↕{% endif %}</th>
-            <th class="table-primary sortable" onClick="sort(3)">최종근로일 {% if order == '3' %}▲{% elif order == '31' %}▼{% else %}↕{% endif %}</th>
+            <th class="table-primary sortable" onClick="sort(2)">
+              입사일 {% if order == '2' %}▲{% elif order == '21' %}▼{% else %}↕{% endif %}
+            </th>
+            <th class="table-primary sortable" onClick="sort(3)">
+              최종근로일 {% if order == '3' %}▲{% elif order == '31' %}▼{% else %}↕{% endif %}
+            </th>
             <th class="table-secondary">기준일</th>
             <th class="table-secondary">근로형태</th>
             <th class="table-secondary">근태확인</th>
@@ -74,102 +111,71 @@
             <th class="table-secondary">금</th>
             <th class="table-secondary">토</th>
             <th class="table-secondary">일</th>
-        </tr>
+          </tr>
         </thead>
-        <tbody>
-        {% if user_list %}
-        {% for user in user_list %}
-        <tr class="text-center align-middle">
-            <td>
-                {{ forloop.counter }}
-            </td>
-            <td>
-                <a href="{% url 'common:user_modify' user.id %}">{{ user.emp_name }}</a>
-                <span style='cursor: pointer;' onclick="javascript:print_nametag('{{user.emp_name}}', '{{user.position}}');">🏷️</span>
-<!--                <div name="nametag" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#nametagModal"-->
-<!--                data-name="{{ user.emp_name }}" data-position="{{ user.position }}">{{ user.position }}</div>-->
-            </td>
-            <td>{{ user.dept }}</td>
-            <td>{{ user.position }}</td>
-            <td>{{ user.join_date|date:'Y-m-d' }}</td>
-            <td>{{ user.out_date|date:'Y-m-d' }}</td>
-            <!-- 계약이 없는 경우 user.cid가 None이므로 NoReverseMatch 오류가 발생할 수 있으므로, 계약유무에 따라 분기처리 -->
-            <td>
-              {% if user.cid %}
-                <a href="{% url 'wtm:work_contract_modify' user.cid %}">
-                  {{ user.stand_date|date:'Y-m-d' }}
-                </a>
-              {% else %}
-                <a href="{% url 'wtm:work_contract_reg' user.id %}">
-                  계약등록
-                </a>
-              {% endif %}
-            </td>
-            <td>{{ user.type|default_if_none:'' }}</td>
-            <td>{{ user.check_yn|default_if_none:'' }}</td>
 
-            {% for key, value in day_of_the_week.items %}
-            <td align="center">
-                <!-- user.key로 사용할 수 없기 때문에, index 값을 가져오는 filter를 활용해서 key에 맞는 값을 세팅 -->
-                {% with user|get_index:key as module_id %}
-                    {% for module in module_list %}
-                    {% if module.id == module_id %}
-                    <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
-                        {% if module.cat == 'OFF' %}
-                            -
-                        {% else %}
-                            {{ module.start_time }}
-                            {{ module.end_time }}
+        <tbody>
+          {% if user_list %}
+            {% for user in user_list %}
+              <tr class="text-center align-middle {% if user.out_date %}is-out{% endif %}">
+                <td>{{ forloop.counter }}</td>
+
+                <td class="text-center">
+                  <a href="{% url 'common:user_modify' user.id %}">{{ user.emp_name }}</a>
+                  <span style="cursor:pointer;" onclick="javascript:print_nametag('{{user.emp_name}}', '{{user.position}}');">🏷️</span>
+                </td>
+
+                <td>{{ user.dept }}</td>
+                <td>{{ user.position }}</td>
+                <td>{{ user.join_date|date:'Y-m-d' }}</td>
+                <td>{{ user.out_date|date:'Y-m-d' }}</td>
+
+                <td>
+                  {% if user.cid %}
+                    <a href="{% url 'wtm:work_contract_modify' user.cid %}">
+                      {{ user.stand_date|date:'Y-m-d' }}
+                    </a>
+                  {% else %}
+                    <a href="{% url 'wtm:work_contract_reg' user.id %}">
+                      계약등록
+                    </a>
+                  {% endif %}
+                </td>
+
+                <td>{{ user.type|default_if_none:'' }}</td>
+                <td>{{ user.check_yn|default_if_none:'' }}</td>
+
+                {% for key, value in day_of_the_week.items %}
+                  <td align="center">
+                    {% with user|get_index:key as module_id %}
+                      {% for module in module_list %}
+                        {% if module.id == module_id %}
+                          <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
+                            {% if module.cat == 'OFF' %}
+                              -
+                            {% else %}
+                              {{ module.start_time }}<br>{{ module.end_time }}
+                            {% endif %}
+                          </div>
                         {% endif %}
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                {% endwith %}
-            </td>
+                      {% endfor %}
+                    {% endwith %}
+                  </td>
+                {% endfor %}
+              </tr>
             {% endfor %}
-        </tr>
-        {% endfor %}
-        {% else %}
-        <tr class="text-center">
-            <td colspan="16">직원이 없습니다.</td>
-        </tr>
-        {% endif %}
+          {% else %}
+            <tr class="text-center">
+              <td colspan="16">직원이 없습니다.</td>
+            </tr>
+          {% endif %}
         </tbody>
-    </table>
+      </table>
     </div>
-</form>
+
+  </form>
 </div>
 
-<!-- Modal dialog -->
-<!--<div class="modal fade" id="nametagModal" tabindex="-1" aria-labelledby="nametagModalLabel" aria-hidden="true">-->
-<!--    <div class="modal-dialog modal-lg">-->
-<!--        <div class="modal-content">-->
-<!--            <div class="modal-header">-->
-<!--                <h1 class="modal-title fs-5" id="nametagModalLabel">명찰 출력</h1>-->
-<!--                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
-<!--            </div>-->
-<!--            <div class="modal-body">-->
-<!--                <div class="nametag-parent">-->
-<!--                    <div class="nametag-left"></div>-->
-<!--                    <div class="nametag-main">-->
-<!--                        <div class="left">-->
-<!--                            <div><img src="{% static 'logo.png' %}" width="200" height="75"></div>-->
-<!--                            <div><img src="{% static 'logo2.png' %}" width="150" height="22"></div>-->
-<!--                        </div>-->
-<!--                        <div class="right">-->
-<!--                            <div id="nametag_position"></div>-->
-<!--                            <div id="nametag_name"></div>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--            </div>-->
-<!--            <div class="modal-footer">-->
-<!--                <button type="button" class="print btn btn-primary">인쇄</button>-->
-<!--                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--</div>-->
 {% endblock %}
 {% block script %}
 <script type="text/javascript">
@@ -219,71 +225,6 @@ function print_nametag(emp_name, position) {
   url = url.replace(/POSITION/g, position);
   window.open(url, name, option);
   //location.href=url;
-}
-
-/* (사용X) WEB 상에서 정렬하는 javascript로서, 부서명 가나다순이 아닌 출력순서로 정렬하기가 까다로워서 사용하지 않았음 */
-function sortTable(n) {
-  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-  table = document.getElementById("sortable");
-  switching = true;
-  // 정렬방향을 세팅 : 오름차순
-  dir = "asc";
-  // 더 이상 정렬이 필요 없을 때까지 반복
-  while (switching) {
-    switching = false;
-    rows = table.rows;
-    // 헤더를 제외한(검색/기본정보/번호 등 헤더가 3개임) 모든 열에 대해 정렬을 시도함
-    for (i = 3; i < (rows.length - 1); i++) {
-      // 변수 초기화
-      shouldSwitch = false;
-      // 현재 열과 다음 열의 값을 가져옴
-      x = rows[i].getElementsByTagName("TD")[n];
-      y = rows[i + 1].getElementsByTagName("TD")[n];
-      // 정렬 필요 여부 체크
-      if (n == 0) {
-          if (dir == "asc") {
-            if (Number(x.innerText) > Number(y.innerText)) {
-              // 정렬이 필요하면 체크하고, while 탈출
-              shouldSwitch = true;
-              break;
-            }
-          } else if (dir == "desc") {
-            if (Number(x.innerText) < Number(y.innerText)) {
-              // 정렬이 필요하면 체크하고, while 탈출
-              shouldSwitch = true;
-              break;
-            }
-          }
-      } else {
-          if (dir == "asc") {
-            if (x.innerText.toLowerCase() > y.innerText.toLowerCase()) {
-              // 정렬이 필요하면 체크하고, while 탈출
-              shouldSwitch = true;
-              break;
-            }
-          } else if (dir == "desc") {
-            if (x.innerText.toLowerCase() < y.innerText.toLowerCase()) {
-              // 정렬이 필요하면 체크하고, while 탈출
-              shouldSwitch = true;
-              break;
-            }
-          }
-      }
-    }
-    if (shouldSwitch) {
-      // 교환 후 완료로 표기
-      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-      switching = true;
-      // 교환 완료시 카운트 1 증가
-      switchcount ++;
-    } else {
-      // 교환이 일어나지 않았고, 오름차순이면(즉, 이미 오름차순으로 정렬을 한번 했다면) -> 내림차순으로 바꾸고 while문 재실행
-      if (switchcount == 0 && dir == "asc") {
-        dir = "desc";
-        switching = true;
-      }
-    }
-  }
 }
 </script>
 {% endblock %}

@@ -6,14 +6,25 @@ html {
   font-size: 14px;
 }
 
-body {
-  -webkit-text-size-adjust: none; /* 폰트의 사이즈를 늘어나지 않도록 한다. */
-  .container {
-   max-width: 1500px;
-   }
-  .main {
-   width: 1500px;
-   }
+body { -webkit-text-size-adjust: none; }
+body .container { max-width: 1500px; }
+body .main { width: 1500px; }
+
+/* 스크롤바 CSS */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: lightgray;
+  border-radius: 10px;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
 }
 
 /* CSS for Bootstrap 5 Fixed Left Sidebar Navigation */
@@ -96,23 +107,6 @@ body {
   }
 }
 
-/* 스크롤바 CSS */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: lightgray;
-  border-radius: 10px;
-  background-clip: padding-box;
-  border: 2px solid transparent;
-}
-
-::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-
 /* 네비게이션바 hover 및 현재 메뉴 하이라이트 처리 */
 .ci, .nav-link:hover {
   color: #02b3bb;
@@ -122,6 +116,19 @@ body {
 .flex-container {
   display: flex;
   flex-wrap: wrap;
+}
+
+/* 공통 페이지 헤더 */
+.page-header {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: .5rem;
+  margin-bottom: 1rem;
+}
+
+.page-header .page-title {
+  font-size: 1.25rem; /* 대략 fs-5 정도 */
+  font-weight: 600;
+  margin: 0;
 }
 
 /* 선택상자 div의 스타일을 정의 */
@@ -163,6 +170,17 @@ body {
   opacity: 0.7;
 }
 
+/* 체크 안된 invisible-radio 인접 label에 mouse over 하면 label에 속한 module_box의 투명도를 0.7로 변경 */
+.invisible-radio:not(:checked) + label:hover .module_box {
+  opacity: 0.7;
+}
+
+/* 체크된 invisible-radio 인접 label에 속한 module_box의 바깥 테두리를 빨간색으로 변경 */
+.invisible-radio:checked + label .module_box {
+  outline: 3px solid red;
+  /* color: blue; */
+}
+
 /* 근무모듈 div의 스타일 정의 */
 .module_box {
   display: flex;
@@ -182,26 +200,11 @@ body {
   background-color: #ebebeb;
 }
 
-/* 체크 안된 invisible-radio 인접 label에 mouse over 하면 label에 속한 module_box의 투명도를 0.7로 변경 */
-.invisible-radio:not(:checked) + label:hover .module_box {
-  opacity: 0.7;
-}
-
-/* 체크된 invisible-radio 인접 label에 속한 module_box의 바깥 테두리를 빨간색으로 변경 */
-.invisible-radio:checked + label .module_box {
-  outline: 3px solid red;
-  /* color: blue; */
-}
-
 /* 근무모듈에서 근무종류에 따라 셀렉트박스를 비활성화하기 위한 CSS */
 select[readonly] {
   background-color: #ddd;
   pointer-events: none;
 }
-
-/* 테이블 헤더 고정을 위한 css */
-.div-sticky-h { height: 85vh; width: 100%; overflow: auto; }
-.div-sticky-m { height: 70vh; width: 100%; overflow: auto; }
 
 /* 헤더는 가장 위에 표시 */
 .sticky-top thead {
@@ -225,20 +228,6 @@ select[readonly] {
   z-index: 1;
   background-color: white;
 }
-
-/* 공통 페이지 헤더 */
-.page-header {
-  border-bottom: 1px solid #dee2e6;
-  padding-bottom: .5rem;
-  margin-bottom: 1rem;
-}
-
-.page-header .page-title {
-  font-size: 1.25rem; /* 대략 fs-5 정도 */
-  font-weight: 600;
-  margin: 0;
-}
-
 
 /****************************************************************/
 /* TODAY
@@ -531,6 +520,7 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 /********
  * 근태기록-월간집계 - 지각/조퇴/연장/휴일 상세 테이블
  ********/
+
 .metric-table-wrapper {
   margin-top: 0.5rem;
   margin-bottom: 1rem;
@@ -612,6 +602,101 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 .sortable {
   cursor: pointer;
 }
+
+/****************************************************************/
+/* 직원관리
+/****************************************************************/
+
+/* 1) 반응형 래퍼 */
+.user-list-page .user-list-table-wrap {
+  overflow-x: auto;
+}
+
+/* 2) 폰트/행높이: 근태기록 밀도 */
+.user-list-page table.table {
+  font-size: 0.86rem;
+}
+
+.user-list-page table.table th,
+.user-list-page table.table td {
+  padding: 0.25rem 0.4rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* (B-1) 직원관리에서는 main 고정폭(1500px)을 풀어서, 화면 폭에 맞춰 테이블이 수축 가능하게 */
+.user-list-page .main {
+  width: 100% !important;
+}
+
+/* (B-2) 컬럼이 필요 이상으로 넓어지는 현상 방지 */
+.user-list-page table.main {
+  table-layout: fixed;
+}
+
+/* (B-3) 요일(월~일) 칸의 padding만 더 줄여서 전체 폭을 확 줄임 (7칸이라 효과 큼) */
+.user-list-page table.main th:nth-child(n+10),
+.user-list-page table.main td:nth-child(n+10) {
+  padding-left: 0.12rem;
+  padding-right: 0.12rem;
+}
+
+/* 3) 헤더 톤: table-primary/secondary */
+/* 기본정보(파란 계열을 아주 연하게) */
+.user-list-page thead th.table-primary {
+  background: #eef6ff !important;
+  color: #1f2d3d !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+}
+
+/* 근로계약(회색 계열을 연하게) */
+.user-list-page thead th.table-secondary {
+  background: #f3f4f6 !important;
+  color: #343a40 !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+}
+
+/* 4) 2단 헤더(기본정보/근로계약)도 과하지 않게 */
+/* 2단 그룹 헤더(기본정보/근로계약) 색상도 아래 컬럼헤더 톤과 맞춤 */
+.user-list-page thead th[colspan="6"] {      /* 기본정보 */
+  background: #eef6ff !important;
+  color: #1f2d3d !important;
+  font-weight: 700;
+}
+
+.user-list-page thead th[colspan="10"] {     /* 근로계약 */
+  background: #f3f4f6 !important;
+  color: #343a40 !important;
+  font-weight: 700;
+}
+
+/* 5) hover: 근태기록 느낌으로 아주 연한 민트 */
+.user-list-page tbody tr:hover {
+  background-color: #f2fbfc;
+}
+
+/* 6) 근로모듈(.module_box)은 유지하되, '간격만' 줄이기 */
+.user-list-page .module_box {
+  margin: 0 auto;           /* 기존 유지 */
+  /* width/height는 전역 30px 유지 */
+  /* font-size/box는 전역 유지(원하면 여기서만 9px→8.5px 같은 미세 조정은 가능) */
+}
+
+/* (선택) 직원관리에서만 살짝 더 촘촘하게 */
+.user-list-page td .module_box {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.user-list-page .user-filter-card {
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+
+/****************************************************************/
+/* 근로계약
+/****************************************************************/
 
 .contract-workday-wrapper {
   display: inline-block;
