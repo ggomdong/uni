@@ -37,7 +37,6 @@ def ensure_active_employee_or_403(user):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         username = attrs.get('username')
-        password = attrs.get('password')
         device_id = self.context['request'].data.get('device_id')
 
         if not device_id:
@@ -50,7 +49,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         # 디바이스 검증
         if user.device_id:
-            if user.device_id != device_id:
+            if user.is_employee and user.device_id != device_id:
                 raise ValidationError("등록되지 않은 기기입니다. 관리자에게 문의하세요.")
         else:
             user.device_id = device_id
