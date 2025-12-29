@@ -206,29 +206,6 @@ select[readonly] {
   pointer-events: none;
 }
 
-/* 헤더는 가장 위에 표시 */
-.sticky-top thead {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-}
-
-/* 첫 번째 열(부서) 고정 */
-.sticky-left td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background-color: white;
-}
-
-/* 두 번째 열(이름) 고정 */
-.sticky-left2 td:nth-child(2) {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background-color: white;
-}
-
 /****************************************************************/
 /* TODAY
 /****************************************************************/
@@ -485,6 +462,29 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 
 .next {
   opacity: 0.3;
+}
+
+/* 근무표 전용: 헤더 sticky */
+.schedule-table.sticky-top thead {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+/* 근무표 전용: 첫 번째 열(부서) 고정 */
+.schedule-table.sticky-left td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: white;
+}
+
+/* 근무표 전용: 두 번째 열(이름) 고정 */
+.schedule-table.sticky-left2 td:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: white;
 }
 
 /****************************************************************/
