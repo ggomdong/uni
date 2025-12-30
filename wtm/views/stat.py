@@ -295,9 +295,28 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
     for u in base_users:
         d = detail_map.get(u["user_id"], {"days": {}, "count": 0, "total_seconds": 0})
         cell_seconds = [d["days"].get(date(year, month, dd), 0) for dd in days_order]
+
+        day_secs = []
+        for dd, sec in zip(days_order, cell_seconds):
+            if sec and sec > 0:
+                dow = day_list.get(dd) or day_list.get(str(dd)) or ""
+                ymd = f"{year:04d}{month:02d}{dd:02d}"
+                day_secs.append({
+                    "day": dd,
+                    "dow": dow,
+                    "sec": sec,
+                    "ymd": ymd,
+                })
+
         rows.append({
-            "dept": u["dept"], "position": u["position"], "emp_name": u["emp_name"],
-            "count": d["count"], "total_seconds": d["total_seconds"], "cells": cell_seconds,
+            "user_id": u["user_id"],
+            "dept": u["dept"],
+            "position": u.get("position"),
+            "emp_name": u["emp_name"],
+            "count": d["count"],
+            "total_seconds": d["total_seconds"],
+            "cells": cell_seconds,
+            "day_secs": day_secs,
         })
 
     return render(request, "wtm/work_metric.html", {

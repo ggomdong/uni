@@ -13,7 +13,7 @@
     <div class="row align-items-center mb-3 g-2">
         {# 왼쪽: 날짜 네비 #}
         <div class="col-lg-5 col-md-6 col-12">
-            <div class="d-flex gap-2 flex-wrap fs-4">
+            <div class="d-flex align-items-center gap-2 flex-wrap fs-4">
                 <a href="{% url 'wtm:work_status' stand_ym|get_month:-1 %}">
                     <button type="button" class="btn-hover">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
@@ -44,9 +44,9 @@
 
         <!-- 오른쪽: 지표 필터 + Excel 버튼 -->
         <div class="col-lg-7 col-md-6 col-12 text-md-end text-start mt-2 mt-md-0">
-            <div class="d-flex flex-wrap align-items-center justify-content-md-end">
+            <div class="toolbar-right d-flex flex-wrap align-items-center justify-content-md-end justify-content-start gap-2">
 
-                <div class="btn-group metric-filter me-2" role="group" aria-label="근태 지표 필터">
+                <div class="btn-group metric-filter" role="group" aria-label="근태 지표 필터">
                     <a href="{% url 'wtm:work_status' stand_ym %}"
                        class="btn btn-sm {% if active_metric == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                         전체
@@ -69,22 +69,26 @@
                     </a>
                 </div>
 
-                {% if user.is_authenticated %}
-                <div class="btn-group">
+                <!-- Export 슬롯: 항상 렌더링(자리 고정). 모바일에서는 통째로 숨김 -->
+                <div class="export-slot d-none d-md-flex">
+                    {% if user.is_authenticated and active_metric == 'all' %}
                     <a href="{% url 'wtm:work_status_excel' stand_ym %}" class="btn btn-sm btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
-                          <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
-                          <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             class="bi bi-floppy-fill" viewBox="0 0 16 16">
+                            <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
+                            <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
                         </svg>
                         Excel
                     </a>
+                    {% else %}
+                    <span class="export-placeholder"></span>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>
 
-    <div class="table-responsive status-table-wrapper">
+    <div class="table-responsive status-table-wrapper d-none d-md-block">
         <table class="table table-sm table-bordered align-middle text-center work-status-table">
             <colgroup>
                 <col style="width:10%;">  <!-- 부서 -->
@@ -177,6 +181,97 @@
                 </tr>
                 {% empty %}
                 <tr><td colspan="19" class="py-5 text-muted">대상 직원이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# ===== 모바일 요약 테이블: 한눈용 ===== #}
+    <div class="status-table-wrapper d-block d-md-none">
+        <table class="table table-sm table-bordered work-status-mobile-table">
+            <colgroup>
+                <col style="width:22%;">  <!-- 직원 -->
+                <col style="width:13%;">  <!-- 오류 -->
+                <col style="width:13%;">  <!-- 지각 -->
+                <col style="width:13%;">  <!-- 조퇴 -->
+                <col style="width:13%;">  <!-- 연장 -->
+                <col style="width:13%;">  <!-- 휴근 -->
+                <col style="width:13%;">  <!-- 무급 -->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th rowspan="2">직원</th>
+                    <th rowspan="2">오류</th>
+                    <th colspan="3">소정근로</th>
+                    <th rowspan="2">휴근</th>
+                    <th rowspan="2">무급</th>
+                </tr>
+                <tr>
+                    <th>지각</th>
+                    <th>조퇴</th>
+                    <th>연장</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td class="ws-namecell">
+                        <span class="ws-dept">{{ r.dept }}</span>
+                        <span class="ws-name">{{ r.emp_name }}</span>
+                    </td>
+
+                    <td class="ws-metric">
+                        <div class="cnt {% if r.error_cnt %}ws-bad{% endif %}">
+                        {% if r.error_cnt %}{{ r.error_cnt }}회{% else %}-{% endif %}
+                        </div>
+                        <div class="tm">&nbsp;</div>
+                    </td>
+
+                    <td class="ws-metric">
+                        <div class="cnt {% if r.reg_late_cnt %}ws-warn{% endif %}">
+                        {% if r.reg_late_cnt %}{{ r.reg_late_cnt }}회{% else %}-{% endif %}
+                        </div>
+                        <div class="tm">
+                        {% if r.reg_late_sec %}{{ r.reg_late_sec|ss_to_hhmmss }}{% else %}-{% endif %}
+                        </div>
+                    </td>
+
+                    <td class="ws-metric">
+                        <div class="cnt {% if r.reg_early_cnt %}ws-warn{% endif %}">
+                        {% if r.reg_early_cnt %}{{ r.reg_early_cnt }}회{% else %}-{% endif %}
+                        </div>
+                        <div class="tm">
+                        {% if r.reg_early_sec %}{{ r.reg_early_sec|ss_to_hhmmss }}{% else %}-{% endif %}
+                        </div>
+                    </td>
+
+                    <td class="ws-metric">
+                        <div class="cnt {% if r.reg_overtime_cnt %}ws-good{% endif %}">
+                        {% if r.reg_overtime_cnt %}{{ r.reg_overtime_cnt }}회{% else %}-{% endif %}
+                        </div>
+                        <div class="tm">
+                        {% if r.reg_overtime_sec %}{{ r.reg_overtime_sec|ss_to_hhmmss }}{% else %}-{% endif %}
+                        </div>
+                    </td>
+
+                    <td class="ws-metric">
+                        <div class="cnt {% if r.hol_work_cnt %}ws-good{% endif %}">
+                        {% if r.hol_work_cnt %}{{ r.hol_work_cnt }}회{% else %}-{% endif %}
+                        </div>
+                        <div class="tm">
+                        {% if r.total_sec %}{{ r.total_sec|ss_to_hhmmss }}{% else %}-{% endif %}
+                        </div>
+                    </td>
+
+                     <td class="ws-metric">
+                        <div class="cnt {% if r.nopay_cnt %}ws-bad{% endif %}">
+                        {% if r.nopay_cnt %}{{ r.nopay_cnt }}회{% else %}-{% endif %}
+                        </div>
+                        <div class="tm">&nbsp;</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">대상 직원이 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

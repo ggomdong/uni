@@ -517,6 +517,61 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   vertical-align: middle !important;
 }
 
+/****************************************************************/
+/* 근태기록-월간집계(전체) 모바일 요약 테이블
+/****************************************************************/
+
+@media (max-width: 768px) {
+
+  /* 모바일 요약 테이블은 화면폭에 맞춰 고정 배치 */
+  .work-status-mobile-table {
+    width: 100%;
+    table-layout: fixed;
+    font-size: 0.82rem;
+  }
+
+  .work-status-mobile-table th,
+  .work-status-mobile-table td {
+    padding: 0.22rem 0.28rem;
+    vertical-align: middle;
+  }
+
+  .work-status-mobile-table thead th {
+    background: #f8f9fa;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* 첫 칸(직원)만 줄바꿈 허용 */
+  .work-status-mobile-table .ws-namecell {
+    white-space: normal;
+    text-align: left;
+  }
+
+  .work-status-mobile-table .ws-dept {
+    display: block;
+    font-size: 0.74rem;
+    color: #6c757d;
+  }
+
+  .work-status-mobile-table .ws-name {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 800;
+  }
+
+  /* 지표 셀은 줄바꿈 없이(2줄 구조는 div로 제어) */
+  .work-status-mobile-table .ws-metric {
+    white-space: nowrap;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .work-status-mobile-table .ws-bad  { color: #dc3545; font-weight: 800; }
+  .work-status-mobile-table .ws-warn { color: #b45f06; font-weight: 800; }
+  .work-status-mobile-table .ws-good { color: #05636A; font-weight: 800; }
+}
+
 /********
  * 근태기록-월간집계 - 지각/조퇴/연장/휴일 상세 테이블
  ********/
@@ -549,7 +604,7 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 /* 버튼 그룹 전체 폭 줄이고 가운데 정렬 */
 .metric-filter {
   max-width: 420px;   /* 원하는 만큼 조절 가능 (예: 360~480 사이) */
-  margin: 0 auto;
+  margin: 0;
 }
 
 /* btn-group 자체를 flex 컨테이너로 */
@@ -563,7 +618,7 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   padding: 0.2rem 0.4rem;   /* 기본 btn-sm 보다 조금 더 작게 */
   font-size: 0.8rem;        /* 글자 크기도 살짝 줄이기 */
 
-  flex: 0 0 80px;           /* 🔹 고정 폭(80px). 필요하면 80~100 조정 */
+  flex: 0 0 80px;           /* 고정 폭(80px). 필요하면 80~100 조정 */
   text-align: center;       /* 글자 가운데 정렬 */
   white-space: nowrap;      /* 줄바꿈 방지 (연장근로, 휴일근로 깨지지 않게) */
 }
@@ -593,6 +648,80 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   border-color: #02b3bb;
   color: #ffffff;
 }
+
+/* export 슬롯 폭 고정: 버튼 유무와 관계없이 항상 같은 자리 */
+.export-slot {
+  min-width: 92px;        /* Excel 버튼 폭에 맞춰 조정(아이콘+텍스트 기준) */
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* 자리만 차지하고 화면에는 안 보이게 */
+.export-placeholder {
+  display: inline-block;
+  width: 92px;
+  height: 31px;           /* btn-sm 높이에 맞춰 조정 */
+  visibility: hidden;
+}
+
+/****************************************************************/
+/* 근태기록-월간집계(지표별) 모바일 요약 테이블
+/****************************************************************/
+
+@media (max-width: 768px) {
+
+  /* 지표별 카드 */
+  .metric-card {
+    border-radius: 12px;
+  }
+
+  .metric-line {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;              /* '지각'과 '2회' 간격 */
+      line-height: 1.1;
+      white-space: nowrap;   /* 줄바꿈 방지 */
+  }
+
+  .metric-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #495057;
+      letter-spacing: -0.2px;
+  }
+
+  .metric-count {
+      font-size: 0.92rem;
+      font-weight: 900;
+      color: #212529;
+      letter-spacing: -0.2px;
+  }
+
+  .metric-total {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #6c757d;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+  }
+
+  .metric-chip {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #212529;
+    font-weight: 700;
+    padding: 0.35rem 0.45rem;
+    font-variant-numeric: tabular-nums;
+    border-radius: 999px;
+  }
+}
+
+
+
+/****************************************************************/
+/* 근태기록 - 모바일 요약 테이블(스크롤 없는 한눈용)
+/****************************************************************/
 
 /****************************************************************/
 /* 직원관리

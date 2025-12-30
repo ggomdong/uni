@@ -47,9 +47,9 @@
 
         <!-- 오른쪽: 지표 필터 + Excel 버튼 -->
         <div class="col-lg-7 col-md-6 col-12 text-md-end text-start mt-2 mt-md-0">
-            <div class="d-flex flex-wrap align-items-center justify-content-md-end">
+            <div class="toolbar-right d-flex flex-wrap align-items-center justify-content-md-end justify-content-start gap-2">
 
-                <div class="btn-group metric-filter me-2" role="group" aria-label="근태 지표 필터">
+                <div class="btn-group metric-filter" role="group" aria-label="근태 지표 필터">
                     <a href="{% url 'wtm:work_status' stand_ym %}"
                        class="btn btn-sm {% if active_metric == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
                         전체
@@ -71,11 +71,27 @@
                         휴일근로
                     </a>
                 </div>
+
+                <!-- Export 슬롯: 항상 렌더링(자리 고정). 모바일에서는 통째로 숨김 -->
+                <div class="export-slot d-none d-md-flex">
+                    {% if user.is_authenticated and active_metric == 'all' %}
+                    <a href="{% url 'wtm:work_status_excel' stand_ym %}" class="btn btn-sm btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             class="bi bi-floppy-fill" viewBox="0 0 16 16">
+                            <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
+                            <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
+                        </svg>
+                        Excel
+                    </a>
+                    {% else %}
+                    <span class="export-placeholder"></span>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="table-responsive metric-table-wrapper">
+    <div class="table-responsive metric-table-wrapper d-none d-md-block">
         <table class="table table-sm table-bordered align-middle text-center work-metric-table">
             <colgroup>
               <col style="width:5%;">  <!-- 부서 -->
@@ -142,6 +158,80 @@
     </div>
 
     {% endwith %}
+
+    {# ===== 모바일 카드 뷰 ===== #}
+    <div class="d-block d-md-none mt-2">
+        {% for r in rows %}
+            {% with uid=r.user_id|stringformat:"s" %}
+            {% with cid="days-"|add:uid %}
+            <div class="card metric-card mb-2">
+                <div class="card-body py-2">
+
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="me-2">
+                            <div class="small text-muted">{{ r.dept }}</div>
+                            <div class="fw-bold">{{ r.emp_name }}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="metric-line">
+                                <span class="metric-label">{{ metric_label }}</span>
+                                <span class="metric-count">{{ r.count|default:"0" }}회</span>
+                            </div>
+                            <div class="metric-total">
+                                {{ r.total_seconds|ss_to_hhmmss|slice:":5" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        {% if r.day_secs %}
+                        <div class="d-flex flex-wrap gap-1 align-items-center">
+                            {% for x in r.day_secs|slice:":6" %}
+                            <a class="badge metric-chip"
+                               href="{% url 'wtm:index' x.ymd %}">
+                                {{ stand_ym|slice:'4:6'|to_int }}.{{ x.day }}({{ x.dow }}) {{ x.sec|ss_to_hhmmss }}
+                            </a>
+                            {% endfor %}
+
+                            {% if r.day_secs|length > 6 %}
+                            <a class="badge metric-chip metric-chip-more"
+                               data-bs-toggle="collapse"
+                               href="#{{ cid }}"
+                               role="button"
+                               aria-expanded="false"
+                               aria-controls="{{ cid }}">
+                                +{{ r.day_secs|length|add:"-6" }}
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        {% if r.day_secs|length > 6 %}
+                        <div class="collapse mt-1" id="{{ cid }}">
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for x in r.day_secs|slice:"6:" %}
+                                <a class="badge metric-chip"
+                                   href="{% url 'wtm:index' x.ymd %}">
+                                    {{ stand_ym|slice:'4:6'|to_int }}.{{ x.day }}({{ x.dow }}) {{ x.sec|ss_to_hhmmss }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% else %}
+                        <div class="small text-muted">기록 없음</div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+            {% endwith %}
+            {% endwith %}
+        {% empty %}
+            <div class="text-center text-muted py-4">대상 직원이 없습니다.</div>
+        {% endfor %}
+    </div>
+
 </div>
 
 <script type="text/javascript">
