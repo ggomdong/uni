@@ -833,17 +833,35 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
     .user-list-page .user-title-row {
         flex-wrap: nowrap;
         min-width: 0;
+        gap: 6px;
     }
 
     .user-list-page .user-name {
         white-space: nowrap;
+        flex: 0 0 auto;
     }
 
-    .user-list-page .user-deptpos {
+    /* 핵심: meta 영역이 남는 공간을 최대한 먹게 */
+    .user-list-page .user-meta {
         min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+
+    /* 하나 태그가 남는 공간을 거의 다 쓰게 */
+    .user-list-page .meta-pill.meta-deptpos {
+        display: inline-block;
+        max-width: 100%;
+        font-size: 0.72rem;
+        line-height: 1.1;
+        padding: 0.12rem 0.48rem;
+        border-radius: 999px;
+        border: 1px solid rgba(2,179,187,.20);
+        background: rgba(2,179,187,.08);
+        color: rgba(33,37,41,.65);
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;  /* 길면 … */
+        text-overflow: ellipsis;
     }
 
     /* 1) 라벨이 잘리지 않도록: 관련 컨테이너는 overflow visible */

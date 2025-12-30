@@ -189,8 +189,8 @@
 
                                     <a class="user-name" href="{% url 'common:user_modify' user.id %}">{{ user.emp_name }}</a>
 
-                                    <span class="text-muted small user-deptpos">
-                                        {{ user.dept }} · {{ user.position }}
+                                    <span class="user-meta">
+                                        <span class="meta-pill meta-deptpos">{{ user.dept }}·{{ user.position }}</span>
                                     </span>
                                 </div>
 
