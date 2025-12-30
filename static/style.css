@@ -829,6 +829,93 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
 
+@media (max-width: 768px) {
+    .user-list-page .user-title-row {
+        flex-wrap: nowrap;
+        min-width: 0;
+    }
+
+    .user-list-page .user-name {
+        white-space: nowrap;
+    }
+
+    .user-list-page .user-deptpos {
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;  /* 길면 … */
+    }
+
+    /* 1) 라벨이 잘리지 않도록: 관련 컨테이너는 overflow visible */
+    .user-list-page .user-mobile-card,
+    .user-list-page .user-mobile-card .card-body,
+    .user-list-page .contract-week-row,
+    .user-list-page .user-week-inline,
+    .user-list-page .user-week-grid--compact,
+    .user-list-page .user-week-grid--compact .week-item {
+        overflow: visible;
+    }
+
+    /* 2) 근로계약(좌) + 모듈(우) 하단 정렬 */
+    .user-list-page .contract-week-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    /* 좌측 텍스트가 모듈 30px 라인에 딱 맞게(높이 늘지 않음) */
+    .user-list-page .contract-info {
+        display: flex;
+        align-items: flex-end;
+        height: 30px;        /* module_box 높이와 동일 */
+        line-height: 1.1;    /* 자연스러운 텍스트 */
+        white-space: nowrap;
+    }
+
+    /* 3) 7칸 모듈: 30px 고정 + 간격 최소 */
+    .user-list-page .user-week-grid--compact {
+        display: grid;
+        grid-template-columns: repeat(7, 30px);
+        gap: 1px; /* 더 타이트하게 */
+        align-items: end;
+    }
+
+    /* week-item은 30x30 박스의 기준점(라벨은 위로 떠서 겹침) */
+    .user-list-page .user-week-grid--compact .week-item {
+        position: relative;
+        width: 30px;
+        height: 30px;
+    }
+
+    /* 기존 module_box(30x30)는 그대로 쓰되, grid에선 margin:auto 제거 */
+    .user-list-page .user-week-grid--compact .module_box {
+        margin: 0;
+    }
+
+    /* 4) 요일 라벨: "높이 증가 없이" 모듈 위에 겹쳐 표시 */
+    .user-list-page .week-label-float {
+        position: absolute;
+        top: -11px;              /* 모듈 위로 살짝 */
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        line-height: 1;
+        font-weight: 700;
+        color: #6c757d;
+        z-index: 5;              /* 안 보이는 문제의 핵심 해결 */
+        pointer-events: none;
+        white-space: nowrap;
+
+        /* 배경을 깔아주면 근로계약 텍스트와 겹쳐도 읽힘(높이 증가 없음) */
+        background: #fff;
+        padding: 0 2px;
+        border-radius: 6px;
+    }
+}
+
+
+
 /****************************************************************/
 /* 근로계약
 /****************************************************************/

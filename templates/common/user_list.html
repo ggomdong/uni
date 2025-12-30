@@ -27,7 +27,7 @@
     <div class="card user-filter-card mb-3">
         <div class="card-body py-2">
             <div class="row g-2 align-items-center">
-                <div class="col-lg-2 col-md-4 col-12">
+                <div class="col-4 col-md-4 col-lg-2">
                     <select class="form-select form-select-sm" name="work" id="work">
                         <option value="전체" {% if search_work == '전체' %} selected {% endif %}>전체(재직여부)</option>
                         <option value="재직자" {% if search_work == '재직자' %} selected {% endif %}>재직자</option>
@@ -35,7 +35,7 @@
                     </select>
                 </div>
 
-                <div class="col-lg-2 col-md-4 col-12">
+                <div class="col-4 col-md-4 col-lg-2">
                 <select class="form-select form-select-sm" name="dept" id="dept">
                         <option value="전체" {% if search_dept == '전체' %} selected {% endif %}>전체(부서)</option>
                         {% for dept in dept_list %}
@@ -44,7 +44,7 @@
                     </select>
                 </div>
 
-                <div class="col-lg-2 col-md-4 col-12">
+                <div class="col-4 col-md-4 col-lg-2">
                     <select class="form-select form-select-sm" name="position" id="position">
                         <option value="전체" {% if search_position == '전체' %} selected {% endif %}>전체(직위)</option>
                         {% for position in position_list %}
@@ -61,7 +61,7 @@
     </div>
 
     <!-- 테이블은 반응형 래퍼로(이미 적용하셨다고 했으니 유지) -->
-    <div class="table-responsive user-list-table-wrap">
+    <div class="d-none d-md-block">
         <table class="main table sticky-top">
             <colgroup>
                 <!-- 기본정보(6) -->
@@ -172,6 +172,106 @@
                 {% endif %}
             </tbody>
         </table>
+    </div>
+
+    {# 모바일 전용(카드형 리스트) #}
+    <div class="d-block d-md-none user-mobile-list">
+        {% if user_list %}
+            {% for user in user_list %}
+                <div class="card user-mobile-card mb-2 {% if user.out_date %}is-out{% endif %}">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="pe-2">
+                                <div class="user-title-row d-flex align-items-center gap-2">
+                                    <span class="badge rounded-pill text-bg-light border user-no">
+                                        #{{ forloop.counter }}
+                                    </span>
+
+                                    <a class="user-name" href="{% url 'common:user_modify' user.id %}">{{ user.emp_name }}</a>
+
+                                    <span class="text-muted small user-deptpos">
+                                        {{ user.dept }} · {{ user.position }}
+                                    </span>
+                                </div>
+
+
+                                <div class="text-muted small">
+                                    입사 {{ user.join_date|date:'Y-m-d' }}
+                                    {% if user.out_date %}
+                                        · 퇴사 {{ user.out_date|date:'Y-m-d' }}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {# 우측 상단: 근로형태 / 근태확인 배지 #}
+                            <div class="text-end d-flex flex-wrap justify-content-end gap-1 user-mini-chips">
+                                {% if user.type %}
+                                    <span class="badge rounded-pill user-chip
+                                        {% if user.type == '고정' %}border border-danger text-danger
+                                        {% else %}border border-info text-info{% endif %}">
+                                        {{ user.type }}
+                                    </span>
+                                {% endif %}
+
+                                {% if user.check_yn %}
+                                    <span class="badge rounded-pill user-chip
+                                        {% if user.check_yn == 'Y' %}border border-info text-info
+                                        {% elif user.check_yn == 'N' %}border border-danger text-danger
+                                        {% else %}border border-secondary text-secondary{% endif %}">
+                                        {% if user.check_yn == 'Y' %}근태Y{% elif user.check_yn == 'N' %}근태N{% else %}{{ user.check_yn }}{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mt-2 contract-week-row">
+                            <div class="contract-info">
+                                <span class="text-muted small">근로계약:</span>
+                                {% if user.cid %}
+                                    <a class="ms-1" href="{% url 'wtm:work_contract_modify' user.cid %}">
+                                        {{ user.stand_date|date:'Y-m-d' }}
+                                    </a>
+                                {% else %}
+                                    <a class="ms-1" href="{% url 'wtm:work_contract_reg' user.id %}">계약등록</a>
+                                {% endif %}
+                            </div>
+
+                            <div class="user-week-inline">
+                                <div class="user-week-grid user-week-grid--compact">
+                                    {% for key, label in day_of_the_week.items %}
+                                        <div class="week-item" title="{{ label }}">
+                                            <span class="week-label-float">{{ label }}</span>
+
+                                            {% with user|get_index:key as module_id %}
+                                                {% if module_id %}
+                                                    {% for module in module_list %}
+                                                        {% if module.id == module_id %}
+                                                            <div class="module_box"
+                                                                 style="background-color: {{ module_colors|get_index:module.color }};">
+                                                                {% if module.cat == 'OFF' %}
+                                                                    -
+                                                                {% else %}
+                                                                    {{ module.start_time }}<br>{{ module.end_time }}
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <div class="module_box" style="background-color:#fff;">-</div>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-muted text-center py-4">직원이 없습니다.</div>
+        {% endif %}
     </div>
 
     </form>
