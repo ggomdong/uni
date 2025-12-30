@@ -536,6 +536,12 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
     vertical-align: middle;
   }
 
+  .work-status-mobile-table thead {
+    position: sticky;
+    top: 65px;          /* fixed-top navbar 높이 */
+    z-index: 30;
+  }
+
   .work-status-mobile-table thead th {
     background: #f8f9fa;
     font-weight: 700;
