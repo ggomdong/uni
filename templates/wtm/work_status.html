@@ -71,7 +71,7 @@
 
                 <!-- Export 슬롯: 항상 렌더링(자리 고정). 모바일에서는 통째로 숨김 -->
                 <div class="export-slot d-none d-md-flex">
-                    {% if user.is_authenticated and active_metric == 'all' %}
+                    {% if user.is_authenticated %}
                     <a href="{% url 'wtm:work_status_excel' stand_ym %}" class="btn btn-sm btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                              class="bi bi-floppy-fill" viewBox="0 0 16 16">
