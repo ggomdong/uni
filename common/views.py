@@ -1,4 +1,4 @@
-import json
+import re
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
@@ -6,9 +6,8 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth import logout
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models.functions import ExtractYear
-from django.db import connection, transaction
+from django.db import connection
 from django.forms import modelformset_factory
-from django.http import JsonResponse
 from django.utils import timezone
 from datetime import datetime
 from .forms import UserForm, UserModifyForm, PasswordChangeForm, DeptForm, PositionForm, HolidayForm, BusinessForm, CodeForm
@@ -48,28 +47,44 @@ class WebLoginView(LoginView):
 
 @login_required(login_url='common:login')
 def signup(request):
-    if request.method == 'POST':
-        form = UserForm(request.POST)
-        if form.is_valid():
-            form.save()
-            # form.cleaned_data.get 은 폼의 입력값을 개별적으로 획득하고 싶을때 사용
-            # username = form.cleaned_data.get('username')
-            # raw_password = form.cleaned_data.get('password1')
-            # user = authenticate(username=username, password=raw_password)   # 사용자 인증
-            # login(request, user)    # 로그인 처리
+    def build_initial_password(username: str) -> str | None:
+        """
+        username(휴대폰번호)에서 숫자만 추출 후 뒤 4자리로 초기 비밀번호 생성
+        예) 010-1234-5678 -> uni#5678
+        """
+        digits = re.sub(r"\D", "", (username or "").strip())
+        if len(digits) < 4:
+            return None
+        return f"uni#{digits[-4:]}"
 
-            # 직원 등록 후 바로 근로계약을 입력할 수 있도록 수정화면으로 이동.
-            # 이를 위해 지금 등록한 user의 id를 얻어야 하므로, 가장 최근 유저의 id를 가져옴.
-            user = User.objects.last()
-            messages.success(
-                request,
-                "직원 정보를 등록했습니다. 근로계약을 입력해 주세요."
+    if request.method == 'POST':
+        post = request.POST.copy()
+
+        init_pw = build_initial_password(post.get('username'))
+
+        if not init_pw:
+            form = UserForm(post)
+            form.add_error(
+                'username',
+                "휴대폰 번호(ID)에서 뒤 4자리를 추출할 수 없습니다. 예: 01012345678 또는 010-1234-5678"
             )
-            return redirect('wtm:work_contract_reg', user_id=user.id)
+        else:
+            # 화면에서 비밀번호 입력을 제거해도, 폼이 요구하는 password1/2는 여기서 강제 주입
+            post['password1'] = init_pw
+            post['password2'] = init_pw
+
+            form = UserForm(post)
+            if form.is_valid():
+                user = form.save()  # User.objects.last() 대신, 방금 저장한 user를 사용
+
+                messages.success(
+                    request,
+                    "직원 정보를 등록했습니다. 근로계약을 입력해 주세요."
+                )
+                return redirect('wtm:work_contract_reg', user_id=user.id)
     else:
         form = UserForm()
 
-    # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     dept_list = list(Dept.objects.values_list('dept_name', flat=True).order_by('order'))
     position_list = list(Position.objects.values_list('position_name', flat=True).order_by('order'))
     context = {'form': form, 'dept_list': dept_list, 'position_list': position_list}
