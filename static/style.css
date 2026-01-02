@@ -970,6 +970,78 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
 }
 
 /****************************************************************/
+/* 근로계약 - 근로요일 입력 정렬(모듈박스 유지, CSS만)
+/****************************************************************/
+
+/* 테이블 간격을 spacing으로 제어 */
+.contract-page .contract-workday-section table{
+  border-collapse: separate;    /* spacing 적용을 위해 */
+  border-spacing: 6px 2px;      /* ← 모듈 간 간격(가로/세로). 취향대로 4~8px */
+  table-layout: fixed;
+  width: auto;
+  margin: 0;                    /* 현재는 왼쪽 정렬이 자연스러움 */
+}
+
+/* td padding 제거(bootstrap 영향 제거) */
+.contract-page .contract-workday-section td{
+  padding: 0 !important;
+}
+
+/* 좌측 라벨(①선택/②입력) 폭 고정 */
+.contract-page .contract-workday-section td[rowspan="2"]{
+  width: 80px !important;
+  white-space: nowrap;
+}
+
+/* ①(60px)/②(50px) inline width를 CSS로 덮어써서 통일 */
+.contract-page .contract-workday-section td:not([rowspan="2"]){
+  width: 44px !important;     /* 42~46 사이에서 조절 */
+}
+
+/* label 기본 마진 제거(박스 위아래 흔들림 방지) */
+.contract-page .contract-workday-section .form-label{
+  margin: 0 !important;
+}
+
+/* 모듈명/요일 라벨 줄 */
+.contract-page .contract-workday-section tr[style*="font-size: 10px"] td{
+  font-size: 10px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/****************************************************************/
+/* 근로계약 - 레이아웃 폭 통일(오른쪽 끝 정렬 안정화)
+/****************************************************************/
+.contract-page {
+  --contract-w: 460px; /* 원하는 폭: 420~520 정도로 취향 조절 */
+}
+
+/* 이 페이지에서만 폭 통일 */
+.contract-page .contract-fixed {
+  width: var(--contract-w);
+  max-width: 100%;
+}
+
+/* col-md-4가 잡아버리는 33% 폭을 “고정폭”으로 덮어쓰기 */
+@media (min-width: 768px) {
+  .contract-page .contract-fixed.col-md-4 {
+    flex: 0 0 var(--contract-w);
+    width: var(--contract-w);
+    max-width: 100%;
+  }
+}
+
+/* 근로요일 입력 박스도 같은 폭 안에서만 보이게 */
+.contract-page .contract-fixed .contract-workday-wrapper,
+.contract-page .contract-fixed .contract-workday-section {
+  width: 100%;
+}
+
+
+/****************************************************************/
 /* 설정
 /****************************************************************/
 

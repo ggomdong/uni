@@ -190,8 +190,7 @@ def write_metric_sheet(ws, data: dict) -> None:
 
 def schedule_excel_data(stand_ym: str) -> dict:
     """
-    schedule.py / work_schedule.html 표를 엑셀용으로 구성.
-    - 이번 달 + (일요일까지 채우기 위한) 다음 달 일부 컬럼을 포함.
+    schedule.py / work_schedule.html 표를 엑셀용으로 구성
     """
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
     last_day = monthrange(year, month)[1]
