@@ -60,7 +60,6 @@
         </div>
     </div>
 
-    <!-- 테이블은 반응형 래퍼로(이미 적용하셨다고 했으니 유지) -->
     <div class="d-none d-md-block">
         <table class="main table sticky-top">
             <colgroup>
@@ -204,9 +203,9 @@
                             </div>
 
                             {# 우측 상단: 근로형태 / 근태확인 배지 #}
-                            <div class="text-end d-flex flex-wrap justify-content-end gap-1 user-mini-chips">
+                            <div class="text-end d-flex flex-wrap justify-content-end gap-1">
                                 {% if user.type %}
-                                    <span class="badge rounded-pill user-chip
+                                    <span class="badge rounded-pill
                                         {% if user.type == '고정' %}border border-danger text-danger
                                         {% else %}border border-info text-info{% endif %}">
                                         {{ user.type }}
@@ -214,7 +213,7 @@
                                 {% endif %}
 
                                 {% if user.check_yn %}
-                                    <span class="badge rounded-pill user-chip
+                                    <span class="badge rounded-pill
                                         {% if user.check_yn == 'Y' %}border border-info text-info
                                         {% elif user.check_yn == 'N' %}border border-danger text-danger
                                         {% else %}border border-secondary text-secondary{% endif %}">

@@ -723,24 +723,14 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   }
 }
 
-
-
-/****************************************************************/
-/* 근태기록 - 모바일 요약 테이블(스크롤 없는 한눈용)
-/****************************************************************/
-
 /****************************************************************/
 /* 직원관리
 /****************************************************************/
 
-/* 직원관리 관련 CSS */
+/* 정렬 버튼에 마우스 올렸을때 */
 .sortable {
   cursor: pointer;
 }
-
-/****************************************************************/
-/* 직원관리
-/****************************************************************/
 
 /* 1) 반응형 래퍼 */
 .user-list-page .user-list-table-wrap {
@@ -815,12 +805,6 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   margin: 0 auto;           /* 기존 유지 */
   /* width/height는 전역 30px 유지 */
   /* font-size/box는 전역 유지(원하면 여기서만 9px→8.5px 같은 미세 조정은 가능) */
-}
-
-/* (선택) 직원관리에서만 살짝 더 촘촘하게 */
-.user-list-page td .module_box {
-  margin-top: 0;
-  margin-bottom: 0;
 }
 
 .user-list-page .user-filter-card {
@@ -932,7 +916,170 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
     }
 }
 
+/****************************************************************/
+/* 직원수정
+/****************************************************************/
 
+/* 근로계약 섹션 헤더(눈에 띄게) */
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.04);
+    margin-bottom: 10px;
+}
+
+.section-title {
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+.section-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--bs-primary);
+}
+
+/* 카드 안에서 폼을 모바일처럼 1열로 */
+.user-modify-page .user-form-stack {
+    max-width: 520px;   /* 480~620 사이 취향 */
+}
+
+.user-modify-page .user-info-card {
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+
+.user-modify-page table.contract-table {
+    font-size: 0.86rem;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.user-modify-page table.contract-table th,
+.user-modify-page table.contract-table td {
+    padding: 0.25rem 0.4rem;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* 월~일 칸만 더 타이트하게
+   컬럼 구성: [1 기준일][2 근로형태][3 근태확인][4~10 월~일][11 삭제]
+*/
+.user-modify-page table.contract-table th:nth-child(n+4):nth-child(-n+10),
+.user-modify-page table.contract-table td:nth-child(n+4):nth-child(-n+10) {
+    padding-left: 0.12rem;
+    padding-right: 0.12rem;
+}
+
+.user-modify-page .module_box {
+    margin: 0 auto;
+}
+
+.user-modify-page .user-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-modify-page .user-action-bar .btn {
+    width: auto;
+}
+
+/* =========================
+   모바일: 근로계약 카드
+   ========================= */
+@media (max-width: 768px) {
+    .user-modify-page .user-title-row {
+        flex-wrap: nowrap;
+        min-width: 0;
+        gap: 6px;
+    }
+
+    .user-modify-page .user-name {
+        white-space: nowrap;
+        flex: 0 0 auto;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    /* 삭제 아이콘 pill: 클릭영역만 확보 + 라인 안정화 */
+    .user-modify-page .contract-delete-pill {
+        padding: 0.10rem 0.30rem;
+        line-height: 1;
+        border-radius: 999px;
+    }
+    .user-modify-page .contract-delete-pill svg {
+        display: block;   /* baseline 흔들림 방지 */
+    }
+    /* borderless를 쓰고 있으면 안전하게 정의(이미 있으면 중복 무시됨) */
+    .user-modify-page .borderless {
+        border: 0 !important;
+        background: transparent !important;
+    }
+
+    /* 라벨이 위로 뜨므로 overflow는 visible */
+    .user-modify-page .user-mobile-card,
+    .user-modify-page .user-mobile-card .card-body,
+    .user-modify-page .contract-week-row,
+    .user-modify-page .user-week-inline,
+    .user-modify-page .user-week-grid--compact,
+    .user-modify-page .user-week-grid--compact .week-item {
+        overflow: visible;
+    }
+
+    /* 좌(칩) + 우(모듈) 하단 정렬 */
+    .user-modify-page .contract-week-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    /* 7칸 모듈: 30px 고정 + 간격 최소(우측 배치) */
+    .user-modify-page .user-week-grid--compact {
+        display: grid;
+        grid-template-columns: repeat(7, 30px);
+        gap: 1px;
+        align-items: end;
+    }
+
+    .user-modify-page .user-week-grid--compact .week-item {
+        position: relative;
+        width: 30px;
+        height: 30px;
+    }
+
+    .user-modify-page .user-week-grid--compact .module_box {
+        margin: 0;
+    }
+
+    /* 요일 라벨을 “높이 증가 없이” 위에 겹쳐 올림 */
+    .user-modify-page .week-label-float {
+        position: absolute;
+        top: -11px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        line-height: 1;
+        font-weight: 700;
+        color: #6c757d;
+        z-index: 5;
+        pointer-events: none;
+        white-space: nowrap;
+        background: #fff;
+        padding: 0 2px;
+        border-radius: 6px;
+    }
+}
 
 /****************************************************************/
 /* 근로계약

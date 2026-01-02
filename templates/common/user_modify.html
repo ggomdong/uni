@@ -1,61 +1,91 @@
 {% extends 'base.html' %}
 {% load pybo_filter %}
-{% block content %}
-<div class="container my-3">
 
-    <div class="page-header">
-        <h4 class="page-title">직원정보 수정</h4>
+{% block content %}
+<div class="container my-3 page-narrow user-modify-page">
+
+    <div class="page-header mb-2">
+        <h4 class="page-title mb-0">직원정보 수정</h4>
     </div>
 
     <form method="post" action="" id="userModifyForm" class="small">
         {% csrf_token %}
         {% include 'form_errors.html' %}
-        <div class="mb-3 col-md-4">
-            <label class="form-label" for="username">ID(휴대폰 번호)</label>
-            <input type="text" class="form-control form-control-sm" name="username" id="username"
-                   value="{{ form.username.value|default_if_none:'' }}">
-        </div>
-        <div class="mb-3 col-md-4">
-            <label class="form-label" for="emp_name">직원명</label>
-            <input type="text" class="form-control form-control-sm" name="emp_name" id="emp_name"
-                   value="{{ form.emp_name.value|default_if_none:'' }}">
-        </div>
-        <div class="mb-3 col-md-4">
-            <label class="form-label" for="email">이메일</label>
-            <input type="text" class="form-control form-control-sm" name="email" id="email"
-                   value="{{ form.email.value|default_if_none:'' }}">
-        </div>
-        <div class="mb-3 col-md-4">
-            <label class="form-label" for="dept">부서명</label>
-            <select class="form-select form-select-sm" name="dept" id="dept">
-                {% for dept in dept_list %}
-                <option value="{{dept}}" {% if form.dept.value == dept %} selected {% endif %}>{{dept}}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="mb-3 col-md-4">
-            <label class="form-label" for="position">직위명</label>
-            <select class="form-select form-select-sm" name="position" id="position">
-                {% for position in position_list %}
-                <option value="{{position}}" {% if form.position.value == position %} selected {% endif %}>{{position}}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="mb-3 col-md-4">
-            <label class="form-label" for="join_date">입사일자</label>
-            <input type="date" class="form-control form-control-sm" name="join_date" id="join_date" max="9999-12-31"
-                   value="{{ form.join_date.value|date:'Y-m-d'|default_if_none:'' }}">
-        </div>
-        <div class="mb-3 col-md-4">
-            <label class="form-label" for="out_date">최종근로일자</label>
-            <button type="button" class="btn btn-danger" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;"
-                    onclick="javascript:document.getElementById('out_date').value='';">삭제</button>
-            <input type="date" class="form-control form-control-sm" name="out_date" id="out_date" max="9999-12-31"
-                   value="{{ form.out_date.value|date:'Y-m-d'|default_if_none:'' }}">
+
+        <div class="card user-info-card mb-3">
+            <div class="card-body">
+
+                <div class="user-form-stack">
+
+                    <div class="mb-3">
+                        <label class="form-label" for="username">ID(휴대폰 번호)</label>
+                        <input type="text" class="form-control form-control-sm" name="username" id="username"
+                               value="{{ form.username.value|default_if_none:'' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="emp_name">직원명</label>
+                        <input type="text" class="form-control form-control-sm" name="emp_name" id="emp_name"
+                               value="{{ form.emp_name.value|default_if_none:'' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="email">이메일</label>
+                        <input type="text" class="form-control form-control-sm" name="email" id="email"
+                               value="{{ form.email.value|default_if_none:'' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="dept">부서명</label>
+                        <select class="form-select form-select-sm" name="dept" id="dept">
+                            {% for dept in dept_list %}
+                                <option value="{{dept}}" {% if form.dept.value == dept %} selected {% endif %}>{{dept}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="position">직위명</label>
+                        <select class="form-select form-select-sm" name="position" id="position">
+                            {% for position in position_list %}
+                                <option value="{{position}}" {% if form.position.value == position %} selected {% endif %}>{{position}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="join_date">입사일자</label>
+                        <input type="date" class="form-control form-control-sm" name="join_date" id="join_date" max="9999-12-31"
+                               value="{{ form.join_date.value|date:'Y-m-d'|default_if_none:'' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="out_date">최종근로일자</label>
+                        <div class="input-group input-group-sm">
+                            <input type="date" class="form-control form-control-sm" name="out_date" id="out_date" max="9999-12-31"
+                                   value="{{ form.out_date.value|date:'Y-m-d'|default_if_none:'' }}">
+                            <button type="button" class="btn btn-outline-danger"
+                                    onclick="document.getElementById('out_date').value='';">
+                                삭제
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </form>
 
-    <div class="d-flex justify-content-start gap-2 mt-3">
+    {# 액션 버튼 영역 #}
+
+    <div class="user-action-bar mt-3">
+
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary"
+                onclick="goBackToList();">
+            이전
+        </button>
+
         <button type="submit" form="userModifyForm" class="btn btn-sm btn-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
               <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
@@ -65,145 +95,243 @@
         </button>
 
         <button type="button"
-            class="btn btn-sm btn-warning ms-2"
-            data-bs-toggle="modal"
-            data-bs-target="#passwordChangeModal">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4m0 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/>
-                </svg>
-              비밀번호 변경
+                class="btn btn-sm btn-warning"
+                data-bs-toggle="modal"
+                data-bs-target="#passwordChangeModal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4m0 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/>
+            </svg>
+            비밀번호 변경
         </button>
 
-        <!-- 기기 정보 초기화: 별도 POST 폼 (같은 줄에 배치) -->
+        {# 기기 정보 초기화: 별도 POST 폼 #}
         <form method="post"
-            action="{% url 'common:reset_device' user_id %}"
-            class="m-0">
-        {% csrf_token %}
+              action="{% url 'common:reset_device' user_id %}"
+              class="m-0">
+            {% csrf_token %}
             <button type="submit"
-            class="btn btn-sm btn-secondary"
-            onclick="return confirm('이 사용자의 기기 정보를 초기화하시겠습니까?');">
+                    class="btn btn-sm btn-secondary"
+                    onclick="return confirm('이 사용자의 기기 정보를 초기화하시겠습니까?');">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
-                <path fill-rule="evenodd"
-                d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966
-                c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                     fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd"
+                          d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966
+                             c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
                 </svg>
                 기기 정보 초기화
             </button>
         </form>
+
     </div>
 
-    <div class="mb-5"></div>
-    <table class="table">
-        <thead>
-        <tr class="text-center table-primary">
-            <th colspan="12">근로계약</th>
-        </tr>
-        <tr class="text-center table-primary">
-            <th>기준일</th>
-            <th>근로형태</th>
-            <th>근태확인</th>
-            {% for key, value in day_of_the_week.items %}
-            <th>{{ value }}</th>
-            {% endfor %}
-            <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        {% if contract_list %}
-        {% for contract in contract_list %}
-        <tr class="text-center">
-            <td>
-                <a href="{% url 'wtm:work_contract_modify' contract.id %}">
-                {{ contract.stand_date|date:'Y-m-d' }}
-                </a>
-            </td>
-            <td>{{ contract.type }}</td>
-            <td>{{ contract.check_yn }}</td>
-            {% for key, value in day_of_the_week.items %}
-            <td align="center">
-                <!-- contract.key로 사용할 수 없기 때문에, 속성 값을 가져오는 filter를 활용해서 key에 맞는 값을 세팅 -->
-                {% with contract|get_attr:key as day %}
-                <div class="module_box" style="background-color: {{ module_colors|get_index:day.color }};">
-                    {% if day.cat == 'OFF' %}
-                        -
-                    {% else %}
-                        {{ day.start_time }}
-                        {{ day.end_time }}
-                    {% endif %}
-                </div>
-                {% endwith %}
-            </td>
-            {% endfor %}
-            <td>
-                <a href="javascript:void(0)" class="delete btn btn-sm btn-danger"
-                   data-uri="{% url 'wtm:work_contract_delete' contract.id %}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
-                      <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
-                    </svg>
-                    삭제
-                </a>
-            </td>
-        </tr>
-        {% endfor %}
-        {% else %}
-        <tr class="text-center">
-            <td colspan="12">근로계약이 없습니다.</td>
-        </tr>
-        {% endif %}
-        </tbody>
-    </table>
-    <div class="col-6">
+    <div class="my-4"></div>
+
+    {# 근로계약 섹션 헤더(시인성 강화) #}
+    <div class="section-head">
+        <div class="d-flex align-items-center gap-2">
+            <span class="section-dot"></span>
+            <div class="section-title">근로계약</div>
+        </div>
+
         <a href="{% url 'wtm:work_contract_reg' user_id %}" class="btn btn-sm btn-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+                <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
             </svg>
-            근로계약 등록
+            등록
         </a>
     </div>
 
+    {# 근로계약: 모바일 카드형 #}
+    <div class="d-block d-md-none">
+        {% if contract_list %}
+            {% for contract in contract_list %}
+                <div class="card user-mobile-card mb-2">
+                    <div class="card-body py-2">
+
+                        {# 상단: 날짜 + 삭제(겹침 방지: 날짜 옆으로 이동) #}
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="pe-2">
+                                <div class="user-title-row d-flex align-items-center gap-2">
+                                    <a class="user-name"
+                                       href="{% url 'wtm:work_contract_modify' contract.id %}">
+                                        {{ contract.stand_date|date:'Y-m-d' }}
+                                    </a>
+
+                                    <a href="javascript:void(0)"
+                                       class="delete badge rounded-pill borderless text-danger text-decoration-none contract-delete-pill"
+                                       data-uri="{% url 'wtm:work_contract_delete' contract.id %}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                                          <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# 하단: (좌) 칩  (우) 주간 모듈 #}
+                        <div class="mt-2 contract-week-row">
+                            <div class="d-flex flex-wrap justify-content-start gap-1">
+                                {% if contract.type %}
+                                    <span class="badge rounded-pill
+                                        {% if contract.type == '고정' %}border border-danger text-danger
+                                        {% else %}border border-info text-info{% endif %}">
+                                        {{ contract.type }}
+                                    </span>
+                                {% endif %}
+
+                                {% if contract.check_yn %}
+                                    <span class="badge rounded-pill
+                                        {% if contract.check_yn == 'Y' %}border border-info text-info
+                                        {% elif contract.check_yn == 'N' %}border border-danger text-danger
+                                        {% else %}border border-secondary text-secondary{% endif %}">
+                                        {% if contract.check_yn == 'Y' %}근태Y{% elif contract.check_yn == 'N' %}근태N{% else %}{{ contract.check_yn }}{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="user-week-inline">
+                                <div class="user-week-grid user-week-grid--compact">
+                                    {% for key, label in day_of_the_week.items %}
+                                        <div class="week-item" title="{{ label }}">
+                                            <span class="week-label-float">{{ label }}</span>
+
+                                            {% with contract|get_attr:key as day %}
+                                                <div class="module_box"
+                                                     style="background-color: {{ module_colors|get_index:day.color }};">
+                                                    {% if day.cat == 'OFF' %}
+                                                        -
+                                                    {% else %}
+                                                        {{ day.start_time }}<br>{{ day.end_time }}
+                                                    {% endif %}
+                                                </div>
+                                            {% endwith %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-muted text-center py-4">근로계약이 없습니다.</div>
+        {% endif %}
+    </div>
+
+    {# 근로계약: 웹 테이블(헤더 색상 중립 톤으로 변경) #}
+    <div class="d-none d-md-block">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <table class="table table-hover text-center mb-0 align-middle contract-table">
+                    <colgroup>
+                        <col style="width:10%">  {# 기준일 #}
+                        <col style="width:8%">   {# 근로형태 #}
+                        <col style="width:7%">   {# 근태확인 #}
+                        <col span="7" style="width:2%">  {# 월~일 #}
+                        <col style="width:6%">   {# 삭제 #}
+                    </colgroup>
+                    <thead class="table-light">
+                        <tr>
+                            <th>기준일</th>
+                            <th>근로형태</th>
+                            <th>근태확인</th>
+                            {% for key, value in day_of_the_week.items %}
+                            <th>{{ value }}</th>
+                            {% endfor %}
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if contract_list %}
+                            {% for contract in contract_list %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'wtm:work_contract_modify' contract.id %}">
+                                        {{ contract.stand_date|date:'Y-m-d' }}
+                                    </a>
+                                </td>
+                                <td>{{ contract.type }}</td>
+                                <td>{{ contract.check_yn }}</td>
+                                {% for key, value in day_of_the_week.items %}
+                                <td>
+                                    {% with contract|get_attr:key as day %}
+                                    <div class="module_box mx-auto" style="background-color: {{ module_colors|get_index:day.color }};">
+                                        {% if day.cat == 'OFF' %}
+                                            -
+                                        {% else %}
+                                            {{ day.start_time }}<br>
+                                            {{ day.end_time }}
+                                        {% endif %}
+                                    </div>
+                                    {% endwith %}
+                                </td>
+                                {% endfor %}
+                                <td>
+                                    <a href="javascript:void(0)"
+                                       class="delete btn btn-sm btn-outline-danger"
+                                       data-uri="{% url 'wtm:work_contract_delete' contract.id %}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                                          <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
+                                        </svg>
+                                        삭제
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="12" class="text-muted py-4">근로계약이 없습니다.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# 비밀번호 변경 모달 #}
     <div class="modal fade" id="passwordChangeModal" tabindex="-1" aria-labelledby="passwordChangeModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-            <!-- 이 폼은 password_change 뷰로 POST 보냄 -->
                 <form id="passwordChangeForm" method="post" action="{% url 'common:password_change' user_id %}">
-                {% csrf_token %}
+                    {% csrf_token %}
 
-                <div class="modal-header">
-                    <h5 class="modal-title" id="passwordChangeModalLabel">비밀번호 변경</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <div class="modal-body">
-                    <div id="passwordModalError"
-                       class="alert alert-danger py-2 px-3 mb-3 d-none"
-                       style="font-size:0.875rem;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="passwordChangeModalLabel">비밀번호 변경</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" for="modal_new_password">새 비밀번호</label>
-                        <input type="password"
-                            class="form-control"
-                            name="new_password"
-                            id="modal_new_password"
-                            autocomplete="new-password">
+                    <div class="modal-body">
+                        <div id="passwordModalError"
+                             class="alert alert-danger py-2 px-3 mb-3 d-none"
+                             style="font-size:0.875rem;">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="modal_new_password">새 비밀번호</label>
+                            <input type="password"
+                                   class="form-control"
+                                   name="new_password"
+                                   id="modal_new_password"
+                                   autocomplete="new-password">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="modal_confirm_password">비밀번호 확인</label>
+                            <input type="password"
+                                   class="form-control"
+                                   name="confirm_password"
+                                   id="modal_confirm_password"
+                                   autocomplete="new-password">
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" for="modal_confirm_password">비밀번호 확인</label>
-                        <input type="password"
-                            class="form-control"
-                            name="confirm_password"
-                            id="modal_confirm_password"
-                            autocomplete="new-password">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-success">변경하기</button>
                     </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="submit" class="btn btn-success">변경하기</button>
-                </div>
                 </form>
             </div>
         </div>
@@ -211,9 +339,9 @@
 
 </div>
 {% endblock %}
+
 {% block script %}
 <script type="text/javascript">
-
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('passwordChangeForm');
     if (!form) return;
@@ -223,15 +351,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const errorBox = document.getElementById('passwordModalError');
 
     function showError(msg) {
-      if (!errorBox) return;
-      errorBox.textContent = msg;
-      errorBox.classList.remove('d-none');
+        if (!errorBox) return;
+        errorBox.textContent = msg;
+        errorBox.classList.remove('d-none');
     }
 
     function clearError() {
-      if (!errorBox) return;
-      errorBox.textContent = '';
-      errorBox.classList.add('d-none');
+        if (!errorBox) return;
+        errorBox.textContent = '';
+        errorBox.classList.add('d-none');
     }
 
     form.addEventListener('submit', function (e) {
@@ -262,14 +390,14 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
     });
-});
 
-const delete_elements = document.getElementsByClassName("delete");
-Array.from(delete_elements).forEach(function(element) {
-    element.addEventListener('click', function() {
-        if(confirm("정말 삭제하시겠습니까?")) {
-            location.href = this.dataset.uri;
-        };
+    const deleteElements = document.getElementsByClassName('delete');
+    Array.from(deleteElements).forEach(function (element) {
+        element.addEventListener('click', function () {
+            if (confirm('정말 삭제하시겠습니까?')) {
+                location.href = this.dataset.uri;
+            }
+        });
     });
 });
 </script>
