@@ -1,4 +1,5 @@
 import re
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
@@ -47,40 +48,29 @@ class WebLoginView(LoginView):
 
 @login_required(login_url='common:login')
 def signup(request):
-    def build_initial_password(username: str) -> str | None:
-        """
-        username(휴대폰번호)에서 숫자만 추출 후 뒤 4자리로 초기 비밀번호 생성
-        예) 010-1234-5678 -> uni#5678
-        """
-        digits = re.sub(r"\D", "", (username or "").strip())
-        if len(digits) < 4:
-            return None
-        return f"uni#{digits[-4:]}"
-
     if request.method == 'POST':
         post = request.POST.copy()
 
-        init_pw = build_initial_password(post.get('username'))
-
-        if not init_pw:
+        # username(휴대폰 번호)에서 숫자만 남기고 뒤4자리 추출
+        digits = re.sub(r"\D", "", (post.get("username") or "").strip())
+        if len(digits) < 4:
             form = UserForm(post)
-            form.add_error(
-                'username',
-                "휴대폰 번호(ID)에서 뒤 4자리를 추출할 수 없습니다. 예: 01012345678 또는 010-1234-5678"
-            )
+            form.add_error("username", "휴대폰 번호(ID)에서 뒤 4자리를 추출할 수 없습니다.")
         else:
-            # 화면에서 비밀번호 입력을 제거해도, 폼이 요구하는 password1/2는 여기서 강제 주입
-            post['password1'] = init_pw
-            post['password2'] = init_pw
+            suffix = getattr(settings, "INITIAL_PASSWORD_SUFFIX", None)
+            if not suffix:
+                # 운영에서 환경변수 누락 시 즉시 알리기
+                raise RuntimeError("INITIAL_PASSWORD_SUFFIX가 설정되어 있지 않습니다. (.env 또는 환경변수 확인)")
+
+            init_pw = f"{digits[-4:]}{suffix}"   # 예: 5678@uni
+
+            post["password1"] = init_pw
+            post["password2"] = init_pw
 
             form = UserForm(post)
             if form.is_valid():
-                user = form.save()  # User.objects.last() 대신, 방금 저장한 user를 사용
-
-                messages.success(
-                    request,
-                    "직원 정보를 등록했습니다. 근로계약을 입력해 주세요."
-                )
+                user = form.save()
+                messages.success(request, "직원 정보를 등록했습니다. 근로계약을 입력해 주세요.")
                 return redirect('wtm:work_contract_reg', user_id=user.id)
     else:
         form = UserForm()

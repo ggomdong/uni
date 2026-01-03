@@ -25,13 +25,6 @@
                                value="{{ form.username.value|default_if_none:'' }}">
                     </div>
 
-                    {# 비밀번호 입력은 화면에서 제거: view에서 자동 세팅 #}
-                    <div class="mb-3">
-                        <div class="form-text text-muted">
-                            초기 비밀번호는 <span class="fw-semibold text-danger">uni#휴대폰뒤4자리</span>로 자동 설정됩니다.
-                        </div>
-                    </div>
-
                     <div class="mb-3">
                         <label class="form-label" for="emp_name">직원명</label>
                         <input type="text"
