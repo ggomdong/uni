@@ -25,7 +25,6 @@ import os, json
 from django.core.exceptions import ImproperlyConfigured
 
 secret_file = os.path.join(BASE_DIR, 'secrets.json')
-INITIAL_PASSWORD_SUFFIX = os.environ.get("INITIAL_PASSWORD_SUFFIX")
 
 with open(secret_file) as f:
     secrets = json.loads(f.read())
