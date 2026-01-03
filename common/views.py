@@ -58,9 +58,6 @@ def signup(request):
             form.add_error("username", "휴대폰 번호(ID)에서 뒤 4자리를 추출할 수 없습니다.")
         else:
             suffix = getattr(settings, "INITIAL_PASSWORD_SUFFIX", None)
-            if not suffix:
-                # 운영에서 환경변수 누락 시 즉시 알리기
-                raise RuntimeError("INITIAL_PASSWORD_SUFFIX가 설정되어 있지 않습니다. (.env 또는 환경변수 확인)")
 
             init_pw = f"{digits[-4:]}{suffix}"   # 예: 5678@uni
 

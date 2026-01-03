@@ -9,6 +9,10 @@ DEBUG = False
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / '.env')
 
+INITIAL_PASSWORD_SUFFIX = env('INITIAL_PASSWORD_SUFFIX', default=None)
+if not INITIAL_PASSWORD_SUFFIX:
+    raise ImproperlyConfigured("INITIAL_PASSWORD_SUFFIX is not set in .env")
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
