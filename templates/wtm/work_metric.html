@@ -114,7 +114,7 @@
                     {% with dd=key|add:""|stringformat:"s" %}
                     <th>
                         <div
-                        {% if dow == '일' or key|to_int in holiday_list %}style="color:red"{% endif %}
+                        {% if key|to_int in holiday_list %}style="color:red"{% endif %}
                         {% if stand_ym == nowym and dd == nowd %}class="roundtext"{% endif %}
                         >{{ key }}</div>
                     </th>
@@ -126,7 +126,7 @@
                     {% with dd=key|add:""|stringformat:"s" %}
                     <th>
                         <div
-                        {% if dow == '일' or key|to_int in holiday_list %}style="color:red"{% endif %}
+                        {% if key|to_int in holiday_list %}style="color:red"{% endif %}
                         {% if stand_ym == nowym and dd == nowd %}class="roundtext"{% endif %}
                         >{{ dow }}</div>
                     </th>

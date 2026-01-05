@@ -103,15 +103,15 @@
             <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
             {% for key, value in day_list.items %}
             <th>
-                <!-- key가 공휴일이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
-                <div {% if value == '일' or key|to_int in holiday_list %}style="color: red"{% endif %}
+                <!-- key가 휴무일(미영업일+공휴일)이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
+                <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                      {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>{{ key }}</div>
             </th>
             {% endfor %}
             {% for key, value in next_day_list.items %}
             <th>
-                <!-- 일요일이나 공휴일 폰트는 빨간색 -->
-                <div class="next" {% if value == '일' or key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ key }}</div>
+                <!-- 휴무일(미영업일+공휴일) 폰트는 빨간색 -->
+                <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ key }}</div>
             </th>
             {% endfor %}
         </tr>
@@ -120,15 +120,15 @@
             <th></th>
             {% for key, value in day_list.items %}
             <th>
-                <!-- key가 공휴일이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
-                <div {% if value == '일' or key|to_int in holiday_list %}style="color: red"{% endif %}
+                <!-- key가 휴무일(미영업일+공휴일)이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
+                <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                      {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>{{ value }}</div>
             </th>
             {% endfor %}
             {% for key, value in next_day_list.items %}
             <th>
-                <!-- 일요일이나 공휴일 폰트는 빨간색 -->
-                <div class="next" {% if value == '일' or key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ value }}</div>
+                <!-- 휴무일(미영업일+공휴일) 폰트는 빨간색 -->
+                <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ value }}</div>
             </th>
             {% endfor %}
         </tr>

@@ -1,15 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from django.db.models.functions import ExtractDay
 from django.db import connection, transaction
 from django.utils import timezone
 from datetime import datetime
 
-from common.models import User, Holiday
+from common.models import User
 from common import context_processors
 from ..models import Module, Schedule
-from .helpers import build_contracts_by_user, get_contract_module_id
+from .helpers import build_contracts_by_user, get_contract_module_id, get_non_business_days
 
 
 def work_schedule(request, stand_ym=None):
@@ -23,12 +22,8 @@ def work_schedule(request, stand_ym=None):
 
     day_list = context_processors.get_day_list(stand_ym)  # ex) {'1':'목', '2':'금', ..., '31':'토'}
 
-    # 공휴일 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
-    holiday_list = list(
-        Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6])
-        .annotate(day=ExtractDay('holiday'))
-        .values_list('day', flat=True)
-    )
+    # 휴무일(미영업일+공휴일) 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
+    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6])))
 
     # 기준이 되는 최종 일요일(이번달 말일이 일요일인 경우 or 다음달 첫 일요일) 날짜를 지정 -> 해당 날짜 기준으로 대상 직원 추출
     schedule_date = stand_ym + list(day_list)[-1]
@@ -45,11 +40,7 @@ def work_schedule(request, stand_ym=None):
         # 다음달 년월을 산출하고, 첫째 일요일인 날짜(6-last_day_weekday)를 붙여서 schedule_date를 재정의
         next_ym = context_processors.get_month(stand_ym, 1)[0:6]
         next_day_list = context_processors.get_day_list(next_ym, 6 - last_day_weekday)
-        next_holiday_list = list(
-            Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6])
-            .annotate(day=ExtractDay('holiday'))
-            .values_list('day', flat=True)
-        )
+        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6])))
         schedule_date = next_ym + str(6 - last_day_weekday).zfill(2)
 
     # 대상 직원을 추출하여 schedule_list에 저장
@@ -425,11 +416,10 @@ def work_schedule_reg(request, stand_ym):
     # 직원별 계약 정보를 한 번에 불러와서 메모리에 적재
     contracts_by_user = build_contracts_by_user(user_list, schedule_date)
 
-    # 공휴일 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
-    holiday_list = list(Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6]).annotate(
-        day=ExtractDay('holiday')).values_list('day', flat=True))
+    # 휴무일(미영업일+공휴일) 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
+    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6])))
 
-    # 공휴일은 OFF 모듈로 지정하기 위해 OFF 모듈의 ID 추출
+    # 휴무일(미영업일+공휴일)은 OFF 모듈로 지정하기 위해 OFF 모듈의 ID 추출
     off_module_list = list(Module.objects.filter(cat='OFF').values_list('id', flat=True))
     off_module_id = (off_module_list[0] if off_module_list else None)
 
@@ -443,7 +433,7 @@ def work_schedule_reg(request, stand_ym):
             if stand_ym + key.zfill(2) < user['join_date'] or (
                     user['out_date'] is not None and stand_ym + key.zfill(2) > user['out_date']):
                 user[key] = None
-            # 공휴일이면 OFF 모듈로 세팅
+            # 휴무일(미영업일+공휴일)이면 OFF 모듈로 세팅
             elif int(key) in holiday_list:
                 user[key] = off_module_id
             else:
@@ -461,16 +451,14 @@ def work_schedule_reg(request, stand_ym):
 
     # 다음달 일요일까지 날짜를 추가하기 위한 로직
     # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.해당 날짜들로 구성된 day_list 작성
-    # 3.next_ym 기준 공휴일 list 생성 4.user_list에 next_ym 기준 근무표 추가
+    # 3.next_ym 기준 휴무일(미영업일+공휴일) list 생성 4.user_list에 next_ym 기준 근무표 추가
     # last_day_weekday가 6(일요일)이면 패스
     if last_day_weekday != 6:
         next_day_list = context_processors.get_day_list(next_ym, 6-last_day_weekday)
         next_day_list_eng = {}
         for key, value in next_day_list.items():
             next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
-        next_holiday_list = list(
-            Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6]).annotate(
-                day=ExtractDay('holiday')).values_list('day', flat=True))
+        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6])))
 
         # 기존 근무표가 입력되어 있는 user_id를 가져옴
         next_schedule_user_list = list(
@@ -485,14 +473,14 @@ def work_schedule_reg(request, stand_ym):
             if user['id'] in next_schedule_user_list:
                 for key, value in next_day_list.items():
                     user["n"+key] = list(next_schedule_origin.filter(user_id=user['id']).values_list('d' + key + '_id', flat=True))[0]
-            # 기존 근무표가 없는 경우 공휴일 세팅 및 contract에서 가져옴
+            # 기존 근무표가 없는 경우 휴무일(미영업일+공휴일) 세팅 및 contract에서 가져옴
             else:
                 for key, value in next_day_list_eng.items():
                     # 입사 전이나, 최종근로일 후라면 None으로 세팅
                     if next_ym + key.zfill(2) < user['join_date'] or (
                             user['out_date'] is not None and next_ym + key.zfill(2) > user['out_date']):
                         user["n"+key] = None
-                    # 공휴일이면 OFF 모듈로 세팅
+                    # 휴무일(미영업일+공휴일)이면 OFF 모듈로 세팅
                     elif int(key) in next_holiday_list:
                         user["n"+key] = off_module_id
                     else:
@@ -702,7 +690,7 @@ def work_schedule_modify(request, stand_ym):
     ############ GET방식일때 아래로 진행 ############
     # 근무표 수정 기능 설명
     # 1. 해당 stand_ym의 대상 직원 추출
-    # 2. 공휴일, 영업일 세팅
+    # 2. 휴무일(미영업일+공휴일) 세팅
     # 3. 기존 근무표 있으면 근무표를 가져오고, 없으면 근로계약에서 가져옴
     ##############################################
 
@@ -758,11 +746,10 @@ def work_schedule_modify(request, stand_ym):
             user_list.append(d)
 
     # 2) 공휴일, OFF 모듈
-    # 공휴일 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
-    holiday_list = list(Holiday.objects.filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6]).annotate(
-        day=ExtractDay('holiday')).values_list('day', flat=True))
+    # 휴무일(미영업일+공휴일) 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
+    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6])))
 
-    # 공휴일은 OFF 모듈로 지정하기 위해 OFF 모듈의 ID 추출
+    # 휴무일(미영업일+공휴일)은 OFF 모듈로 지정하기 위해 OFF 모듈의 ID 추출
     off_module_list = list(Module.objects.filter(cat='OFF').values_list('id', flat=True))
     off_module_id = (off_module_list[0] if off_module_list else None)
 
@@ -771,7 +758,7 @@ def work_schedule_modify(request, stand_ym):
     schedule_user_list = list(schedule_origin.values_list('user_id', flat=True))
     schedule_map = {s.user_id: s for s in schedule_origin}
 
-    # 4) 다음달(필요시) 근무표 전체, dict로 매핑 + 공휴일
+    # 4) 다음달(필요시) 근무표 전체, dict로 매핑 + 휴무일(미영업일+공휴일)
     next_schedule_map = {}
     next_schedule_user_list = []
     if last_day_weekday != 6:
@@ -780,12 +767,7 @@ def work_schedule_modify(request, stand_ym):
         for key, value in next_day_list.items():
             next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
 
-        next_holiday_list = list(
-            Holiday.objects
-            .filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6])
-            .annotate(day=ExtractDay('holiday'))
-            .values_list('day', flat=True)
-        )
+        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6])))
 
         next_schedule_origin = Schedule.objects.filter(
             year=next_ym[0:4], month=next_ym[4:6]
@@ -829,7 +811,7 @@ def work_schedule_modify(request, stand_ym):
 
                         user[key] = (None if r == None else r[0])
 
-        # 기존 근무표가 없는 경우 공휴일 세팅 및 contract에서 가져옴달
+        # 기존 근무표가 없는 경우 휴무일(미영업일+공휴일) 세팅 및 contract에서 가져옴달
         else:
             user['is_new'] = True
             for key, value in day_list_eng.items():
@@ -837,7 +819,7 @@ def work_schedule_modify(request, stand_ym):
                 if stand_ym + key.zfill(2) < user['join_date'] or (
                         user['out_date'] is not None and stand_ym + key.zfill(2) > user['out_date']):
                     user[key] = None
-                # 공휴일이면 OFF 모듈로 세팅
+                # 휴무일(미영업일+공휴일)이면 OFF 모듈로 세팅
                 elif int(key) in holiday_list:
                     user[key] = off_module_id
                 else:
@@ -864,16 +846,14 @@ def work_schedule_modify(request, stand_ym):
 
     # 다음달 일요일까지 날짜를 추가하기 위한 로직
     # 1.마지막날의 요일값을 확인(6-요일값 만큼의 일자가 있음) 2.해당 날짜들로 구성된 day_list 작성
-    # 3.next_ym 기준 공휴일 list 생성 4.user_list에 next_ym 기준 근무표 추가
+    # 3.next_ym 기준 휴무일(미영업일+공휴일) list 생성 4.user_list에 next_ym 기준 근무표 추가
     # last_day_weekday가 6(일요일)이면 패스
     if last_day_weekday != 6:
         next_day_list = context_processors.get_day_list(next_ym, 6 - last_day_weekday)
         next_day_list_eng = {}
         for key, value in next_day_list.items():
             next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
-        next_holiday_list = list(
-            Holiday.objects.filter(holiday__year=next_ym[0:4], holiday__month=next_ym[4:6]).annotate(
-                day=ExtractDay('holiday')).values_list('day', flat=True))
+        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6])))
 
         # 기존 근무표가 입력되어 있는 user_id를 가져옴
         next_schedule_user_list = list(
@@ -889,14 +869,14 @@ def work_schedule_modify(request, stand_ym):
                 for key, value in next_day_list.items():
                     user["n" + key] = \
                     list(next_schedule_origin.filter(user_id=user['id']).values_list('d' + key + '_id', flat=True))[0]
-            # 기존 근무표가 없는 경우 공휴일 세팅 및 contract에서 가져옴
+            # 기존 근무표가 없는 경우 휴무일(미영업일+공휴일) 세팅 및 contract에서 가져옴
             else:
                 for key, value in next_day_list_eng.items():
                     # 입사 전이나, 최종근로일 후라면 None으로 세팅
                     if next_ym + key.zfill(2) < user['join_date'] or (
                             user['out_date'] is not None and next_ym + key.zfill(2) > user['out_date']):
                         user["n" + key] = None
-                    # 공휴일이면 OFF 모듈로 세팅
+                    # 휴무일(미영업일+공휴일)이면 OFF 모듈로 세팅
                     elif int(key) in next_holiday_list:
                         user["n" + key] = off_module_id
                     else:

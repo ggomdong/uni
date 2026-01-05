@@ -1,5 +1,5 @@
 import openpyxl
-from openpyxl.styles import Alignment, PatternFill, Font, Border, Side
+from openpyxl.styles import Alignment,  Font
 from urllib.parse import quote
 
 from datetime import date
@@ -7,15 +7,13 @@ from calendar import monthrange
 
 from django.contrib.auth.decorators import login_required
 
-from django.db.models.functions import ExtractDay
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from common.models import Holiday
 from common import context_processors
 from wtm.services.attendance import build_monthly_attendance_summary_for_users, build_monthly_metric_details_for_users
-from .helpers import sec_to_hhmmss, fetch_base_users_for_month
+from .helpers import sec_to_hhmmss, fetch_base_users_for_month, get_non_business_days
 from .helpers_excel import header_fill, header_font, header_align, set_table_border, metric_excel_data, write_metric_sheet, schedule_excel_data, write_schedule_sheet
 
 
@@ -268,12 +266,7 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
 
     # 2) 일자 리스트 (헤더용)
     day_list = context_processors.get_day_list(stand_ym)
-    holiday_list = list(
-        Holiday.objects
-        .filter(holiday__year=stand_ym[0:4], holiday__month=stand_ym[4:6])
-        .annotate(day=ExtractDay('holiday'))
-        .values_list('day', flat=True)
-    )
+    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6])))
 
     # 3) 메트릭 디테일 계산
     uid_list = [u["user_id"] for u in base_users]
