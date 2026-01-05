@@ -66,9 +66,22 @@ def signup(request):
 
             form = UserForm(post)
             if form.is_valid():
-                user = form.save()
-                messages.success(request, "직원 정보를 등록했습니다. 근로계약을 입력해 주세요.")
-                return redirect('wtm:work_contract_reg', user_id=user.id)
+                # 1) 등록자(관리자)의 지점 확보
+                creator_branch = request.user.branch
+
+                if creator_branch is None:
+                    form.add_error(
+                        None,
+                        "등록자(관리자)의 지점 정보가 없어 신규 직원의 지점을 자동 지정할 수 없습니다. "
+                        "관리자 계정의 지점 정보를 먼저 설정해 주세요.",
+                    )
+                else:
+                    user = form.save(commit=False)
+                    user.branch = creator_branch
+                    user.save()
+
+                    messages.success(request, "직원 정보를 등록했습니다. 근로계약을 입력해 주세요.")
+                    return redirect('wtm:work_contract_reg', user_id=user.id)
     else:
         form = UserForm()
 

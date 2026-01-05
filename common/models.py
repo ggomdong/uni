@@ -33,8 +33,8 @@ class User(AbstractUser):
         "common.Branch",  # 문자열로 참조해서 선언 순서 문제 피하기
         verbose_name="지점",
         on_delete=models.PROTECT,
-        null=True,  # 기존 사용자들 때문에 처음엔 널 허용
-        blank=True,
+        null=False,
+        blank=False,
         related_name="users",  # branch.users 로 역참조
     )
 
