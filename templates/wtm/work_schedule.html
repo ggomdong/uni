@@ -7,65 +7,92 @@
         <h4 class="page-title">근무표</h4>
     </div>
 
+    {# ------------------------------------------------------------------ #}
+    {# 상단 컨트롤 바: 날짜 네비 + 버튼                             #}
+    {# ------------------------------------------------------------------ #}
+    <div class="schedule-toolbar sticky-top bg-white border-bottom py-2 mb-3">
+        {# 왼쪽: 날짜 네비 #}
+        <div class="d-flex align-items-center gap-2 flex-nowrap overflow-auto">
+            <div class="d-flex align-items-center gap-2 flex-nowrap fs-4">
+                <a href="{% url 'wtm:work_schedule' stand_ym|get_month:-1 %}">
+                    <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-left text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                        </svg>
+                    </button>
+                </a>
+                <a href="{% url 'wtm:work_schedule' stand_ym|get_month:1 %}">
+                    <button type="button" class="btn-hover">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-right text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                        </svg>
+                    </button>
+                </a>
+
+                <span class="nativeDatePicker">
+                    <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
+                    value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
+                </span>
+            </div>
+
+            <!-- 오른쪽: 버튼 -->
+            <div class="ms-auto d-flex align-items-center gap-2 flex-nowrap flex-shrink-0 text-nowrap">
+                {% if user.is_authenticated %}
+                    {% if schedule_list %}
+                        <a href="javascript:void(0)" class="delete btn btn-sm btn-outline-danger"
+                           data-uri="{% url 'wtm:work_schedule_delete' stand_ym %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                              <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
+                            </svg>
+                            삭제
+                        </a>
+                        <a href="{% url 'wtm:work_schedule_modify' stand_ym %}" class="btn btn-sm btn-outline-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                 fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4Z"/>
+                            </svg>
+                            수정
+                        </a>
+                    {% else %}
+                        <a href="{% url 'wtm:work_schedule_reg' stand_ym %}" class="btn btn-sm btn-outline-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                 fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                      d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+                            </svg>
+                            신규
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
     <div>
     <table class="table table-hover text-center table-borderless table-sm schedule-table sticky-top sticky-left2">
+        <colgroup>
+            <col class="col-dept">
+            <col class="col-name">
+            {% for key, value in day_list.items %}
+                <col class="col-day">
+            {% endfor %}
+            {% for key, value in next_day_list.items %}
+                <col class="col-day">
+            {% endfor %}
+        </colgroup>
         <thead>
-        <tr>
-            <th colspan="100%">
-            <div class="row my-3 text-start">
-                <div class="col-10 fs-4">
-                    <a href="{% url 'wtm:work_schedule' stand_ym|get_month:-1 %}">
-                        <button type="button" class="btn-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-left text-dark" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
-                        </svg>
-                        </button></a>
-                    <a href="{% url 'wtm:work_schedule' stand_ym|get_month:1 %}">
-                        <button type="button" class="btn-hover">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-right text-dark" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
-                        </svg>
-                        </button></a>
-                    <span class="nativeDatePicker">
-                        <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
-                               value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
-                    </span>
-                </div>
-                <div class="col-2 text-end">
-                    {% if user.is_authenticated %}
-                    {% if schedule_list %}
-                    <a href="javascript:void(0)" class="delete btn btn-sm btn-danger"
-                           data-uri="{% url 'wtm:work_schedule_delete' stand_ym %}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
-                          <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
-                        </svg>
-                        삭제
-                    </a>
-                    <a href="{% url 'wtm:work_schedule_modify' stand_ym %}" class="btn btn-sm btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
-                          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-                        </svg>
-                        수정
-                    </a>
-                    {% else %}
-                    <a href="{% url 'wtm:work_schedule_reg' stand_ym %}" class="btn btn-sm btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
-                        </svg>
-                        신규
-                    </a>
-                    {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-            </th>
-        </tr>
         {% if schedule_list %}
         {% now "Ym" as yearmonth %}
         {% now "j" as today %}
         <tr>
-            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
-            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+            <th colspan="2">{{stand_ym|slice:'0:4'}}년 {{stand_ym|slice:'4:6'}}월</th>
             {% for key, value in day_list.items %}
             <th>
                 <!-- key가 휴무일(미영업일+공휴일)이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
@@ -81,8 +108,8 @@
             {% endfor %}
         </tr>
         <tr>
-            <th></th>
-            <th></th>
+            <th>부서</th>
+            <th>성명</th>
             {% for key, value in day_list.items %}
             <th>
                 <!-- key가 휴무일(미영업일+공휴일)이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
@@ -127,7 +154,7 @@
 <!--                     onclick="module_modify({{ schedule.id }}, {{ stand_ym|concat_date:key }}, {{ module.0 }});">-->
                     {% if module.1 == '휴일근로' %}
                         <font color="blue">
-                        {{ module.3 }}
+                        {{ module.3 }}<br>
                         {{ module.4 }}
                         </font>
                     {% elif module.1 == '유급휴무' %}
@@ -141,7 +168,7 @@
                     {% elif module.1 == 'OFF' %}
                         -
                     {% else %}
-                        {{ module.3 }}
+                        {{ module.3 }}<br>
                         {{ module.4 }}
                     {% endif %}
                 </div>
@@ -165,7 +192,7 @@
 <!--                     onclick="module_modify({{ schedule.id }}, {{ next_ym|concat_date:key }}, {{ module.0 }});">-->
                     {% if module.1 == '휴일근로' %}
                         <font color="blue">
-                        {{ module.3 }}
+                        {{ module.3 }}<br>
                         {{ module.4 }}
                         </font>
                     {% elif module.1 == '유급휴무' %}
@@ -179,7 +206,7 @@
                     {% elif module.1 == 'OFF' %}
                         -
                     {% else %}
-                        {{ module.3 }}
+                        {{ module.3 }}<br>
                         {{ module.4 }}
                     {% endif %}
                 </div>

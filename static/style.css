@@ -464,27 +464,81 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   opacity: 0.3;
 }
 
-/* 근무표 전용: 헤더 sticky */
-.schedule-table.sticky-top thead {
-  position: sticky;
-  top: 0;
-  z-index: 3;
+/* 공통 폰트 */
+.schedule-table {
+  font-size: 0.86rem;
+  table-layout: fixed;     /* 월별 좌우 간격 흔들림 방지 핵심 */
+  width: max-content;      /* 날짜칸이 고정폭이면 가로 스크롤로 자연스럽게 */
 }
 
-/* 근무표 전용: 첫 번째 열(부서) 고정 */
-.schedule-table.sticky-left td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background-color: white;
+/* colgroup 기반 폭 강제 (권장) */
+.schedule-table col.col-dept { width: 84px; }
+.schedule-table col.col-name { width: 92px; }
+.schedule-table col.col-day  { width: 34px; }   /* 30px 박스 + 여유 */
+
+/* 셀 간격: 좌측(부서/성명)과 날짜영역을 분리해서 제어 */
+.schedule-table tbody tr > :is(th, td):nth-child(-n+2),
+.schedule-table thead tr > th:nth-child(-n+2) {
+  padding: 0.25rem 0.35rem !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 
-/* 근무표 전용: 두 번째 열(이름) 고정 */
-.schedule-table.sticky-left2 td:nth-child(2) {
+/* 날짜영역(3번째~): 상하는 조금, 좌우는 일정하고 타이트하게 */
+.schedule-table thead th:nth-child(n+3),
+.schedule-table tbody td:nth-child(n+3) {
+  padding: 2px 1px !important;
+  vertical-align: middle;
+}
+
+/* ---------- 좌측 2열 sticky (등록/수정은 th, 조회는 td라서 둘 다) ---------- */
+.schedule-table.sticky-left2 tbody th:nth-child(1),
+.schedule-table.sticky-left2 tbody td:nth-child(1),
+.schedule-table.sticky-left2 thead th:nth-child(1) {
   position: sticky;
   left: 0;
-  z-index: 1;
-  background-color: white;
+  z-index: 20;
+  background: #fff;
+}
+
+.schedule-table.sticky-left2 tbody th:nth-child(2),
+.schedule-table.sticky-left2 tbody td:nth-child(2),
+.schedule-table.sticky-left2 thead th:nth-child(2) {
+  position: sticky;
+  left: 84px;              /* col-dept 폭과 반드시 동일 */
+  z-index: 20;
+  background: #fff;
+}
+
+/* 헤더+좌측 교차 영역은 더 위로 */
+.schedule-table.sticky-left2 thead th:nth-child(1),
+.schedule-table.sticky-left2 thead th:nth-child(2) {
+  z-index: 40;
+}
+
+/* 헤더 배경 보장 */
+.schedule-table thead th { background: #fff; }
+
+/* ---------- 헤더 sticky ---------- */
+/* 모바일/상단네비(65px) 구간에서는 65px 아래로 고정 */
+@media (max-width: 1919.98px) {
+  .schedule-table.sticky-top thead {
+    position: sticky;
+    top: 65px;
+    z-index: 30;
+    background: #fff;
+  }
+}
+/* 사이드바(1920+) 구간에서는 상단 네비가 없으니 0 */
+@media (min-width: 1920px) {
+  .schedule-table.sticky-top thead {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: #fff;
+  }
 }
 
 /****************************************************************/
