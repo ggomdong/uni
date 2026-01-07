@@ -416,8 +416,10 @@ select[readonly] {
 /* ====== Config ====== */
 :root {
     --wtm-nav-h: 65px;         /* <1920 구간 상단 네비 높이 */
-    --wtm-app-top: 0px;       /* >=1920 구간 app-content top padding */
+    --wtm-app-top: 20px;       /* >=1920 구간 app-content top padding */
+    --wtm-pagehdr-h: 52px;    /* '근무표' 제목 영역 높이(필요 시 48~60에서 1회 조정) */
     --wtm-toolbar-h: 56px;     /* 툴바 실제 높이(필요 시 52~64로 1회 조정) */
+    --wtm-thead-row1-h: 34px;    /* thead 1행 높이(숫자행). 필요시 30~38에서 1회 */
 
     --wtm-dept-w: 60px;
     --wtm-name-w: 60px;
@@ -501,74 +503,160 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     z-index: auto !important;
 }
 
-/* ====== Toolbar layer ====== */
+/* ====== Layering (Bootstrap 기준: dropdown 1000 / sticky 1020 / fixed 1030) ======
+   목표:
+   - navbar(1030) & dropdown이 항상 최상단
+   - schedule-toolbar는 navbar 아래(1020)
+   - thead는 toolbar 아래(1015)
+   - 좌측 sticky(본문)는 그 아래(1010)
+   - 헤더+좌측 교차는 본문보다 위(1018) but toolbar보단 아래
+*/
+
+/* Toolbar */
 .schedule-toolbar.sticky-top {
     background: #fff;
     min-height: var(--wtm-toolbar-h);
-    z-index: 1035; /* navbar(보통 1030)보다 위 */
+    z-index: 1020; /* navbar(1030)보다 낮게 → 드롭다운이 툴바에 안 가림 */
 }
 
-/* ====== Header sticky ====== */
+/* thead sticky */
 .schedule-table.sticky-top thead {
     position: sticky;
-    z-index: 1025; /* 툴바 바로 아래 */
+    z-index: 1015;
     background: #fff;
 }
 .schedule-table thead th { background: #fff; }
 
-/* ====== Left 2 cols sticky ====== */
+/* Left 2 cols sticky */
 .schedule-table.sticky-left2 tbody td:nth-child(1),
-.schedule-table.sticky-left2 thead th:nth-child(1) {
+.schedule-table.sticky-left2 tbody th:nth-child(1) {
     position: sticky;
     left: 0;
-    z-index: 1015;
+    z-index: 1010;
     background: #fff;
+    background-clip: padding-box;
 }
 .schedule-table.sticky-left2 tbody td:nth-child(2),
-.schedule-table.sticky-left2 thead th:nth-child(2) {
+.schedule-table.sticky-left2 tbody th:nth-child(2) {
     position: sticky;
     left: var(--wtm-dept-w);
-    z-index: 1015;
+    z-index: 1010;
     background: #fff;
+    background-clip: padding-box;
 }
 
-/* 헤더+좌측 교차는 더 위로 */
+/* 헤더 + 좌측 교차(가장 헷갈리는 영역) */
 .schedule-table.sticky-left2 thead th:nth-child(1),
 .schedule-table.sticky-left2 thead th:nth-child(2) {
-    z-index: 1030;
+    position: sticky;
+    z-index: 1018; /* 본문 좌측 sticky(1010) 위, thead(1015)도 위, toolbar(1020) 아래 */
     background: #fff;
+    background-clip: padding-box;
 }
 
-/* ====== Desktop offsets ====== */
-/* <1920: 상단 fixed navbar(65px) 아래 + 툴바 아래 */
-@media (max-width: 1919.98px) {
-    .schedule-toolbar.sticky-top { top: var(--wtm-nav-h) !important; }
-    .schedule-table.sticky-top thead { top: calc(var(--wtm-nav-h) + var(--wtm-toolbar-h)) !important; }
+.schedule-table.sticky-left2 thead tr:first-child th:nth-child(1) {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 1030 !important;
+    background: #fff !important;
 
-    .schedule-toolbar.sticky-top {
+    /* Bootstrap table 셀의 투명/overlay 처리를 확실히 덮어씌우는 핵심 */
+    box-shadow: inset 0 0 0 9999px #fff;
+}
+
+.schedule-table.sticky-left2 thead tr:first-child th:nth-child(2) {
+    position: sticky !important;
+    left: var(--wtm-dept-w) !important;
+    z-index: 1030 !important;
+    background: #fff !important;
+    box-shadow: inset 0 0 0 9999px #fff;
+}
+
+/* '부서/성명'이 들어있는 thead의 마지막 줄(대부분 2번째 줄)을 대상으로 sticky-left 재지정 */
+.schedule-table.sticky-left2 thead tr:last-child th:nth-child(1) {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 1030 !important;
+    background: #fff !important;
+}
+
+.schedule-table.sticky-left2 thead tr:last-child th:nth-child(2) {
+    position: sticky !important;
+    left: var(--wtm-dept-w) !important; /* 기존 변수 그대로 사용 */
+    z-index: 1030 !important;
+    background: #fff !important;
+}
+
+/* ====== Responsive offsets ====== */
+
+/* <1920: 제목 + 툴바를 함께 fixed로 올려서 "제목이 위 / 날짜네비가 아래" 유지 */
+@media (max-width: 1919.98px){
+
+    /* (1) fixed 2단(제목+툴바) 자리 확보 → 내용이 위로 말려 올라가 덮는 현상 방지 */
+    .schedule-page{
+        padding-top: calc(var(--wtm-pagehdr-h) + var(--wtm-toolbar-h) + 12px);
+    }
+
+    /* (2) 제목(근무표) fixed: navbar 바로 아래 */
+    .schedule-page-header{
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: var(--wtm-nav-h);
+        height: var(--wtm-pagehdr-h);
+
+        display: flex;
+        align-items: center;
+
+        background: #fff;
+        z-index: 1025;          /* 툴바(1020)보다 위, navbar(1030)보단 아래 */
+        margin: 0 !important;    /* 기존 page-header 여백 제거 */
+        padding: 0 12px;         /* 취향 */
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    /* page-header 내부 타이틀도 여백 제거 */
+    .schedule-page-header .page-title{
+        margin: 0;
+    }
+
+    /* (3) 툴바 fixed: 제목 바로 아래 */
+    .schedule-toolbar.sticky-top{
         position: fixed !important;
         left: 0;
         right: 0;
-        top: var(--wtm-nav-h) !important;
+        top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h));
+        min-height: var(--wtm-toolbar-h);
 
-        /* 핵심: HTML의 mb-3(투명 마진) 때문에 툴바-헤더 사이 빈띠가 보임 → 제거 */
-        margin-bottom: 0 !important;
+        margin: 0 !important;      /* mb-3로 생기던 "빈 띠" 제거 */
+        background: #fff;
+        z-index: 1020;             /* navbar(1030) 아래 → 드롭다운이 툴바에 안 가림 */
 
-        /* container 안에 있던 것처럼 좌우만 살짝 패딩 */
         padding-left: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
         padding-right: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
     }
 
-    /* 모바일에서는 thead가 “네비 + 툴바” 아래로 고정 */
-    .schedule-table.sticky-top thead {
-        top: calc(var(--wtm-nav-h) + var(--wtm-toolbar-h)) !important;
+    /* (4) thead sticky는 navbar + 제목 + 툴바 아래로 */
+    .schedule-table.sticky-top thead{
+        top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h) + var(--wtm-toolbar-h)) !important;
     }
 }
 
-/* >=1920: 사이드바 모드(app-content padding-top:16px 기준) */
+/* >=1920: 사이드바/와이드 모드(가로 스크롤 이슈가 덜하니 sticky로 충분) */
 @media (min-width: 1920px) {
-    .schedule-toolbar.sticky-top { top: var(--wtm-app-top) !important; }
-    .schedule-table.sticky-top thead { top: calc(var(--wtm-app-top) + var(--wtm-toolbar-h)) !important; }
+
+    .schedule-page {
+        padding-top: 0;
+    }
+
+    .schedule-toolbar.sticky-top {
+        position: sticky !important;
+        top: var(--wtm-app-top) !important;
+    }
+
+    .schedule-table.sticky-top thead {
+        top: calc(var(--wtm-app-top) + var(--wtm-toolbar-h)) !important;
+    }
 }
 
 /****************************************************************/
