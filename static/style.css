@@ -410,135 +410,165 @@ select[readonly] {
 }
 
 /****************************************************************/
-/* 근무표
+/* 근무표 (Schedule)
 /****************************************************************/
 
-/* 근무표 입력시 column hover효과를 위한 CSS */
-.table-hover tbody tr:hover td {
-  --bs-bg-opacity: 0.1;
-  background-color: rgba(var(--bs-black-rgb), var(--bs-bg-opacity)) !important;
+/* ====== Config ====== */
+:root {
+    --wtm-nav-h: 65px;         /* <1920 구간 상단 네비 높이 */
+    --wtm-app-top: 0px;       /* >=1920 구간 app-content top padding */
+    --wtm-toolbar-h: 56px;     /* 툴바 실제 높이(필요 시 52~64로 1회 조정) */
+
+    --wtm-dept-w: 60px;
+    --wtm-name-w: 60px;
+    --wtm-day-w: 34px;
 }
 
-.is-hover {
-  --bs-bg-opacity: 0.1;
-  background-color: rgba(var(--bs-black-rgb), var(--bs-bg-opacity)) !important;
-}
-
-/* 근무표에서 오늘 날짜를 눈에 띄게 하기 위한 CSS */
+/* ====== UI bits ====== */
 .roundtext {
-  background-color: cyan;
-  font-weight: bold;
-  border-radius: 20px;
-  width: auto;
-  height: auto;
+    background-color: cyan;
+    font-weight: bold;
+    border-radius: 20px;
 }
 
-/* 근무표 월 캘린더 활용을 위한 CSS */
-input[type='month'] {
-  border: none;
-  cursor: pointer;
-}
+.next { opacity: 0.3; }
 
-input[type='month']::-webkit-calendar-picker-indicator, input[type='date']::-webkit-calendar-picker-indicator {
-  cursor: pointer;
+input[type="month"] {
+    border: none;
+    cursor: pointer;
 }
+input[type="month"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
 
-input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']::-webkit-calendar-picker-indicator:hover {
-  opacity: 0.5;
-}
-
-/* 근무표에서 전/후 월 이동 버튼위에 mouse over 시 표현을 위한 CSS */
 .btn-hover {
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
 }
-
 .btn-hover:hover {
-  background: #ebebeb;
-  border-radius: 50%;
+    background: #ebebeb;
+    border-radius: 50%;
 }
 
-.next {
-  opacity: 0.3;
-}
-
-/* 공통 폰트 */
+/* ====== Table base ====== */
 .schedule-table {
-  font-size: 0.86rem;
-  table-layout: fixed;     /* 월별 좌우 간격 흔들림 방지 핵심 */
-  width: max-content;      /* 날짜칸이 고정폭이면 가로 스크롤로 자연스럽게 */
+    font-size: 0.86rem;
+    table-layout: fixed;
+    width: max-content; /* 테이블이 컨테이너를 넘으면 body 가로 스크롤 */
 }
 
-/* colgroup 기반 폭 강제 (권장) */
-.schedule-table col.col-dept { width: 84px; }
-.schedule-table col.col-name { width: 92px; }
-.schedule-table col.col-day  { width: 34px; }   /* 30px 박스 + 여유 */
+/* colgroup 폭 */
+.schedule-table col.col-dept { width: var(--wtm-dept-w); }
+.schedule-table col.col-name { width: var(--wtm-name-w); }
+.schedule-table col.col-day  { width: var(--wtm-day-w); }
 
-/* 셀 간격: 좌측(부서/성명)과 날짜영역을 분리해서 제어 */
+/* 좌측 2열 padding */
 .schedule-table tbody tr > :is(th, td):nth-child(-n+2),
 .schedule-table thead tr > th:nth-child(-n+2) {
-  padding: 0.25rem 0.35rem !important;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: middle;
+    padding: 0.25rem 0.35rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
-/* 날짜영역(3번째~): 상하는 조금, 좌우는 일정하고 타이트하게 */
+/* 날짜 영역 padding */
 .schedule-table thead th:nth-child(n+3),
 .schedule-table tbody td:nth-child(n+3) {
-  padding: 2px 1px !important;
-  vertical-align: middle;
+    padding: 2px 1px !important;
+    vertical-align: middle;
 }
 
-/* ---------- 좌측 2열 sticky (등록/수정은 th, 조회는 td라서 둘 다) ---------- */
-.schedule-table.sticky-left2 tbody th:nth-child(1),
-.schedule-table.sticky-left2 tbody td:nth-child(1),
-.schedule-table.sticky-left2 thead th:nth-child(1) {
-  position: sticky;
-  left: 0;
-  z-index: 20;
-  background: #fff;
+/* ====== Hover (근무표에서만: 불투명 처리로 비침 방지) ====== */
+/* 기존 전역 .table-hover 는 건드리지 않고 schedule-table에서만 덮어씀 */
+.schedule-table.table-hover tbody tr:hover td:nth-child(n+3) {
+    background-color: #f2f2f2 !important;
+}
+/* 좌측 sticky 영역은 흰색 유지(가독성) */
+.schedule-table.table-hover tbody tr:hover td:nth-child(-n+2) {
+    background-color: #fff !important;
+}
+/* today 칸 강조도 반투명 말고 불투명으로(비침 방지) */
+.is-hover {
+    background-color: #f2f2f2 !important;
 }
 
-.schedule-table.sticky-left2 tbody th:nth-child(2),
-.schedule-table.sticky-left2 tbody td:nth-child(2),
-.schedule-table.sticky-left2 thead th:nth-child(2) {
-  position: sticky;
-  left: 84px;              /* col-dept 폭과 반드시 동일 */
-  z-index: 20;
-  background: #fff;
+/* ====== Sticky: Bootstrap sticky-top(table)에 의해 z-index 꼬이는 것 방지 ====== */
+.schedule-table.sticky-top {
+    position: static !important; /* table 자체는 sticky 금지 */
+    top: auto !important;
+    z-index: auto !important;
 }
 
-/* 헤더+좌측 교차 영역은 더 위로 */
-.schedule-table.sticky-left2 thead th:nth-child(1),
-.schedule-table.sticky-left2 thead th:nth-child(2) {
-  z-index: 40;
+/* ====== Toolbar layer ====== */
+.schedule-toolbar.sticky-top {
+    background: #fff;
+    min-height: var(--wtm-toolbar-h);
+    z-index: 1035; /* navbar(보통 1030)보다 위 */
 }
 
-/* 헤더 배경 보장 */
+/* ====== Header sticky ====== */
+.schedule-table.sticky-top thead {
+    position: sticky;
+    z-index: 1025; /* 툴바 바로 아래 */
+    background: #fff;
+}
 .schedule-table thead th { background: #fff; }
 
-/* ---------- 헤더 sticky ---------- */
-/* 모바일/상단네비(65px) 구간에서는 65px 아래로 고정 */
-@media (max-width: 1919.98px) {
-  .schedule-table.sticky-top thead {
+/* ====== Left 2 cols sticky ====== */
+.schedule-table.sticky-left2 tbody td:nth-child(1),
+.schedule-table.sticky-left2 thead th:nth-child(1) {
     position: sticky;
-    top: 65px;
-    z-index: 30;
+    left: 0;
+    z-index: 1015;
     background: #fff;
-  }
 }
-/* 사이드바(1920+) 구간에서는 상단 네비가 없으니 0 */
-@media (min-width: 1920px) {
-  .schedule-table.sticky-top thead {
+.schedule-table.sticky-left2 tbody td:nth-child(2),
+.schedule-table.sticky-left2 thead th:nth-child(2) {
     position: sticky;
-    top: 0;
-    z-index: 30;
+    left: var(--wtm-dept-w);
+    z-index: 1015;
     background: #fff;
-  }
+}
+
+/* 헤더+좌측 교차는 더 위로 */
+.schedule-table.sticky-left2 thead th:nth-child(1),
+.schedule-table.sticky-left2 thead th:nth-child(2) {
+    z-index: 1030;
+    background: #fff;
+}
+
+/* ====== Desktop offsets ====== */
+/* <1920: 상단 fixed navbar(65px) 아래 + 툴바 아래 */
+@media (max-width: 1919.98px) {
+    .schedule-toolbar.sticky-top { top: var(--wtm-nav-h) !important; }
+    .schedule-table.sticky-top thead { top: calc(var(--wtm-nav-h) + var(--wtm-toolbar-h)) !important; }
+
+    .schedule-toolbar.sticky-top {
+        position: fixed !important;
+        left: 0;
+        right: 0;
+        top: var(--wtm-nav-h) !important;
+
+        /* 핵심: HTML의 mb-3(투명 마진) 때문에 툴바-헤더 사이 빈띠가 보임 → 제거 */
+        margin-bottom: 0 !important;
+
+        /* container 안에 있던 것처럼 좌우만 살짝 패딩 */
+        padding-left: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
+        padding-right: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
+    }
+
+    /* 모바일에서는 thead가 “네비 + 툴바” 아래로 고정 */
+    .schedule-table.sticky-top thead {
+        top: calc(var(--wtm-nav-h) + var(--wtm-toolbar-h)) !important;
+    }
+}
+
+/* >=1920: 사이드바 모드(app-content padding-top:16px 기준) */
+@media (min-width: 1920px) {
+    .schedule-toolbar.sticky-top { top: var(--wtm-app-top) !important; }
+    .schedule-table.sticky-top thead { top: calc(var(--wtm-app-top) + var(--wtm-toolbar-h)) !important; }
 }
 
 /****************************************************************/
@@ -571,9 +601,9 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   vertical-align: middle !important;
 }
 
-/****************************************************************/
+/********
 /* 근태기록-월간집계(전체) 모바일 요약 테이블
-/****************************************************************/
+ ********/
 
 @media (max-width: 768px) {
 
@@ -724,9 +754,9 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   visibility: hidden;
 }
 
-/****************************************************************/
+/********
 /* 근태기록-월간집계(지표별) 모바일 요약 테이블
-/****************************************************************/
+ ********/
 
 @media (max-width: 768px) {
 
@@ -1048,9 +1078,9 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
     width: auto;
 }
 
-/* =========================
+/********
    모바일: 근로계약 카드
-   ========================= */
+ ********/
 @media (max-width: 768px) {
     .user-modify-page .user-title-row {
         flex-wrap: nowrap;
@@ -1170,9 +1200,9 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   background-color: #ffffff;
 }
 
-/****************************************************************/
+/********
 /* 근로계약 - 근로요일 입력 정렬(모듈박스 유지, CSS만)
-/****************************************************************/
+ ********/
 
 /* 테이블 간격을 spacing으로 제어 */
 .contract-page .contract-workday-section table{
@@ -1213,9 +1243,9 @@ input[type='month']::-webkit-calendar-picker-indicator:hover, input[type='date']
   text-overflow: ellipsis;
 }
 
-/****************************************************************/
+/********
 /* 근로계약 - 레이아웃 폭 통일(오른쪽 끝 정렬 안정화)
-/****************************************************************/
+ ********/
 .contract-page {
   --contract-w: 460px; /* 원하는 폭: 420~520 정도로 취향 조절 */
 }
