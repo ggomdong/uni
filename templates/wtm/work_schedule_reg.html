@@ -2,267 +2,310 @@
 {% load pybo_filter %}
 {% block content %}
 <form id="form" method="post">
-{% csrf_token %}
-<div class="container my-3">
+    {% csrf_token %}
 
-    <div class="page-header">
-        <h4 class="page-title">근무표 등록/수정</h4>
-    </div>
+    <div class="container my-3 schedule-edit-page">
 
-    <table class="table text-center table-borderless table-sm sticky-top table-hover">
-        {% if user_list %}
-        {% now "Ym" as yearmonth %}
-        {% now "j" as today %}
-        <thead>
-        <tr>
-            <th colspan="100%" style="font-weight: normal;">
-            <div class="row my-3 text-start">
-                <div class="col-6 fs-4">
+        <div class="page-header schedule-edit-page-header">
+            <h4 class="page-title">근무표 등록/수정</h4>
+        </div>
+
+        {# ------------------------------------------------------------------ #}
+        {# 상단 툴바(고정): 월 표시 + 버튼 + 모듈 팔레트                         #}
+        {# ------------------------------------------------------------------ #}
+        <div class="schedule-edit-toolbar sticky-top bg-white border-bottom py-1 mb-3">
+
+            <div class="d-flex align-items-center gap-2 flex-nowrap">
+                <div class="fs-5 fw-semibold text-nowrap">
                     {{ stand_ym|slice:"0:4" }}년 {{ stand_ym|slice:"4:6" }}월
                 </div>
-                <div class="col-6 text-end">
-                    <!-- undo / redo 버튼 추가 -->
-                    <button type="button" id="undoBtn" class="btn btn-sm btn-outline-secondary btn-sm me-1" disabled>
+
+                <div class="ms-auto d-flex align-items-center gap-1 flex-nowrap text-nowrap">
+                    <button type="button" id="undoBtn" class="btn btn-sm btn-outline-secondary me-1" disabled>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708z"/>
+                            <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708z"/>
                         </svg>
                     </button>
-                    <button type="button" id="redoBtn" class="btn btn-sm btn-outline-secondary btn-sm me-1" disabled>
+
+                    <button type="button" id="redoBtn" class="btn btn-sm btn-outline-secondary me-1" disabled>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-right" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M14.854 4.854a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 4H3.5A2.5 2.5 0 0 0 1 6.5v8a.5.5 0 0 0 1 0v-8A1.5 1.5 0 0 1 3.5 5h9.793l-3.147 3.146a.5.5 0 0 0 .708.708z"/>
+                            <path fill-rule="evenodd" d="M14.854 4.854a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 4H3.5A2.5 2.5 0 0 0 1 6.5v8a.5.5 0 0 0 1 0v-8A1.5 1.5 0 0 1 3.5 5h9.793l-3.147 3.146a.5.5 0 0 0 .708.708z"/>
                         </svg>
                     </button>
+
                     <a href="{% url 'wtm:work_schedule' stand_ym %}" class="btn btn-sm btn-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-backspace-fill" viewBox="0 0 16 16">
-                          <path d="M15.683 3a2 2 0 0 0-2-2h-7.08a2 2 0 0 0-1.519.698L.241 7.35a1 1 0 0 0 0 1.302l4.843 5.65A2 2 0 0 0 6.603 15h7.08a2 2 0 0 0 2-2zM5.829 5.854a.5.5 0 1 1 .707-.708l2.147 2.147 2.146-2.147a.5.5 0 1 1 .707.708L9.39 8l2.146 2.146a.5.5 0 0 1-.707.708L8.683 8.707l-2.147 2.147a.5.5 0 0 1-.707-.708L7.976 8z"/>
+                            <path d="M15.683 3a2 2 0 0 0-2-2h-7.08a2 2 0 0 0-1.519.698L.241 7.35a1 1 0 0 0 0 1.302l4.843 5.65A2 2 0 0 0 6.603 15h7.08a2 2 0 0 0 2-2zM5.829 5.854a.5.5 0 1 1 .707-.708l2.147 2.147 2.146-2.147a.5.5 0 1 1 .707.708L9.39 8l2.146 2.146a.5.5 0 0 1-.707.708L8.683 8.707l-2.147 2.147a.5.5 0 0 1-.707-.708L7.976 8z"/>
                         </svg>
                         취소
                     </a>
+
                     <button type="button" class="save btn btn-sm btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
-                          <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
-                          <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
+                            <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
+                            <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
                         </svg>
                         저장
                     </button>
                 </div>
             </div>
-            </th>
-        </tr>
-        <tr>
-            <th colspan="100%">
-                <table>
-                    <tr>
-                        {% for module in module_list %}
-                        <th style="vertical-align: bottom; width: 50px; font-weight: normal;">
-                        <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
-                        <label class="form-label" for="{{module.id}}">
-                            <div class="module_box" id="select{{module.id}}" style="background-color: {{ module_colors|get_index:module.color }};">
-                                {% if module.cat == '휴일근로' %}
-                                <font color="blue">
-                                    {{ module.start_time }}
-                                    {{ module.end_time }}
-                                </font>
-                                {% elif module.cat == '유급휴무' %}
-                                {{ module.name|slice:"0:2" }}<br>
-                                {{ module.name|slice:"2:4" }}
-                                {% elif module.cat == '무급휴무' %}
-                                <font color="red">
-                                {{ module.name|slice:"0:2" }}<br>
-                                {{ module.name|slice:"2:4" }}
-                                </font>
-                                {% elif module.cat == 'OFF' %}
-                                -
-                                {% else %}
-                                {{ module.start_time }}
-                                {{ module.end_time }}
-                                {% endif %}
-                            </div>
-                        </label>
-                        </th>
-                        {% endfor %}
-                    </tr>
-                    <tr>
-                        {% for module in module_list %}
-                        <th style="width: 50px; font-weight: normal; font-size: 10px">
-                            {{ module.name }}
-                        </th>
-                        {% endfor %}
-                    </tr>
-                </table>
-            </th>
-        </tr>
-        <tr style="border-bottom: 1px solid #d3d3d3;">
-            <th colspan="100%"></th>
-        </tr>
-        <tr>
-            <th colspan="100%"></th>
-        </tr>
-        <tr>
-            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
-            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
-            {% for key, value in day_list.items %}
-            <th>
-                <!-- key가 휴무일(미영업일+공휴일)이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
-                <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
-                     {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>{{ key }}</div>
-            </th>
-            {% endfor %}
-            {% for key, value in next_day_list.items %}
-            <th>
-                <!-- 휴무일(미영업일+공휴일) 폰트는 빨간색 -->
-                <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ key }}</div>
-            </th>
-            {% endfor %}
-        </tr>
-        <tr>
-            <th></th>
-            <th></th>
-            {% for key, value in day_list.items %}
-            <th>
-                <!-- key가 휴무일(미영업일+공휴일)이고, today 이면 폰트는 빨간색, 테두리 div roundtext 적용 -->
-                <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
-                     {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>{{ value }}</div>
-            </th>
-            {% endfor %}
-            {% for key, value in next_day_list.items %}
-            <th>
-                <!-- 휴무일(미영업일+공휴일) 폰트는 빨간색 -->
-                <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>{{ value }}</div>
-            </th>
-            {% endfor %}
-        </tr>
-        </thead>
 
-        <tbody>
-        {% for user in user_list %}
-        {% if user.dept_diff == 'Y' %}
-        <tr style="border-bottom: 1px solid #d3d3d3;">
-            <th></th>
-        </tr>
-        <tr>
-            <th></th>
-        </tr>
-        {% endif %}
-        <tr>
-            <th class="align-middle">
-                {% if user.is_new %}
-                <svg width="30px" height="30px" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="#01babd">
-                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                    <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                    <g id="SVGRepo_iconCarrier">
-                        <title>new-rectangle</title>
-                        <g id="Layer_2" data-name="Layer 2">
-                            <g id="invisible_box" data-name="invisible box">
-                                <rect width="48" height="48" fill="none"></rect>
-                            </g> <g id="icons_Q2" data-name="icons Q2">
-                            <path d="M44,14H4a2,2,0,0,0-2,2V32a2,2,0,0,0,2,2H44a2,2,0,0,0,2-2V16A2,2,0,0,0,44,14ZM17.3,29H14.8l-3-5-.7-1.3h0V29H8.7V19h2.5l3,5,.6,1.3h.1s-.1-1.2-.1-1.6V19h2.5Zm9.1,0H18.7V19h7.6v2H21.2v1.8h4.4v2H21.2v2.1h5.2Zm10.9,0H34.8l-1-4.8c-.2-.8-.4-1.9-.4-1.9h0s-.2,1.1-.3,1.9L32,29H29.6L26.8,19h2.5l1,4.2a20.1,20.1,0,0,1,.5,2.5h0l.5-2.4,1-4.3h2.3l.9,4.3.5,2.4h0l.5-2.5,1-4.2H40Z"></path>
-                        </g>
-                        </g>
-                    </g>
-                </svg>
-                {% endif %}
-                {{ user.dept }}</th>
-            <th class="align-middle">{{ user.emp_name }}</th>
-            {% for key, value in day_list.items %}
-            <td>
-                {% with user|get_index:key as schedule %}
-                <input type="hidden" name="sch_{{user.id}}_{{key}}" id="sch_{{user.id}}_{{key}}"
-                       value="{{schedule|default_if_none:''}}">
-                {% if stand_ym|concat_date:key < user.join_date or stand_ym|concat_date:key > user.out_date %}
-                <div class="module_box-disabled"></div>
-                {% else %}
-                <div class="module_box" id="insert_{{user.id}}_{{key}}" onclick="javascript:insert('{{user.id}}_{{key}}');" style="cursor: pointer;
-                    {% for module in module_list %}
-                    {% if module.id == schedule %}
-                    background-color: {{ module_colors|get_index:module.color }};
-                    {% endif %}
-                    {% endfor %}">
-                    {% for module in module_list %}
-                    {% if module.id == schedule %}
-                        {% if module.cat == '휴일근로' %}
-                        <font color="blue">
-                            {{ module.start_time }}
-                            {{ module.end_time }}
-                        </font>
-                        {% elif module.cat == '유급휴무' %}
-                        {{ module.name|slice:"0:2" }}<br>
-                        {{ module.name|slice:"2:4" }}
-                        {% elif module.cat == '무급휴무' %}
-                        <font color="red">
-                        {{ module.name|slice:"0:2" }}<br>
-                        {{ module.name|slice:"2:4" }}
-                        </font>
-                        {% elif module.cat == 'OFF' %}
-                        -
-                        {% else %}
-                        {{ module.start_time }}
-                        {{ module.end_time }}
-                        {% endif %}
-                    {% endif %}
-                    {% endfor %}
+            {# 모듈 팔레트: 고정 툴바 내부, 가로 스크롤 #}
+            <div class="module-palette mt-2">
+                <div class="module-palette-scroll">
+                    <table class="module-palette-table text-center">
+                        <tr>
+                            {% for module in module_list %}
+                                <th class="module-palette-cell">
+                                    <input type="radio" class="invisible-radio" name="module" id="{{ module.id }}" value="{{ module.id }}">
+                                    <label class="form-label" for="{{ module.id }}">
+                                        <div class="module_box" id="select{{ module.id }}" style="background-color: {{ module_colors|get_index:module.color }};">
+                                            {% if module.cat == '휴일근로' %}
+                                                <font color="blue">
+                                                    {{ module.start_time }}<br>
+                                                    {{ module.end_time }}
+                                                </font>
+                                            {% elif module.cat == '유급휴무' %}
+                                                {{ module.name|slice:"0:2" }}<br>
+                                                {{ module.name|slice:"2:4" }}
+                                            {% elif module.cat == '무급휴무' %}
+                                                <font color="red">
+                                                    {{ module.name|slice:"0:2" }}<br>
+                                                    {{ module.name|slice:"2:4" }}
+                                                </font>
+                                            {% elif module.cat == 'OFF' %}
+                                                -
+                                            {% else %}
+                                                {{ module.start_time }}<br>
+                                                {{ module.end_time }}
+                                            {% endif %}
+                                        </div>
+                                    </label>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                        <tr class="module-palette-names">
+                            {% for module in module_list %}
+                                <th class="module-palette-name">{{ module.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </table>
                 </div>
-                {% endif %}
-                {% endwith %}
-            </td>
-            {% endfor %}
-            {% for key, value in next_day_list.items %}
-            <td>
-                {% with user|get_next_index:key as schedule %}
-                <input type="hidden" name="sch_{{user.id}}_n{{key}}" id="sch_{{user.id}}_n{{key}}"
-                       value="{{schedule|default_if_none:''}}">
-                {% if next_ym|concat_date:key < user.join_date or next_ym|concat_date:key > user.out_date %}
-                <div class="module_box-disabled"></div>
-                {% else %}
-                <div class="module_box" id="insert_{{user.id}}_n{{key}}" onclick="javascript:insert('{{user.id}}_n{{key}}');" style="cursor: pointer;
-                    {% for module in module_list %}
-                    {% if module.id == schedule %}
-                    background-color: {{ module_colors|get_index:module.color }};
-                    {% endif %}
-                    {% endfor %}">
-                    {% for module in module_list %}
-                    {% if module.id == schedule %}
-                        {% if module.cat == '휴일근로' %}
-                        <font color="blue">
-                            {{ module.start_time }}
-                            {{ module.end_time }}
-                        </font>
-                        {% elif module.cat == '유급휴무' %}
-                        {{ module.name|slice:"0:2" }}<br>
-                        {{ module.name|slice:"2:4" }}
-                        {% elif module.cat == '무급휴무' %}
-                        <font color="red">
-                        {{ module.name|slice:"0:2" }}<br>
-                        {{ module.name|slice:"2:4" }}
-                        </font>
-                        {% elif module.cat == 'OFF' %}
-                        -
-                        {% else %}
-                        {{ module.start_time }}
-                        {{ module.end_time }}
+            </div>
+
+        </div>
+
+        {# ------------------------------------------------------------------ #}
+        {# 본문 테이블(조회 화면과 동일한 sticky 패턴 적용)                    #}
+        {# ------------------------------------------------------------------ #}
+        <table class="table table-hover text-center table-borderless table-sm schedule-table schedule-edit-table sticky-top sticky-left2">
+
+            <colgroup>
+                <col class="col-dept">
+                <col class="col-name">
+                {% for key, value in day_list.items %}
+                    <col class="col-day">
+                {% endfor %}
+                {% for key, value in next_day_list.items %}
+                    <col class="col-day">
+                {% endfor %}
+            </colgroup>
+
+            {% if user_list %}
+                {% now "Ym" as yearmonth %}
+                {% now "j" as today %}
+
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th></th>
+
+                        {% for key, value in day_list.items %}
+                            <th>
+                                <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
+                                     {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
+                                    {{ key }}
+                                </div>
+                            </th>
+                        {% endfor %}
+
+                        {% for key, value in next_day_list.items %}
+                            <th>
+                                <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
+                                    {{ key }}
+                                </div>
+                            </th>
+                        {% endfor %}
+                    </tr>
+
+                    <tr>
+                        <th>부서</th>
+                        <th>성명</th>
+
+                        {% for key, value in day_list.items %}
+                            <th>
+                                <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
+                                     {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
+                                    {{ value }}
+                                </div>
+                            </th>
+                        {% endfor %}
+
+                        {% for key, value in next_day_list.items %}
+                            <th>
+                                <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
+                                    {{ value }}
+                                </div>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for user in user_list %}
+
+                        {% if user.dept_diff == 'Y' %}
+                            <tr style="border-bottom: 1px solid #d3d3d3;">
+                                <th></th>
+                            </tr>
+                            <tr>
+                                <th></th>
+                            </tr>
                         {% endif %}
-                    {% endif %}
+
+                        <tr>
+                            <td class="align-middle">
+                                {% if user.is_new %}
+                                    <svg width="30px" height="30px" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="#01babd">
+                                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                        <g id="SVGRepo_iconCarrier">
+                                            <title>new-rectangle</title>
+                                            <g id="Layer_2" data-name="Layer 2">
+                                                <g id="invisible_box" data-name="invisible box">
+                                                    <rect width="48" height="48" fill="none"></rect>
+                                                </g>
+                                                <g id="icons_Q2" data-name="icons Q2">
+                                                    <path d="M44,14H4a2,2,0,0,0-2,2V32a2,2,0,0,0,2,2H44a2,2,0,0,0,2-2V16A2,2,0,0,0,44,14ZM17.3,29H14.8l-3-5-.7-1.3h0V29H8.7V19h2.5l3,5,.6,1.3h.1s-.1-1.2-.1-1.6V19h2.5Zm9.1,0H18.7V19h7.6v2H21.2v1.8h4.4v2H21.2v2.1h5.2Zm10.9,0H34.8l-1-4.8c-.2-.8-.4-1.9-.4-1.9h0s-.2,1.1-.3,1.9L32,29H29.6L26.8,19h2.5l1,4.2a20.1,20.1,0,0,1,.5,2.5h0l.5-2.4,1-4.3h2.3l.9,4.3.5,2.4h0l.5-2.5,1-4.2H40Z"></path>
+                                                </g>
+                                            </g>
+                                        </g>
+                                    </svg>
+                                {% endif %}
+                                {{ user.dept }}
+                            </td>
+
+                            <td class="align-middle">{{ user.emp_name }}</td>
+
+                            {% for key, value in day_list.items %}
+                                <td class="{% if yearmonth == stand_ym and key == today %}is-hover{% endif %}">
+                                    {% with user|get_index:key as schedule %}
+                                        <input type="hidden" name="sch_{{ user.id }}_{{ key }}" id="sch_{{ user.id }}_{{ key }}"
+                                               value="{{ schedule|default_if_none:'' }}">
+
+                                        {% if stand_ym|concat_date:key < user.join_date or stand_ym|concat_date:key > user.out_date %}
+                                            <div class="module_box-disabled"></div>
+                                        {% else %}
+                                            <div class="module_box" id="insert_{{ user.id }}_{{ key }}"
+                                                 onclick="javascript:insert('{{ user.id }}_{{ key }}');"
+                                                 style="cursor: pointer;
+                                                 {% for module in module_list %}
+                                                     {% if module.id == schedule %}
+                                                         background-color: {{ module_colors|get_index:module.color }};
+                                                     {% endif %}
+                                                 {% endfor %}">
+                                                {% for module in module_list %}
+                                                    {% if module.id == schedule %}
+                                                        {% if module.cat == '휴일근로' %}
+                                                            <font color="blue">
+                                                                {{ module.start_time }}<br>
+                                                                {{ module.end_time }}
+                                                            </font>
+                                                        {% elif module.cat == '유급휴무' %}
+                                                            {{ module.name|slice:"0:2" }}<br>
+                                                            {{ module.name|slice:"2:4" }}
+                                                        {% elif module.cat == '무급휴무' %}
+                                                            <font color="red">
+                                                                {{ module.name|slice:"0:2" }}<br>
+                                                                {{ module.name|slice:"2:4" }}
+                                                            </font>
+                                                        {% elif module.cat == 'OFF' %}
+                                                            -
+                                                        {% else %}
+                                                            {{ module.start_time }}<br>
+                                                            {{ module.end_time }}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                            {% endfor %}
+
+                            {% for key, value in next_day_list.items %}
+                                <td>
+                                    {% with user|get_next_index:key as schedule %}
+                                        <input type="hidden" name="sch_{{ user.id }}_n{{ key }}" id="sch_{{ user.id }}_n{{ key }}"
+                                               value="{{ schedule|default_if_none:'' }}">
+
+                                        {% if next_ym|concat_date:key < user.join_date or next_ym|concat_date:key > user.out_date %}
+                                            <div class="module_box-disabled"></div>
+                                        {% else %}
+                                            <div class="module_box" id="insert_{{ user.id }}_n{{ key }}"
+                                                 onclick="javascript:insert('{{ user.id }}_n{{ key }}');"
+                                                 style="cursor: pointer;
+                                                 {% for module in module_list %}
+                                                     {% if module.id == schedule %}
+                                                         background-color: {{ module_colors|get_index:module.color }};
+                                                     {% endif %}
+                                                 {% endfor %}">
+                                                {% for module in module_list %}
+                                                    {% if module.id == schedule %}
+                                                        {% if module.cat == '휴일근로' %}
+                                                            <font color="blue">
+                                                                {{ module.start_time }}<br>
+                                                                {{ module.end_time }}
+                                                            </font>
+                                                        {% elif module.cat == '유급휴무' %}
+                                                            {{ module.name|slice:"0:2" }}<br>
+                                                            {{ module.name|slice:"2:4" }}
+                                                        {% elif module.cat == '무급휴무' %}
+                                                            <font color="red">
+                                                                {{ module.name|slice:"0:2" }}<br>
+                                                                {{ module.name|slice:"2:4" }}
+                                                            </font>
+                                                        {% elif module.cat == 'OFF' %}
+                                                            -
+                                                        {% else %}
+                                                            {{ module.start_time }}<br>
+                                                            {{ module.end_time }}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+
                     {% endfor %}
-                </div>
-                {% endif %}
-                {% endwith %}
-            </td>
-            {% endfor %}
-        </tr>
-        {% endfor %}
-        </tbody>
-        {% endif %}
-    </table>
-</div>
+                </tbody>
+
+            {% endif %}
+        </table>
+
+    </div>
 </form>
 {% endblock %}
+
 {% block script %}
 <script type="text/javascript">
 // ----- Undo / Redo 스택 -----
 const undoStack = [];
 const redoStack = [];
 
-// target(예: "3_15") 과 moduleId 로 셀 상태를 세팅하는 공통 함수
 function applyModuleToCell(target, moduleId) {
     const moduleBoxInsert = document.getElementById("insert_" + target);
     const moduleInput = document.getElementById("sch_" + target);
@@ -272,20 +315,17 @@ function applyModuleToCell(target, moduleId) {
     moduleInput.value = moduleId || '';
 
     if (moduleId) {
-        // 상단 모듈 박스에서 모양 복사
         const moduleBoxSelected = document.getElementById("select" + moduleId);
         if (moduleBoxSelected) {
             moduleBoxInsert.innerHTML = moduleBoxSelected.innerHTML;
             moduleBoxInsert.style.backgroundColor = moduleBoxSelected.style.backgroundColor;
         }
     } else {
-        // 모듈 없었던 상태로 되돌릴 때 (빈 칸)
         moduleBoxInsert.innerHTML = "";
         moduleBoxInsert.style.backgroundColor = "";
     }
 }
 
-// 버튼 활성/비활성 관리
 function updateUndoRedoButtons() {
     const undoBtn = document.getElementById("undoBtn");
     const redoBtn = document.getElementById("redoBtn");
@@ -294,81 +334,60 @@ function updateUndoRedoButtons() {
     if (redoBtn) redoBtn.disabled = (redoStack.length === 0);
 }
 
-// Undo 실행
 function undo() {
     const last = undoStack.pop();
     if (!last) return;
 
-    // from 으로 되돌림
     applyModuleToCell(last.target, last.from);
-
-    // redo 스택에 넣기
     redoStack.push(last);
-
     updateUndoRedoButtons();
 }
 
-// Redo 실행
 function redo() {
     const last = redoStack.pop();
     if (!last) return;
 
-    // to 로 다시 적용
     applyModuleToCell(last.target, last.to);
-
-    // undo 스택에 다시 쌓기
     undoStack.push(last);
-
     updateUndoRedoButtons();
 }
 
-
 function insert(target) {
-    // target은 "user.id"_"일" 값임 ex) 1_1, 1_31,
-
     try {
-        // 선택모듈의 module.id를 가져온다.
         const moduleIdSelected = document.querySelector("input[type='radio'][name='module']:checked").value;
 
-        // 변경 전 값(이전 모듈 id) 저장
         const moduleInput = document.getElementById("sch_" + target);
         const prevModuleId = moduleInput ? (moduleInput.value || null) : null;
 
-        // 이전 상태와 동일하면 스택에 쌓을 필요 없음
         if (prevModuleId === moduleIdSelected) {
             return;
         }
 
-        // 실제 변경 적용
         applyModuleToCell(target, moduleIdSelected);
 
-        // undo 스택에 기록 (target, from, to)
         undoStack.push({
             target: target,
             from: prevModuleId,
             to: moduleIdSelected,
         });
 
-        // 새 작업이 생겼으니 redo 스택은 비운다
         redoStack.length = 0;
-
         updateUndoRedoButtons();
     } catch (e) {
         alert("근무표 변경을 원하시면, 상단 근로모듈을 먼저 선택하세요.");
         return;
     }
-};
+}
 
 const save_elements = document.getElementsByClassName("save");
 Array.from(save_elements).forEach(function(element) {
     element.addEventListener('click', function() {
-        if(confirm("저장하시겠습니까?")) {
+        if (confirm("저장하시겠습니까?")) {
             document.getElementById('form').submit();
-        };
+        }
     });
 });
 
-// Undo / Redo 버튼 이벤트
 document.addEventListener("DOMContentLoaded", function() {
     const undoBtn = document.getElementById("undoBtn");
     const redoBtn = document.getElementById("redoBtn");
@@ -389,51 +408,42 @@ document.addEventListener("DOMContentLoaded", function() {
 
 document.addEventListener('keydown', function(event) {
     function getIndex(o) {
-      for (x = 0; x < o.length; x++)
-        if (o[x].checked)
-          return x;
+        for (let x = 0; x < o.length; x++) {
+            if (o[x].checked) return x;
+        }
     }
 
-    var e = event.keyCode
+    const e = event.keyCode;
     const module = document.getElementsByName('module');
     const len = module.length;
-    const moduleSelectedIndex = getIndex(module);
 
-    // ----- Undo / Redo 단축키 -----
-    // Ctrl + Z : Undo
-    if (event.ctrlKey && !event.shiftKey && e === 90) {  // 90 = 'Z'
+    // Ctrl + Z
+    if (event.ctrlKey && !event.shiftKey && e === 90) {
         event.preventDefault();
         undo();
         return;
     }
-    // Ctrl + Y 또는 Ctrl + Shift + Z : Redo
-    if (event.ctrlKey && (e === 89 || (event.shiftKey && e === 90))) { // 89 = 'Y'
+    // Ctrl + Y or Ctrl + Shift + Z
+    if (event.ctrlKey && (e === 89 || (event.shiftKey && e === 90))) {
         event.preventDefault();
         redo();
         return;
     }
 
-    // 1~9 숫자키를 누를 경우. 참고로 기본적으로 좌우방향키로 radio버튼 선택이 가능하기 때문에 방향키에 대해서는 별도 구현하지 않았음
-    if(e >= 49 && e <= 57) {
-        if(len >= e-48) {
-            module[e-49].checked = true;
-        }
-    } else if(e == 48) {        // 0 숫자키
-        if(len >= 10) {
-            module[9].checked = true;
-        }
-    } else if(e == 189) {       // - 키
-        if(len >= 11) {
-            module[10].checked = true;
-        }
-    } else if(e == 190) {       // = 키
-        if(len >= 12) {
-            module[11].checked = true;
-        }
+    // 1~9, 0, -, =
+    if (e >= 49 && e <= 57) {
+        if (len >= e - 48) module[e - 49].checked = true;
+    } else if (e === 48) {
+        if (len >= 10) module[9].checked = true;
+    } else if (e === 189) {
+        if (len >= 11) module[10].checked = true;
+    } else if (e === 190) {
+        if (len >= 12) module[11].checked = true;
     }
 });
 
-const tds = document.querySelectorAll(".table-hover td");
+// 열 hover(기존 로직 유지)
+const tds = document.querySelectorAll(".schedule-edit-table.table-hover td");
 tds.forEach((td) => {
     const table = td.closest("table");
     const colIndex = td.cellIndex;
@@ -446,6 +456,5 @@ tds.forEach((td) => {
         cols.forEach((hover) => hover.classList.remove("is-hover"));
     });
 });
-
 </script>
 {% endblock %}

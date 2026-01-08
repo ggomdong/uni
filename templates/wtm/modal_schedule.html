@@ -1,70 +1,76 @@
 {% load pybo_filter %}
 {% block content %}
-<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+<div class="modal fade schedule-modal" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h1 class="modal-title fs-5" id="scheduleModalLabel">근무표 수정</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
             <div class="modal-body">
                 <form id="form" method="post" action="{% url 'wtm:work_schedule_popup' %}">
-                {% csrf_token %}
-                <input type="hidden" name="user_id" value="{{ initial_user_id|default_if_none:'' }}">
-                <input type="hidden" name="stand_date" value="{{ initial_stand_date|default_if_none:'' }}">
-                <input type="hidden" name="module_id" value="{{ initial_module_id|default_if_none:'' }}">
-                <!-- 모달을 띄운 부모가 index인지 확인하기 위한 필드 -->
-                <input type="hidden" name="from_index" id="fromIndexInput" value="">
-                <div class="container my-3">
-                    <!-- module 정보 표시 -->
-                    <div class="mb-3 col-md-6">
-                        <div class="alert alert-warning" role="alert">
-                            <div id="module_info"></div>
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ initial_user_id|default_if_none:'' }}">
+                    <input type="hidden" name="stand_date" value="{{ initial_stand_date|default_if_none:'' }}">
+                    <input type="hidden" name="module_id" value="{{ initial_module_id|default_if_none:'' }}">
+                    <!-- 모달을 띄운 부모가 index인지 확인하기 위한 필드 -->
+                    <input type="hidden" name="from_index" id="fromIndexInput" value="">
+
+                    <div class="container-fluid my-3 px-2">
+                        <div class="mb-3 col-md-6">
+                            <div class="alert alert-warning" role="alert">
+                                <div id="module_info"></div>
+                            </div>
+                        </div>
+
+                        {# 가로 스크롤 래퍼: 넘칠 때만 스크롤이 생김(FHD에선 그대로) #}
+                        <div class="schedule-module-scroll">
+                            <table class="schedule-module-table text-center table-borderless my-4">
+                                <tr>
+                                    {% for module in module_list %}
+                                    <th class="schedule-module-th" style="vertical-align: bottom;">
+                                        <input type="radio" class="invisible-radio" name="module" id="{{ module.id }}" value="{{ module.id }}">
+                                        <label class="form-label" for="{{ module.id }}">
+                                            <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
+                                                {% if module.cat == '휴일근로' %}
+                                                    <font color="blue">
+                                                        {{ module.start_time }}<br>
+                                                        {{ module.end_time }}
+                                                    </font>
+                                                {% elif module.cat == '유급휴무' %}
+                                                    {{ module.name|slice:"0:2" }}<br>
+                                                    {{ module.name|slice:"2:4" }}
+                                                {% elif module.cat == '무급휴무' %}
+                                                    <font color="red">
+                                                        {{ module.name|slice:"0:2" }}<br>
+                                                        {{ module.name|slice:"2:4" }}
+                                                    </font>
+                                                {% elif module.cat == 'OFF' %}
+                                                    -
+                                                {% else %}
+                                                    {{ module.start_time }}<br>
+                                                    {{ module.end_time }}
+                                                {% endif %}
+                                            </div>
+                                        </label>
+                                    </th>
+                                    {% endfor %}
+                                </tr>
+
+                                <tr>
+                                    {% for module in module_list %}
+                                    <th class="schedule-module-th schedule-module-name">
+                                        {{ module.name|pretty_module_name }}
+                                    </th>
+                                    {% endfor %}
+                                </tr>
+                            </table>
                         </div>
                     </div>
-
-                    <table class="text-center table-borderless my-4">
-                        <tr>
-                            {% for module in module_list %}
-                            <th style="vertical-align: bottom; width: 50px; font-weight: normal;">
-                            <input type="radio" class="invisible-radio" name="module" id="{{module.id}}" value="{{module.id}}">
-                            <label class="form-label" for="{{module.id}}">
-                                <div class="module_box" style="background-color: {{ module_colors|get_index:module.color }};">
-                                    {% if module.cat == '휴일근로' %}
-                                    <font color="blue">
-                                        {{ module.start_time }}
-                                        {{ module.end_time }}
-                                    </font>
-                                    {% elif module.cat == '유급휴무' %}
-                                    {{ module.name|slice:"0:2" }}<br>
-                                    {{ module.name|slice:"2:4" }}
-                                    {% elif module.cat == '무급휴무' %}
-                                    <font color="red">
-                                    {{ module.name|slice:"0:2" }}<br>
-                                    {{ module.name|slice:"2:4" }}
-                                    </font>
-                                    {% elif module.cat == 'OFF' %}
-                                    -
-                                    {% else %}
-                                    {{ module.start_time }}
-                                    {{ module.end_time }}
-                                    {% endif %}
-                                </div>
-                            </label>
-                            </th>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            {% for module in module_list %}
-                            <th style="width: 50px; font-weight: normal; font-size: 10px">
-                                {{ module.name|pretty_module_name }}
-                            </th>
-                            {% endfor %}
-                        </tr>
-                    </table>
-                </div>
                 </form>
             </div>
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
                 <button type="button" class="modify btn btn-primary">수정</button>
@@ -73,6 +79,7 @@
     </div>
 </div>
 {% endblock %}
+
 {% block script %}
 <script type="text/javascript">
 const modify_elements = document.getElementsByClassName("modify");
@@ -88,7 +95,7 @@ Array.from(modify_elements).forEach(function(element) {
     } else if(confirm("수정하시겠습니까?")) {
       document.querySelector("input[type='hidden'][name='module_id']").value = moduleIdSelected.value;
       document.getElementById('form').submit();
-    };
+    }
   });
 });
 </script>

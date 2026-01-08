@@ -559,9 +559,6 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     left: 0 !important;
     z-index: 1030 !important;
     background: #fff !important;
-
-    /* Bootstrap table 셀의 투명/overlay 처리를 확실히 덮어씌우는 핵심 */
-    box-shadow: inset 0 0 0 9999px #fff;
 }
 
 .schedule-table.sticky-left2 thead tr:first-child th:nth-child(2) {
@@ -569,7 +566,6 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     left: var(--wtm-dept-w) !important;
     z-index: 1030 !important;
     background: #fff !important;
-    box-shadow: inset 0 0 0 9999px #fff;
 }
 
 /* '부서/성명'이 들어있는 thead의 마지막 줄(대부분 2번째 줄)을 대상으로 sticky-left 재지정 */
@@ -602,8 +598,8 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
         position: fixed;
         left: 0;
         right: 0;
-        top: var(--wtm-nav-h);
-        height: var(--wtm-pagehdr-h);
+        top: calc(var(--wtm-nav-h) - 6px);
+        height: calc(var(--wtm-pagehdr-h) + 6px);
 
         display: flex;
         align-items: center;
@@ -657,6 +653,152 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     .schedule-table.sticky-top thead {
         top: calc(var(--wtm-app-top) + var(--wtm-toolbar-h)) !important;
     }
+}
+
+/****************************************************************/
+/* 근무표 등록/수정 (Schedule Edit)
+/****************************************************************/
+
+/* 등록/수정 툴바 높이(월+버튼 1줄 + 모듈팔레트 1줄) */
+:root {
+    --wtm-editbar-h: 118px;   /* 필요 시 108~132 범위에서 “1회만” 조정 */
+}
+
+/* edit toolbar는 schedule-toolbar와 동일한 레이어 정책 */
+.schedule-edit-toolbar.sticky-top {
+    background: #fff;
+    min-height: var(--wtm-editbar-h);
+    z-index: 1020; /* navbar(1030)보다 낮게 */
+}
+
+/* 모듈 팔레트: 가로 스크롤 */
+.schedule-edit-toolbar .module-palette-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px; /* 스크롤바 공간 */
+}
+
+/* 팔레트 테이블을 “슬림”하게 */
+.schedule-edit-toolbar .module-palette-table {
+    border-collapse: separate;
+    border-spacing: 6px 2px;
+    margin: 0;
+    width: max-content;   /* 모듈이 많으면 가로 스크롤 */
+}
+
+.schedule-edit-toolbar .module-palette-cell,
+.schedule-edit-toolbar .module-palette-name {
+    border: 0;
+    padding: 0 !important;
+    font-weight: normal;
+    vertical-align: bottom;
+    width: 50px;
+}
+
+.schedule-edit-toolbar .module-palette-names .module-palette-name {
+    font-size: 10px;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.9;
+}
+
+/* <1920: 제목 + 툴바 fixed 2단 (조회 화면과 동일한 UX) */
+@media (max-width: 1919.98px) {
+    .schedule-edit-page{
+        padding-top: calc(var(--wtm-pagehdr-h) + var(--wtm-editbar-h) + 12px);
+    }
+
+    .schedule-edit-page-header{
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: calc(var(--wtm-nav-h) - 6px);
+        height: calc(var(--wtm-pagehdr-h) + 6px);
+
+        display: flex;
+        align-items: center;
+
+        background: #fff;
+        z-index: 1025;          /* 툴바(1020)보다 위, navbar(1030)보단 아래 */
+        margin: 0 !important;
+        padding: 0 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .schedule-edit-page-header .page-title{
+        margin: 0;
+    }
+
+    .schedule-edit-toolbar.sticky-top{
+        position: fixed !important;
+        left: 0;
+        right: 0;
+        top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h));
+        min-height: var(--wtm-editbar-h);
+
+        margin: 0 !important;
+        background: #fff;
+        z-index: 1020;
+
+        padding-left: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
+        padding-right: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
+    }
+
+    /* thead sticky는 navbar + 제목 + edit툴바 아래로 */
+    .schedule-edit-table.sticky-top thead{
+        top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h) + var(--wtm-editbar-h)) !important;
+    }
+}
+
+/* >=1920: 사이드바/와이드 모드 */
+@media (min-width: 1920px) {
+    .schedule-edit-page{
+        padding-top: 0;
+    }
+
+    .schedule-edit-toolbar.sticky-top{
+        position: sticky !important;
+        top: var(--wtm-app-top) !important;
+    }
+
+    .schedule-edit-table.sticky-top thead{
+        top: calc(var(--wtm-app-top) + var(--wtm-editbar-h)) !important;
+    }
+}
+
+/****************************************************************/
+/* 근무표 수정 모달 (modal_schedule.html)
+/****************************************************************/
+
+/* 모달 안에서만 적용되게 스코프 */
+.schedule-modal .schedule-module-scroll {
+    overflow-x: auto;                 /* 넘칠 때만 가로 스크롤 */
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+
+/* 테이블은 “내용만큼” 넓어지게 해서 래퍼가 스크롤 담당 */
+.schedule-modal .schedule-module-table {
+    width: max-content;
+    min-width: max-content !important;
+    border-collapse: separate;
+    border-spacing: 5px 0; /* 2~6px 사이에서 취향껏 */
+}
+
+/* th 폭은 기존 50px 유지(인라인 style 제거하고 싶으면 여기만 조정) */
+.schedule-modal .schedule-module-th {
+    width: 10px;
+    font-weight: normal;
+    white-space: nowrap;              /* 예상치 못한 줄바꿈 방지(줄바꿈은 <br>로만) */
+}
+
+/* 이름 줄(두 번째 row) 폰트 크기 */
+.schedule-modal .schedule-module-name {
+    font-size: 10px;
 }
 
 /****************************************************************/
