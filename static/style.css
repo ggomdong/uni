@@ -470,6 +470,9 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
 .schedule-grid {
     font-size: 0.86rem;
     width: max-content; /* 페이지 전체 가로 스크롤(내부 스크롤 X) */
+    --wtm-pad-x: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
+    padding-left: var(--wtm-pad-x);
+    padding-right: var(--wtm-pad-x);
 }
 
 .schedule-grid-row {
@@ -507,6 +510,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     position: sticky;
     left: var(--wtm-dept-w);
     z-index: 1010;
+    box-shadow: 1px 0 0 #dee2e6;
 }
 
 /* ====== Sticky header (세로 스크롤 시 날짜 헤더 고정) ====== */
