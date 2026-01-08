@@ -20,3 +20,18 @@
     </div>
   </div>
 </footer>
+
+<script>
+(function () {
+    const footer = document.querySelector('.app-footer');
+    if (!footer) return;
+
+    const sync = () => {
+        // 문서 가로 스크롤을 “상쇄”해서 footer가 화면에 고정된 것처럼 보이게 함
+        footer.style.transform = `translateX(${window.scrollX}px)`;
+    };
+
+    window.addEventListener('scroll', sync, { passive: true });
+    sync();
+})();
+</script>
