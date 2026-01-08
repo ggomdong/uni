@@ -410,16 +410,15 @@ select[readonly] {
 }
 
 /****************************************************************/
-/* 근무표 (Schedule)
+/* 근무표 (Schedule) - GRID 버전
 /****************************************************************/
 
 /* ====== Config ====== */
 :root {
     --wtm-nav-h: 65px;         /* <1920 구간 상단 네비 높이 */
-    --wtm-app-top: 20px;       /* >=1920 구간 app-content top padding */
-    --wtm-pagehdr-h: 52px;    /* '근무표' 제목 영역 높이(필요 시 48~60에서 1회 조정) */
-    --wtm-toolbar-h: 56px;     /* 툴바 실제 높이(필요 시 52~64로 1회 조정) */
-    --wtm-thead-row1-h: 34px;    /* thead 1행 높이(숫자행). 필요시 30~38에서 1회 */
+    --wtm-app-top: 0px;        /* >=1920 구간(사이드바 모드) 상단 여백 */
+    --wtm-pagehdr-h: 52px;     /* '근무표' 제목 영역 높이 */
+    --wtm-toolbar-h: 48px;     /* 툴바 높이 */
 
     --wtm-dept-w: 60px;
     --wtm-name-w: 60px;
@@ -453,148 +452,124 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     border-radius: 50%;
 }
 
-/* ====== Table base ====== */
-.schedule-table {
-    font-size: 0.86rem;
-    table-layout: fixed;
-    width: max-content; /* 테이블이 컨테이너를 넘으면 body 가로 스크롤 */
-}
-
-/* colgroup 폭 */
-.schedule-table col.col-dept { width: var(--wtm-dept-w); }
-.schedule-table col.col-name { width: var(--wtm-name-w); }
-.schedule-table col.col-day  { width: var(--wtm-day-w); }
-
-/* 좌측 2열 padding */
-.schedule-table tbody tr > :is(th, td):nth-child(-n+2),
-.schedule-table thead tr > th:nth-child(-n+2) {
-    padding: 0.25rem 0.35rem !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    vertical-align: middle;
-}
-
-/* 날짜 영역 padding */
-.schedule-table thead th:nth-child(n+3),
-.schedule-table tbody td:nth-child(n+3) {
-    padding: 2px 1px !important;
-    vertical-align: middle;
-}
-
-/* ====== Hover (근무표에서만: 불투명 처리로 비침 방지) ====== */
-/* 기존 전역 .table-hover 는 건드리지 않고 schedule-table에서만 덮어씀 */
-.schedule-table.table-hover tbody tr:hover td:nth-child(n+3) {
-    background-color: #f2f2f2 !important;
-}
-/* 좌측 sticky 영역은 흰색 유지(가독성) */
-.schedule-table.table-hover tbody tr:hover td:nth-child(-n+2) {
-    background-color: #fff !important;
-}
-/* today 칸 강조도 반투명 말고 불투명으로(비침 방지) */
-.is-hover {
-    background-color: #f2f2f2 !important;
-}
-
-/* ====== Sticky: Bootstrap sticky-top(table)에 의해 z-index 꼬이는 것 방지 ====== */
-.schedule-table.sticky-top {
-    position: static !important; /* table 자체는 sticky 금지 */
-    top: auto !important;
-    z-index: auto !important;
-}
-
-/* ====== Layering (Bootstrap 기준: dropdown 1000 / sticky 1020 / fixed 1030) ======
-   목표:
-   - navbar(1030) & dropdown이 항상 최상단
-   - schedule-toolbar는 navbar 아래(1020)
-   - thead는 toolbar 아래(1015)
-   - 좌측 sticky(본문)는 그 아래(1010)
-   - 헤더+좌측 교차는 본문보다 위(1018) but toolbar보단 아래
+/* ====== Layering (Bootstrap 기준) ======
+   navbar fixed-top: 1030
+   toolbar: 1020 (navbar/드롭다운 아래로)
+   grid header: 1015
+   left sticky(body): 1010
+   left sticky(header): 1018
 */
-
-/* Toolbar */
 .schedule-toolbar.sticky-top {
     background: #fff;
     min-height: var(--wtm-toolbar-h);
-    z-index: 1020; /* navbar(1030)보다 낮게 → 드롭다운이 툴바에 안 가림 */
+    z-index: 1020;
+    margin-bottom: 0 !important; /* mb-3로 생기는 “빈 띠” 방지 */
 }
 
-/* thead sticky */
-.schedule-table.sticky-top thead {
-    position: sticky;
-    z-index: 1015;
+/* ====== GRID base ====== */
+.schedule-grid {
+    font-size: 0.86rem;
+    width: max-content; /* 페이지 전체 가로 스크롤(내부 스크롤 X) */
+}
+
+.schedule-grid-row {
+    display: grid;
+    grid-template-columns: var(--wtm-cols);
+    align-items: stretch;
+}
+
+.schedule-grid-cell {
+    text-align: center;
+    padding: 2px 1px;
+    vertical-align: middle;
+}
+
+/* 좌측 2칸(부서/성명) 공통 */
+.schedule-grid-cell.left1,
+.schedule-grid-cell.left2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     background: #fff;
+    background-clip: padding-box;
+    display: flex;
+    align-items: center;      /* 세로 가운데 */
+    justify-content: center;  /* 기존처럼 가로도 가운데 유지 */
 }
-.schedule-table thead th { background: #fff; }
 
-/* Left 2 cols sticky */
-.schedule-table.sticky-left2 tbody td:nth-child(1),
-.schedule-table.sticky-left2 tbody th:nth-child(1) {
+/* ====== Sticky left (가로 스크롤 시 부서/성명 고정) ====== */
+.schedule-grid-cell.left1 {
     position: sticky;
     left: 0;
     z-index: 1010;
-    background: #fff;
-    background-clip: padding-box;
 }
-.schedule-table.sticky-left2 tbody td:nth-child(2),
-.schedule-table.sticky-left2 tbody th:nth-child(2) {
+.schedule-grid-cell.left2 {
     position: sticky;
     left: var(--wtm-dept-w);
     z-index: 1010;
-    background: #fff;
-    background-clip: padding-box;
 }
 
-/* 헤더 + 좌측 교차(가장 헷갈리는 영역) */
-.schedule-table.sticky-left2 thead th:nth-child(1),
-.schedule-table.sticky-left2 thead th:nth-child(2) {
+/* ====== Sticky header (세로 스크롤 시 날짜 헤더 고정) ====== */
+.schedule-grid-header {
     position: sticky;
-    z-index: 1018; /* 본문 좌측 sticky(1010) 위, thead(1015)도 위, toolbar(1020) 아래 */
+    z-index: 1015;
     background: #fff;
-    background-clip: padding-box;
+    border-bottom: 1px solid #dee2e6;
 }
 
-.schedule-table.sticky-left2 thead tr:first-child th:nth-child(1) {
-    position: sticky !important;
-    left: 0 !important;
-    z-index: 1030 !important;
-    background: #fff !important;
+/* 헤더 셀은 항상 흰배경 */
+.schedule-grid-row-head .schedule-grid-cell {
+    background: #fff;
+    font-weight: 600;
 }
 
-.schedule-table.sticky-left2 thead tr:first-child th:nth-child(2) {
-    position: sticky !important;
-    left: var(--wtm-dept-w) !important;
-    z-index: 1030 !important;
-    background: #fff !important;
+/* 헤더의 좌측 2칸은 더 위로 */
+.schedule-grid-row-head .schedule-grid-cell.left1,
+.schedule-grid-row-head .schedule-grid-cell.left2,
+.schedule-grid-row-head .schedule-grid-cell.head.left1,
+.schedule-grid-row-head .schedule-grid-cell.head.left2 {
+    position: sticky;
+    background: #fff;
+    z-index: 1018;
+}
+.schedule-grid-row-head .schedule-grid-cell.head.left1 { left: 0; }
+.schedule-grid-row-head .schedule-grid-cell.head.left2 { left: var(--wtm-dept-w); }
+
+/* ====== Hover (비침 방지: 불투명) ====== */
+.schedule-grid-row-data:hover .schedule-grid-cell.day {
+    background-color: #f2f2f2;
+}
+.schedule-grid-row-data:hover .schedule-grid-cell.left1,
+.schedule-grid-row-data:hover .schedule-grid-cell.left2 {
+    background: #fff;
 }
 
-/* '부서/성명'이 들어있는 thead의 마지막 줄(대부분 2번째 줄)을 대상으로 sticky-left 재지정 */
-.schedule-table.sticky-left2 thead tr:last-child th:nth-child(1) {
-    position: sticky !important;
-    left: 0 !important;
-    z-index: 1030 !important;
-    background: #fff !important;
+/* 오늘 칸 강조 */
+.schedule-grid-cell.day.is-today {
+    background-color: #f2f2f2;
 }
 
-.schedule-table.sticky-left2 thead tr:last-child th:nth-child(2) {
-    position: sticky !important;
-    left: var(--wtm-dept-w) !important; /* 기존 변수 그대로 사용 */
-    z-index: 1030 !important;
-    background: #fff !important;
+/* ====== Dept 구분선/여백 ====== */
+.schedule-grid-divider-row .schedule-grid-divider {
+    grid-column: 1 / -1;
+    height: 1px;
+    border-bottom: 1px solid #d3d3d3;
+}
+.schedule-grid-spacer-row .schedule-grid-spacer {
+    grid-column: 1 / -1;
+    height: 12px;
 }
 
 /* ====== Responsive offsets ====== */
 
-/* <1920: 제목 + 툴바를 함께 fixed로 올려서 "제목이 위 / 날짜네비가 아래" 유지 */
-@media (max-width: 1919.98px){
+/* <1920: 제목+툴바 fixed 2단 유지 (제목 위 / 날짜네비 아래) */
+@media (max-width: 1919.98px) {
 
-    /* (1) fixed 2단(제목+툴바) 자리 확보 → 내용이 위로 말려 올라가 덮는 현상 방지 */
-    .schedule-page{
+    .schedule-page {
         padding-top: calc(var(--wtm-pagehdr-h) + var(--wtm-toolbar-h) + 12px);
     }
 
-    /* (2) 제목(근무표) fixed: navbar 바로 아래 */
-    .schedule-page-header{
+    .schedule-page-header {
         position: fixed;
         left: 0;
         right: 0;
@@ -605,40 +580,34 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
         align-items: center;
 
         background: #fff;
-        z-index: 1025;          /* 툴바(1020)보다 위, navbar(1030)보단 아래 */
-        margin: 0 !important;    /* 기존 page-header 여백 제거 */
-        padding: 0 12px;         /* 취향 */
+        z-index: 1025; /* toolbar(1020)보다 위, navbar(1030) 아래 */
+        margin: 0 !important;
+        padding: 0 12px;
         border-bottom: 1px solid #dee2e6;
     }
 
-    /* page-header 내부 타이틀도 여백 제거 */
-    .schedule-page-header .page-title{
+    .schedule-page-header .page-title {
         margin: 0;
     }
 
-    /* (3) 툴바 fixed: 제목 바로 아래 */
-    .schedule-toolbar.sticky-top{
+    .schedule-toolbar.sticky-top {
         position: fixed !important;
         left: 0;
         right: 0;
         top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h));
         min-height: var(--wtm-toolbar-h);
-
-        margin: 0 !important;      /* mb-3로 생기던 "빈 띠" 제거 */
-        background: #fff;
-        z-index: 1020;             /* navbar(1030) 아래 → 드롭다운이 툴바에 안 가림 */
+        z-index: 1020;
 
         padding-left: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
         padding-right: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
     }
 
-    /* (4) thead sticky는 navbar + 제목 + 툴바 아래로 */
-    .schedule-table.sticky-top thead{
-        top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h) + var(--wtm-toolbar-h)) !important;
+    .schedule-grid-header {
+        top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h) + var(--wtm-toolbar-h));
     }
 }
 
-/* >=1920: 사이드바/와이드 모드(가로 스크롤 이슈가 덜하니 sticky로 충분) */
+/* >=1920: 사이드바/와이드 모드 */
 @media (min-width: 1920px) {
 
     .schedule-page {
@@ -650,10 +619,11 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
         top: var(--wtm-app-top) !important;
     }
 
-    .schedule-table.sticky-top thead {
-        top: calc(var(--wtm-app-top) + var(--wtm-toolbar-h)) !important;
+    .schedule-grid-header {
+        top: calc(var(--wtm-app-top) + var(--wtm-toolbar-h));
     }
 }
+
 
 /****************************************************************/
 /* 근무표 등록/수정 (Schedule Edit)
