@@ -96,85 +96,84 @@
         </div>
 
         {# ------------------------------------------------------------------ #}
-        {# 본문 테이블(조회 화면과 동일한 sticky 패턴 적용)                    #}
+        {# 본문: GRID (조회 화면과 동일 패턴)                                   #}
         {# ------------------------------------------------------------------ #}
-        <table class="table table-hover text-center table-borderless table-sm schedule-table schedule-edit-table sticky-top sticky-left2">
+        {% if user_list %}
+            {% now "Ym" as yearmonth %}
+            {% now "j" as today %}
+            {% with day_list|length as day_len %}
 
-            <colgroup>
-                <col class="col-dept">
-                <col class="col-name">
-                {% for key, value in day_list.items %}
-                    <col class="col-day">
-                {% endfor %}
-                {% for key, value in next_day_list.items %}
-                    <col class="col-day">
-                {% endfor %}
-            </colgroup>
+            <div class="schedule-grid schedule-edit-grid"
+                 style="--wtm-cols: var(--wtm-dept-w) var(--wtm-name-w)
+                        {% for key, value in day_list.items %} var(--wtm-day-w) {% endfor %}
+                        {% for key, value in next_day_list.items %} var(--wtm-day-w) {% endfor %};">
 
-            {% if user_list %}
-                {% now "Ym" as yearmonth %}
-                {% now "j" as today %}
-
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th></th>
+                {# --------- GRID HEADER (sticky) --------- #}
+                <div class="schedule-grid-header">
+                    <div class="schedule-grid-row schedule-grid-row-head">
+                        <div class="schedule-grid-cell head left1"></div>
+                        <div class="schedule-grid-cell head left2"></div>
 
                         {% for key, value in day_list.items %}
-                            <th>
+                            <div class="schedule-grid-cell head day" data-col="{{ forloop.counter0 }}">
                                 <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                                      {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
                                     {{ key }}
                                 </div>
-                            </th>
+                            </div>
                         {% endfor %}
 
                         {% for key, value in next_day_list.items %}
-                            <th>
+                            <div class="schedule-grid-cell head day" data-col="{{ forloop.counter0|add:day_len }}">
                                 <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
                                     {{ key }}
                                 </div>
-                            </th>
+                            </div>
                         {% endfor %}
-                    </tr>
+                    </div>
 
-                    <tr>
-                        <th>부서</th>
-                        <th>성명</th>
+                    <div class="schedule-grid-row schedule-grid-row-head">
+                        <div class="schedule-grid-cell head left1">부서</div>
+                        <div class="schedule-grid-cell head left2">성명</div>
 
                         {% for key, value in day_list.items %}
-                            <th>
+                            <div class="schedule-grid-cell head day" data-col="{{ forloop.counter0 }}">
                                 <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                                      {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
                                     {{ value }}
                                 </div>
-                            </th>
+                            </div>
                         {% endfor %}
 
                         {% for key, value in next_day_list.items %}
-                            <th>
+                            <div class="schedule-grid-cell head day" data-col="{{ forloop.counter0|add:day_len }}">
                                 <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
                                     {{ value }}
                                 </div>
-                            </th>
+                            </div>
                         {% endfor %}
-                    </tr>
-                </thead>
+                    </div>
+                </div>
 
-                <tbody>
+                {# --------- GRID BODY --------- #}
+                <div class="schedule-grid-body">
+                    <div class="schedule-grid-row schedule-grid-spacer-row">
+                        <div class="schedule-grid-spacer"></div>
+                    </div>
+
                     {% for user in user_list %}
 
-                        {% if user.dept_diff == 'Y' %}
-                            <tr style="border-bottom: 1px solid #d3d3d3;">
-                                <th></th>
-                            </tr>
-                            <tr>
-                                <th></th>
-                            </tr>
+                        {% if user.dept_diff == 'Y' and not forloop.first %}
+                            <div class="schedule-grid-row schedule-grid-divider-row">
+                                <div class="schedule-grid-divider"></div>
+                            </div>
+                            <div class="schedule-grid-row schedule-grid-spacer-row">
+                                <div class="schedule-grid-spacer"></div>
+                            </div>
                         {% endif %}
 
-                        <tr>
-                            <td class="align-middle">
+                        <div class="schedule-grid-row schedule-grid-row-data">
+                            <div class="schedule-grid-cell left1 align-middle">
                                 {% if user.is_new %}
                                     <svg width="30px" height="30px" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="#01babd">
                                         <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
@@ -193,12 +192,13 @@
                                     </svg>
                                 {% endif %}
                                 {{ user.dept }}
-                            </td>
+                            </div>
 
-                            <td class="align-middle">{{ user.emp_name }}</td>
+                            <div class="schedule-grid-cell left2 align-middle">{{ user.emp_name }}</div>
 
                             {% for key, value in day_list.items %}
-                                <td class="{% if yearmonth == stand_ym and key == today %}is-hover{% endif %}">
+                                <div class="schedule-grid-cell day {% if yearmonth == stand_ym and key == today %}is-today{% endif %}"
+                                     data-col="{{ forloop.counter0 }}">
                                     {% with user|get_index:key as schedule %}
                                         <input type="hidden" name="sch_{{ user.id }}_{{ key }}" id="sch_{{ user.id }}_{{ key }}"
                                                value="{{ schedule|default_if_none:'' }}">
@@ -240,11 +240,12 @@
                                             </div>
                                         {% endif %}
                                     {% endwith %}
-                                </td>
+                                </div>
                             {% endfor %}
 
                             {% for key, value in next_day_list.items %}
-                                <td>
+                                <div class="schedule-grid-cell day"
+                                     data-col="{{ forloop.counter0|add:day_len }}">
                                     {% with user|get_next_index:key as schedule %}
                                         <input type="hidden" name="sch_{{ user.id }}_n{{ key }}" id="sch_{{ user.id }}_n{{ key }}"
                                                value="{{ schedule|default_if_none:'' }}">
@@ -286,15 +287,14 @@
                                             </div>
                                         {% endif %}
                                     {% endwith %}
-                                </td>
+                                </div>
                             {% endfor %}
-                        </tr>
-
+                        </div>
                     {% endfor %}
-                </tbody>
-
-            {% endif %}
-        </table>
+                </div>
+            </div>
+            {% endwith %}
+        {% endif %}
 
     </div>
 </form>
@@ -404,6 +404,24 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     updateUndoRedoButtons();
+
+    // ----- 열 hover (GRID 버전) -----
+    const dayCells = document.querySelectorAll(".schedule-edit-grid .schedule-grid-cell.day[data-col]");
+    dayCells.forEach((cell) => {
+        const col = cell.dataset.col;
+
+        cell.addEventListener("mouseover", () => {
+            document
+                .querySelectorAll(`.schedule-edit-grid .schedule-grid-cell.day[data-col="${col}"]`)
+                .forEach((c) => c.classList.add("is-hover"));
+        });
+
+        cell.addEventListener("mouseleave", () => {
+            document
+                .querySelectorAll(`.schedule-edit-grid .schedule-grid-cell.day[data-col="${col}"]`)
+                .forEach((c) => c.classList.remove("is-hover"));
+        });
+    });
 });
 
 document.addEventListener('keydown', function(event) {
@@ -440,21 +458,6 @@ document.addEventListener('keydown', function(event) {
     } else if (e === 190) {
         if (len >= 12) module[11].checked = true;
     }
-});
-
-// 열 hover(기존 로직 유지)
-const tds = document.querySelectorAll(".schedule-edit-table.table-hover td");
-tds.forEach((td) => {
-    const table = td.closest("table");
-    const colIndex = td.cellIndex;
-    const cols = table.querySelectorAll(`td:nth-child(${colIndex + 1})`);
-
-    td.addEventListener("mouseover", () => {
-        cols.forEach((hover) => hover.classList.add("is-hover"));
-    });
-    td.addEventListener("mouseleave", () => {
-        cols.forEach((hover) => hover.classList.remove("is-hover"));
-    });
 });
 </script>
 {% endblock %}

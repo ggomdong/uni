@@ -485,7 +485,6 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     text-align: center;
     padding: 2px 1px;
     vertical-align: middle;
-    position: relative;
 }
 
 /* 좌측 2칸(부서/성명) 공통 */
@@ -499,9 +498,6 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     display: flex;
     align-items: center;      /* 세로 가운데 */
     justify-content: center;  /* 기존처럼 가로도 가운데 유지 */
-    z-index: 2000;                 /* day 셀보다 무조건 위 */
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
 }
 
 /* ====== Sticky left (가로 스크롤 시 부서/성명 고정) ====== */
@@ -538,7 +534,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
 .schedule-grid-row-head .schedule-grid-cell.head.left2 {
     position: sticky;
     background: #fff;
-    z-index: 2500;
+    z-index: 1018;
 }
 .schedule-grid-row-head .schedule-grid-cell.head.left1 { left: 0; }
 .schedule-grid-row-head .schedule-grid-cell.head.left2 { left: var(--wtm-dept-w); }
@@ -647,6 +643,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     background: #fff;
     min-height: var(--wtm-editbar-h);
     z-index: 1020; /* navbar(1030)보다 낮게 */
+    margin-bottom: 0 !important;
 }
 
 /* 모듈 팔레트: 가로 스크롤 */
@@ -681,6 +678,11 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     overflow: hidden;
     text-overflow: ellipsis;
     opacity: 0.9;
+}
+
+/* GRID 열 hover(기존 table의 is-hover 대체) */
+.schedule-edit-grid .schedule-grid-cell.day.is-hover {
+    background-color: #f2f2f2;
 }
 
 /* <1920: 제목 + 툴바 fixed 2단 (조회 화면과 동일한 UX) */
@@ -725,9 +727,8 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
         padding-right: calc(var(--bs-gutter-x, 1.5rem) * 0.5);
     }
 
-    /* thead sticky는 navbar + 제목 + edit툴바 아래로 */
-    .schedule-edit-table.sticky-top thead{
-        top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h) + var(--wtm-editbar-h)) !important;
+    .schedule-edit-page .schedule-grid-header {
+        top: calc(var(--wtm-nav-h) + var(--wtm-pagehdr-h) + var(--wtm-editbar-h));
     }
 }
 
@@ -742,8 +743,8 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
         top: var(--wtm-app-top) !important;
     }
 
-    .schedule-edit-table.sticky-top thead{
-        top: calc(var(--wtm-app-top) + var(--wtm-editbar-h)) !important;
+    .schedule-edit-page .schedule-grid-header {
+        top: calc(var(--wtm-app-top) + var(--wtm-editbar-h));
     }
 }
 
