@@ -485,6 +485,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     text-align: center;
     padding: 2px 1px;
     vertical-align: middle;
+    position: relative;
 }
 
 /* 좌측 2칸(부서/성명) 공통 */
@@ -498,6 +499,9 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     display: flex;
     align-items: center;      /* 세로 가운데 */
     justify-content: center;  /* 기존처럼 가로도 가운데 유지 */
+    z-index: 2000;                 /* day 셀보다 무조건 위 */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 /* ====== Sticky left (가로 스크롤 시 부서/성명 고정) ====== */
@@ -534,7 +538,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
 .schedule-grid-row-head .schedule-grid-cell.head.left2 {
     position: sticky;
     background: #fff;
-    z-index: 1018;
+    z-index: 2500;
 }
 .schedule-grid-row-head .schedule-grid-cell.head.left1 { left: 0; }
 .schedule-grid-row-head .schedule-grid-cell.head.left2 { left: var(--wtm-dept-w); }
@@ -545,7 +549,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
 }
 .schedule-grid-row-data:hover .schedule-grid-cell.left1,
 .schedule-grid-row-data:hover .schedule-grid-cell.left2 {
-    background: #fff;
+    background-color: #f2f2f2;
 }
 
 /* 오늘 칸 강조 */
