@@ -1,7 +1,7 @@
 import environ
 from .base import *
 
-ALLOWED_HOSTS = ['52.78.193.52', 'wsnuni.co.kr']
+ALLOWED_HOSTS = ['52.78.193.52', '.wsnuni.co.kr']
 STATIC_ROOT = BASE_DIR / 'static/'
 STATICFILES_DIRS = []
 DEBUG = False
