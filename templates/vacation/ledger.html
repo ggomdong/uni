@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3 vacation-page vacation-ledger-page">
+
+    <div class="page-header">
+        <h4 class="page-title">연차관리 ▸ 연차정산표</h4>
+    </div>
+
+    {# ------------------------------------------------------------------ #}
+    {# 상단 컨트롤 바: 월 네비 + 탭                                           #}
+    {# ------------------------------------------------------------------ #}
+    <div class="row align-items-center mb-3 g-2">
+        <div class="col-md-6 col-12">
+            <div class="d-flex align-items-center gap-2 flex-wrap fs-4">
+                <a href="{% url 'vacation:ledger' stand_ym|get_month:-1 %}">
+                    <button type="button" class="btn-hover" aria-label="이전 달">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-left text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                        </svg>
+                    </button>
+                </a>
+
+                <a href="{% url 'vacation:ledger' stand_ym|get_month:1 %}">
+                    <button type="button" class="btn-hover" aria-label="다음 달">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-right text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                        </svg>
+                    </button>
+                </a>
+
+                <span class="nativeDatePicker">
+                    <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
+                           value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
+                </span>
+            </div>
+
+            {% now "Ym" as now_ym %}
+            <div class="d-flex flex-wrap gap-2 mt-2 small text-muted vacation-legend">
+                <span class="badge vac-legend-chip vac-past">과거(변경불가)</span>
+                <span class="badge vac-legend-chip vac-current">당월(스위치 가능)</span>
+                <span class="badge vac-legend-chip vac-future">미래(대기)</span>
+                <span class="ms-1">* “수당↔휴가” 전환은 당월만 가능</span>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-12">
+            <div class="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap align-items-center">
+                {% include 'vacation/_vacation_tabs.html' with active_tab='ledger' stand_ym=stand_ym %}
+            </div>
+        </div>
+    </div>
+
+
+    {# ------------------------------------------------------------------ #}
+    {# 선택된 직원 요약(자리만 확보)                                       #}
+    {# ------------------------------------------------------------------ #}
+    <div class="card vac-card mb-3">
+        <div class="card-body py-2">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="badge text-bg-light border">선택 직원</span>
+                <span class="fw-semibold">{{ selected_user.emp_name|default:"(직원 선택 전)" }}</span>
+                <span class="text-muted small">{{ selected_user.dept|default:"부서" }}</span>
+                <span class="text-muted small">{{ selected_user.position|default:"직위" }}</span>
+                <span class="ms-auto small text-muted">
+          기준년도: <span class="fw-semibold">{{ stand_ym|slice:"0:4" }}</span>
+        </span>
+            </div>
+        </div>
+    </div>
+
+    {# ------------------------------------------------------------------ #}
+    {# Ledger 테이블: 4행 × 12월                                           #}
+    {# ------------------------------------------------------------------ #}
+    <div class="table-responsive vacation-table-wrapper">
+        <table class="table table-sm table-bordered align-middle text-center vacation-ledger-table">
+            <colgroup>
+                <col style="width: 110px;">  {# row header #}
+                {% for c in ym_cols %}
+                <col style="width: 70px;">
+                {% endfor %}
+            </colgroup>
+
+            <thead class="table-light">
+            <tr>
+                <th class="text-nowrap">구분</th>
+                {% for c in ym_cols %}
+                <th class="text-nowrap">{{ c.month }}월</th>
+                {% endfor %}
+            </tr>
+            </thead>
+
+            <tbody>
+            {# 1) 발생 #}
+            <tr>
+                <th class="text-start vac-rowhead">발생</th>
+                {% for c in ym_cols %}
+                <td class="vac-cell
+              {% if c.ym < now_ym %}vac-past{% elif c.ym > now_ym %}vac-future{% else %}vac-current{% endif %}">
+                    <div class="fw-semibold">
+                        {{ ledger.grant|get_index:forloop.counter0|default:"-" }}
+                    </div>
+                    <div class="small text-muted">일</div>
+                </td>
+                {% endfor %}
+            </tr>
+
+            {# 2) 수당(월할 지급/스위치 자리) #}
+            <tr>
+                <th class="text-start vac-rowhead">수당</th>
+                {% for c in ym_cols %}
+                <td class="vac-cell
+              {% if c.ym < now_ym %}vac-past{% elif c.ym > now_ym %}vac-future{% else %}vac-current{% endif %}">
+                    <div class="fw-semibold">
+                        {{ ledger.paid|get_index:forloop.counter0|default:"-" }}
+                    </div>
+
+                    {% if c.ym == now_ym %}
+                    {# 당월만 스위치(협의용 UI) #}
+                    <div class="form-check form-switch vac-switch mt-1">
+                        <input class="form-check-input" type="checkbox" role="switch" id="sw{{ c.ym }}">
+                        <label class="form-check-label small text-muted" for="sw{{ c.ym }}">휴가로 전환</label>
+                    </div>
+                    {% else %}
+                    <div class="small text-muted mt-1">변경불가</div>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+
+            {# 3) 사용 #}
+            <tr>
+                <th class="text-start vac-rowhead">사용</th>
+                {% for c in ym_cols %}
+                <td class="vac-cell
+              {% if c.ym < now_ym %}vac-past{% elif c.ym > now_ym %}vac-future{% else %}vac-current{% endif %}">
+                    <div class="fw-semibold">
+                        {{ ledger.used|get_index:forloop.counter0|default:"-" }}
+                    </div>
+                    <div class="small text-muted">일</div>
+                </td>
+                {% endfor %}
+            </tr>
+
+            {# 4) 잔여 #}
+            <tr>
+                <th class="text-start vac-rowhead">잔여</th>
+                {% for c in ym_cols %}
+                <td class="vac-cell vac-balance
+              {% if c.ym < now_ym %}vac-past{% elif c.ym > now_ym %}vac-future{% else %}vac-current{% endif %}">
+                    <div class="fw-bold">
+                        {{ ledger.balance|get_index:forloop.counter0|default:"-" }}
+                    </div>
+                    <div class="small text-muted">일</div>
+                </td>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {# 검색용 GET 폼(형태만 유지) #}
+    <form id="searchForm" method="get" action="{% url 'vacation:ledger' stand_ym %}">
+        <input type="hidden" id="kw" name="kw" value="{{ kw|default_if_none:'' }}">
+    </form>
+
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+      // 월 선택 이동 ( /vacation/ledger/YYYYMM/ )
+      const baseUrl = "{% url 'vacation:ledger' '209901' %}".replace('209901/', '');
+      const selectMonth = document.getElementById('selectMonth');
+
+      if (selectMonth) {
+        selectMonth.addEventListener('change', function () {
+          if (!this.value) return;
+          const target = this.value.replace(/-/g, ''); // YYYY-MM -> YYYYMM
+          window.location.href = baseUrl + target + '/';
+        });
+      }
+
+      // 검색
+      const btnSearch = document.getElementById('btn_search');
+      const searchInput = document.getElementById('search_kw');
+
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+
+      function doSearch() {
+        const kwHidden = document.getElementById('kw');
+        if (kwHidden && searchInput) kwHidden.value = searchInput.value;
+        document.getElementById('searchForm').submit();
+      }
+
+      if (btnSearch) btnSearch.addEventListener('click', doSearch);
+
+      if (searchInput) {
+        searchInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            doSearch();
+          }
+        });
+      }
+    });
+</script>
+{% endblock %}

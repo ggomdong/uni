@@ -29,6 +29,9 @@
                     <a class="dropdown-item" href="{% url 'wtm:work_status' %}">월간집계</a>
                   </div>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'vacation' %}ci{% endif %}" href="{% url 'vacation:ledger' %}">연차관리</a>
+                </li>
                 <li class="nav-item dropdown">
                   <a class="nav-link dropdown-toggle {% if url_name == 'meal_status' or url_name == 'meal_status' %}ci{% endif %}" href="#" id="DropdownMeal" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     식대관리
@@ -50,6 +53,8 @@
                     <a class="dropdown-item" href="{% url 'common:position' %}">직위관리</a>
                     <hr class="dropdown-divider">
                     <a class="dropdown-item" href="{% url 'wtm:work_module' %}">근로모듈</a>
+                    <hr class="dropdown-divider">
+                    <a class="dropdown-item" href="{% url 'vacation:settings' %}">연차관리</a>
                     <hr class="dropdown-divider">
                     <a class="dropdown-item" href="{% url 'common:holiday' %}">공휴일관리</a>
                     <a class="dropdown-item" href="{% url 'common:business' %}">영업일관리</a>

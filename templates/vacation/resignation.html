@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3 vacation-page vacation-resignation-page">
+
+    <div class="page-header">
+        <h4 class="page-title">연차관리 ▸ 퇴직정산</h4>
+    </div>
+
+    {# ------------------------------------------------------------------ #}
+    {# 상단 컨트롤 바: 월 네비 + 탭                                           #}
+    {# ------------------------------------------------------------------ #}
+    <div class="row align-items-center mb-3 g-2">
+        <div class="col-md-6 col-12">
+            <div class="d-flex align-items-center gap-2 flex-wrap fs-4">
+                <a href="{% url 'vacation:resignation' stand_ym|get_month:-1 %}">
+                    <button type="button" class="btn-hover" aria-label="이전 달">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-left text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+                        </svg>
+                    </button>
+                </a>
+
+                <a href="{% url 'vacation:resignation' stand_ym|get_month:1 %}">
+                    <button type="button" class="btn-hover" aria-label="다음 달">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                             fill="currentColor" class="bi bi-chevron-right text-dark"
+                             viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                  d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                        </svg>
+                    </button>
+                </a>
+
+                <span class="nativeDatePicker">
+                    <input type="month" id="selectYM" name="selectYM" onkeydown="return false" onfocus="this.showPicker()"
+                           value="{{stand_ym|slice:'0:4'}}-{{stand_ym|slice:'4:6'}}"/>
+                </span>
+            </div>
+
+            <div class="small text-muted mt-2">
+                * 퇴사일 입력 시 “값1(시스템 잔여)” vs “값2(입사일 기준 재계산)”을 비교하여 MAX로 정산
+            </div>
+        </div>
+
+        <div class="col-md-6 col-12">
+            <div class="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap align-items-center">
+                {% include 'vacation/_vacation_tabs.html' with active_tab='ledger' stand_ym=stand_ym %}
+            </div>
+        </div>
+    </div>
+
+    {# 입력 영역 #}
+    <div class="card vac-card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">직원</label>
+                    <select class="form-select form-select-sm">
+                        <option selected>직원을 선택하세요(협의용)</option>
+                        {% if user_list %}
+                        {% for u in user_list %}
+                        <option value="{{ u.id }}">{{ u.emp_name }} ({{ u.dept }} · {{ u.position }})</option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">퇴사일</label>
+                    <input type="date" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-sm btn-primary w-100">시뮬레이션</button>
+                </div>
+                <div class="col-md-3 small text-muted">
+                    365-day 특례 / 선공제 무효화 등은 결과 영역에 표시
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# 결과 요약 카드 #}
+    <div class="row g-2 mb-3">
+        <div class="col-md-4">
+            <div class="card vac-card vac-kpi">
+                <div class="card-body">
+                    <div class="small text-muted">값1) 시스템 잔여</div>
+                    <div class="fs-5 fw-bold">- 일</div>
+                    <div class="small text-muted mt-1">현재 대시보드 잔여 기준</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card vac-card vac-kpi">
+                <div class="card-body">
+                    <div class="small text-muted">값2) 입사일 기준 재계산</div>
+                    <div class="fs-5 fw-bold">- 일</div>
+                    <div class="small text-muted mt-1">(총발생 - 총사용 - 총수당)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card vac-card vac-kpi vac-kpi-final">
+                <div class="card-body">
+                    <div class="small text-muted">최종) MAX(값1, 값2)</div>
+                    <div class="fs-5 fw-bold">- 일</div>
+                    <div class="small text-muted mt-1">근로자 불이익 방지</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# 상세 내역(자리만) #}
+    <div class="table-responsive vacation-table-wrapper">
+        <table class="table table-sm table-bordered align-middle text-center vacation-table">
+            <thead class="table-light">
+            <tr>
+                <th>구분</th>
+                <th>설명</th>
+                <th>일수</th>
+                <th>일자</th>
+                <th>비고</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>특례</td>
+                <td class="text-start">365-day Rule 해당 여부</td>
+                <td class="fw-semibold">-</td>
+                <td>-</td>
+                <td class="text-muted">해당 시 선공제 무효화</td>
+            </tr>
+            <tr>
+                <td colspan="5" class="py-4 text-muted">정산 상세 내역은 로직 확정 후 채워집니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+      const baseUrl = "{% url 'vacation:resignation' '209901' %}".replace('209901/', '');
+      const selectMonth = document.getElementById('selectMonth');
+      if (selectMonth) {
+        selectMonth.addEventListener('change', function () {
+          if (!this.value) return;
+          const target = this.value.replace(/-/g, '');
+          window.location.href = baseUrl + target + '/';
+        });
+      }
+    });
+</script>
+{% endblock %}

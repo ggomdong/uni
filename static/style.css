@@ -1017,6 +1017,88 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
 }
 
 /****************************************************************/
+/* Vacation (연차관리) - UI only
+/****************************************************************/
+
+.vacation-page .vac-card{
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+
+.vacation-page .vacation-tabs .nav-link{
+  color: #495057;
+  font-weight: 600;
+}
+.vacation-page .vacation-tabs .nav-link.active{
+  color: #02b3bb;
+  border-color: #dee2e6 #dee2e6 #fff;
+}
+
+.vacation-page .vacation-table-wrapper{
+  overflow-x: auto;   /* 근태쪽 hidden 정책과 분리 */
+}
+
+.vacation-page .vacation-table,
+.vacation-page .vacation-ledger-table{
+  font-size: 0.86rem;
+}
+
+.vacation-page .vacation-table th,
+.vacation-page .vacation-table td,
+.vacation-page .vacation-ledger-table th,
+.vacation-page .vacation-ledger-table td{
+  padding: 0.25rem 0.4rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.vacation-page .vac-rowhead{
+  background: #fff;
+  font-weight: 700;
+}
+
+/* Ledger 셀 상태(과거/당월/미래) */
+.vacation-page .vac-cell{
+  font-variant-numeric: tabular-nums;
+}
+.vacation-page .vac-past{
+  background: #f8f9fa;
+  color: #6c757d;
+}
+.vacation-page .vac-current{
+  background: #fff;
+  box-shadow: inset 0 0 0 2px rgba(2,179,187,.18);
+}
+.vacation-page .vac-future{
+  background: #e7f5ff;
+  color: #0b5ed7;
+}
+
+/* 잔여 강조 */
+.vacation-page .vac-balance{
+  background-clip: padding-box;
+}
+.vacation-page .vac-balance .fw-bold{
+  color: #05636A;
+}
+
+/* 레전드 칩 */
+.vacation-page .vac-legend-chip{
+  border: 1px solid rgba(0,0,0,.08);
+  font-weight: 700;
+}
+.vacation-page .vac-legend-chip.vac-past{ background:#f8f9fa; color:#6c757d; }
+.vacation-page .vac-legend-chip.vac-current{ background:#fff; color:#05636A; }
+.vacation-page .vac-legend-chip.vac-future{ background:#e7f5ff; color:#0b5ed7; }
+
+/* 월 표시 input 폭 */
+.vacation-page .uniMonthText{
+  width: 140px;
+}
+
+
+/****************************************************************/
 /* 직원관리
 /****************************************************************/
 

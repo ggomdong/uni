@@ -29,6 +29,7 @@ urlpatterns = [
     path('pybo/', include('pybo.urls')),
     path('common/', include('common.urls')),
     path('wtm/', include('wtm.urls')),
+    path('vacation/', include('vacation.urls')),
 ]
 
 handler404 = 'common.views.page_not_found'

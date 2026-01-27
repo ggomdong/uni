@@ -68,6 +68,7 @@ CUSTOM_APPS = [
     "pybo",
     "common",
     "wtm",
+    "vacation",
 ]
 
 INSTALLED_APPS = SYSTEM_APPS + THIRD_PARTY_APPS + CUSTOM_APPS

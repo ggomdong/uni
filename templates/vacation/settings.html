@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load pybo_filter %}
+{% block content %}
+<div class="container my-3 vacation-page vacation-settings-page">
+
+    <div class="page-header">
+        <h4 class="page-title">설정 ▸ 연차관리</h4>
+    </div>
+
+    <form method="post" action="{% url 'vacation:settings' %}">
+        {% csrf_token %}
+
+        {# 핵심 수식 변수(15/12/2) #}
+        <div class="card vac-card mb-3">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="fw-semibold">재직 중 사용 가능 연차 공식(변수)</div>
+                    <div class="small text-muted">법정(15) - 선지급(12) + 회사보정(2) = 5</div>
+                </div>
+
+                <div class="row g-2 mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">법정 기준 일수</label>
+                        <input type="number" class="form-control form-control-sm" value="15">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">급여 선지급(공제) 일수</label>
+                        <input type="number" class="form-control form-control-sm" value="12">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">회사 보정 일수</label>
+                        <input type="number" class="form-control form-control-sm" value="2">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# 별첨 1: 입사월별 Cap 테이블 #}
+        <div class="card vac-card mb-3">
+            <div class="card-body">
+                <div class="fw-semibold mb-2">[별첨1] 1년차 연차 발생 상한(Cap)</div>
+
+                <div class="table-responsive vacation-table-wrapper">
+                    <table class="table table-sm table-bordered align-middle text-center vacation-table">
+                        <thead class="table-light">
+                        <tr>
+                            <th>입사월</th>
+                            <th>1년차 상한(Cap)</th>
+                            <th class="text-muted">비고</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {# UI 협의용: 기본 행만 제공(로직/저장은 추후) #}
+                        <tr><td>1월</td><td><input class="form-control form-control-sm text-center" value="4"></td><td class="text-muted small">예시</td></tr>
+                        <tr><td>2월</td><td><input class="form-control form-control-sm text-center" value="4"></td><td class="text-muted small">예시</td></tr>
+                        <tr><td>3월</td><td><input class="form-control form-control-sm text-center" value="3"></td><td class="text-muted small">예시</td></tr>
+                        <tr><td>...</td><td><input class="form-control form-control-sm text-center" value=""></td><td class="text-muted small">협의 후 확정</td></tr>
+                        <tr><td>9월</td><td><input class="form-control form-control-sm text-center" value="1"></td><td class="text-muted small">예시</td></tr>
+                        <tr><td>10~12월</td><td><input class="form-control form-control-sm text-center" value="0"></td><td class="text-muted small">예시</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="small text-muted mt-2">
+                    * 실제 저장은 “월별 레코드(1~12)”로 구성하거나, JSON/Key-Value로 저장하는 방식 중 선택(추후).
+                </div>
+            </div>
+        </div>
+
+        {# 장기근속 포상 #}
+        <div class="card vac-card mb-3">
+            <div class="card-body">
+                <div class="fw-semibold mb-2">장기근속 포상 설정</div>
+
+                <div class="table-responsive vacation-table-wrapper">
+                    <table class="table table-sm table-bordered align-middle text-center vacation-table">
+                        <thead class="table-light">
+                        <tr>
+                            <th style="width: 120px;">근속 연수</th>
+                            <th style="width: 140px;">부여 일수</th>
+                            <th>설명</th>
+                            <th style="width: 120px;"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td><input class="form-control form-control-sm text-center" value="3"></td>
+                            <td><input class="form-control form-control-sm text-center" value="1"></td>
+                            <td class="text-start small text-muted">만 3년 달성 “당월 1일” 자동 생성</td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger">삭제</button></td>
+                        </tr>
+                        <tr>
+                            <td><input class="form-control form-control-sm text-center" value="5"></td>
+                            <td><input class="form-control form-control-sm text-center" value="2"></td>
+                            <td class="text-start small text-muted">만 5년 달성 “당월 1일” 자동 생성</td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger">삭제</button></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <button type="button" class="btn btn-sm btn-outline-primary">포상 규칙 추가</button>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-sm btn-primary">저장</button>
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}

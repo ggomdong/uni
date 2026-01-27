@@ -1,0 +1,21 @@
+<div class="btn-group metric-filter" role="group" aria-label="연차관리 탭">
+    <a href="{% url 'vacation:ledger' stand_ym %}"
+       class="btn btn-sm {% if active_tab == 'ledger' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        정산표
+    </a>
+
+    <a href="{% url 'vacation:approvals' stand_ym %}"
+       class="btn btn-sm {% if active_tab == 'approvals' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        승인관리
+    </a>
+
+    <a href="{% url 'vacation:resignation' stand_ym %}"
+       class="btn btn-sm {% if active_tab == 'resignation' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        퇴직정산
+    </a>
+
+    <a href="{% url 'vacation:settings' %}"
+       class="btn btn-sm {% if active_tab == 'settings' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        설정
+    </a>
+</div>
