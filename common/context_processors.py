@@ -1,6 +1,13 @@
 from datetime import datetime
 import calendar
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
+
+
+def env_info(request):
+    return {
+        "env_label": getattr(settings, "ENV_LABEL"),
+    }
 
 week_list = ["월", "화", "수", "목", "금", "토", "일"]
 day_of_the_week = {'mon': '월', 'tue': '화', 'wed': '수', 'thu': '목', 'fri': '금', 'sat': '토', 'sun': '일', }
