@@ -10,8 +10,12 @@
     <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
     <!-- etc CSS -->
     <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
-    <link rel="shortcut icon" href="{% static 'favicon.png' %}">
-    <title>YOU&I 근태관리</title>
+    <link rel="shortcut icon"
+      href="{% static 'favicon' %}{% if env_label != 'PROD' %}-{{ env_label|lower }}{% endif %}.png">
+    <title>
+        {% if env_label != "PROD" %}[{{ env_label }}] {% endif %}
+        {% block title %}Medi HR - YOU&I 인사관리{% endblock %}
+    </title>
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- 네비게이션바 -->

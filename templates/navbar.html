@@ -1,7 +1,14 @@
 {% load static %}
-<nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
+<nav class="navbar fixed-top navbar-expand-lg navbar-light border-bottom
+    {% if env_label == 'DEV' %}bg-warning border-warning
+    {% elif env_label == 'LOCAL' %}bg-info border-info
+    {% else %}bg-light{% endif %}">
+
     <div class="container-fluid">
         <a class="navbar-brand" href="{% url 'wtm:index' %}"><img src="{% static 'logo.png' %}" width="108" height="40"></a>
+        {% if env_label != 'PROD' %}
+          <span class="badge text-bg-dark ms-2 align-self-center">{{ env_label }}</span>
+        {% endif %}
         <button class="navbar-toggler" type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#navbarSupportedContent"
@@ -66,7 +73,6 @@
                     <a class="nav-link {% if url_name == 'pybo_index' %}ci{% endif %}" href="{% url 'pybo:pybo_index' %}">공지사항</a>
                 </li>
                 {% endif %}
-                <br><br>
                 <li class="nav-item">
                     {% if user.is_authenticated %}
                         <form id="logout-form" method="post"

@@ -13,6 +13,8 @@ INITIAL_PASSWORD_SUFFIX = env('INITIAL_PASSWORD_SUFFIX', default=None)
 if not INITIAL_PASSWORD_SUFFIX:
     raise ImproperlyConfigured("INITIAL_PASSWORD_SUFFIX is not set in .env")
 
+ENV_LABEL = env('ENV_LABEL', default='PROD').upper()
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
