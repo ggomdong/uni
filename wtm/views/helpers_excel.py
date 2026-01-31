@@ -36,7 +36,7 @@ def set_table_border(ws, min_row: int, max_row: int, min_col: int, max_col: int)
             cell.border = thin_border
 
 
-def metric_excel_data(stand_ym: str, metric: str) -> dict:
+def metric_excel_data(stand_ym: str, metric: str, *, branch) -> dict:
     """
     work_metric 화면과 동일한 데이터(월 그리드)를 엑셀용으로 구성.
     반환:
@@ -58,7 +58,7 @@ def metric_excel_data(stand_ym: str, metric: str) -> dict:
         raise ValueError("invalid metric")
 
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
-    base_users = fetch_base_users_for_month(stand_ym)
+    base_users = fetch_base_users_for_month(stand_ym, branch=branch)
     day_list = context_processors.get_day_list(stand_ym)
 
     if not base_users:
@@ -73,7 +73,13 @@ def metric_excel_data(stand_ym: str, metric: str) -> dict:
         }
 
     uid_list = [u["user_id"] for u in base_users]
-    detail_map = build_monthly_metric_details_for_users(users=uid_list, year=year, month=month, metric=metric)
+    detail_map = build_monthly_metric_details_for_users(
+        users=uid_list,
+        year=year,
+        month=month,
+        metric=metric,
+        branch=branch,
+    )
 
     days_order = list(range(1, monthrange(year, month)[1] + 1))
     rows = []
@@ -88,7 +94,7 @@ def metric_excel_data(stand_ym: str, metric: str) -> dict:
             "cells": cell_seconds,
         })
 
-    non_business_days = get_non_business_days(year, month)
+    non_business_days = get_non_business_days(year, month, branch=branch)
 
     return {
         "metric": metric,
@@ -188,7 +194,7 @@ def write_metric_sheet(ws, data: dict) -> None:
     set_table_border(ws, 1, ws.max_row, 1, 4 + last_day)
 
 
-def schedule_excel_data(stand_ym: str) -> dict:
+def schedule_excel_data(stand_ym: str, *, branch) -> dict:
     """
     schedule.py / work_schedule.html 표를 엑셀용으로 구성
     """
@@ -197,7 +203,11 @@ def schedule_excel_data(stand_ym: str) -> dict:
 
     day_list = context_processors.get_day_list(stand_ym)
 
-    schedule_count = Schedule.objects.filter(year=stand_ym[:4], month=stand_ym[4:6]).count()
+    schedule_count = Schedule.objects.filter(
+        year=stand_ym[:4],
+        month=stand_ym[4:6],
+        branch=branch,
+    ).count()
     if schedule_count == 0:
         return {
             "stand_ym": stand_ym,
@@ -210,21 +220,22 @@ def schedule_excel_data(stand_ym: str) -> dict:
 
     schedule_date = f"{stand_ym}{last_day:02d}"
 
-    query_user = f'''
+    query_user = '''
                 SELECT u.id, u.emp_name, u.dept, u.position,
                         DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
                         d.`order` as do, p.`order` as po
                 FROM common_user u
-                    LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
-                    LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+                    LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
+                    LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
                 WHERE is_employee = TRUE
-                    and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
-                    and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
+                    AND u.branch_id = %s
+                    and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
+                    and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
                 ORDER BY do, po, join_date, emp_name
                 '''
 
     with connection.cursor() as cursor:
-        cursor.execute(query_user)
+        cursor.execute(query_user, [branch.id, schedule_date, f"{stand_ym}01"])
         results = cursor.fetchall()
         desc = cursor.description
         base_users = []
@@ -248,10 +259,15 @@ def schedule_excel_data(stand_ym: str) -> dict:
 
     sched_map = {
         s.user_id: s
-        for s in Schedule.objects.filter(year=stand_ym[:4], month=stand_ym[4:6], user_id__in=user_ids)
+        for s in Schedule.objects.filter(
+            year=stand_ym[:4],
+            month=stand_ym[4:6],
+            user_id__in=user_ids,
+            branch=branch,
+        )
     }
 
-    module_map = {m.id: {"cat": m.cat, "name": m.name} for m in Module.objects.all()}
+    module_map = {m.id: {"cat": m.cat, "name": m.name} for m in Module.objects.filter(branch=branch)}
 
     rows = []
     for u in base_users:
@@ -298,7 +314,7 @@ def schedule_excel_data(stand_ym: str) -> dict:
             "days": day_values,
         })
 
-    non_business_days = get_non_business_days(year, month)
+    non_business_days = get_non_business_days(year, month, branch=branch)
 
     return {
         "stand_ym": stand_ym,

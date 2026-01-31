@@ -3,6 +3,7 @@ from datetime import datetime, date
 from django.utils import timezone
 from django.shortcuts import render
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import connection
 
 from common import context_processors
@@ -11,15 +12,17 @@ from .helpers import dictfetchall
 from ..models import Module
 
 
+@login_required(login_url="common:login")
 def index(request, stand_day=None):
     if stand_day is None:
         stand_day = datetime.today().strftime('%Y%m%d')
 
     days = context_processors.get_days_korean(stand_day)
+    branch = request.user.branch
 
     ###### 1. 근무인원 현황 (화면 상단) ######
 
-    query = f'''
+    query = '''
         SELECT u.dept, u.position, u.emp_name,
             m.start_time, m.end_time,
             case when STR_TO_DATE(m.start_time, '%H:%i') <= STR_TO_DATE('13:00', '%H:%i') then 1
@@ -30,21 +33,25 @@ def index(request, stand_day=None):
             end as pm,
             d.order as do, p.order as po
         FROM common_user u
-            LEFT OUTER JOIN wtm_schedule s on (u.id = s.user_id)
-            LEFT OUTER JOIN wtm_module m on (s.d{int(stand_day[6:8])}_id = m.id)
-            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
-            LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+            LEFT OUTER JOIN wtm_schedule s on (u.id = s.user_id AND s.branch_id = u.branch_id)
+            LEFT OUTER JOIN wtm_module m on (s.d{int(stand_day[6:8])}_id = m.id AND m.branch_id = u.branch_id)
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
         WHERE is_employee = TRUE
-          and s.year = '{stand_day[0:4]}'
-          and s.month = '{stand_day[4:6]}'
-          and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
-          and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
+          and u.branch_id = %s
+          and s.year = %s
+          and s.month = %s
+          and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
+          and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
         ORDER BY do, po, join_date, emp_name
         '''
     # print(query)
     try:
         with connection.cursor() as cursor:
-            cursor.execute(query)
+            cursor.execute(
+                query,
+                [branch.id, stand_day[0:4], stand_day[4:6], stand_day, stand_day],
+            )
             results = cursor.fetchall()
 
             x = cursor.description
@@ -105,46 +112,63 @@ def index(request, stand_day=None):
             FROM common_user u
                 LEFT OUTER JOIN wtm_schedule s
                              ON u.id = s.user_id
-                            AND s.year = '{stand_day[0:4]}'
-                            AND s.month = '{stand_day[4:6]}'
+                            AND s.year = %s
+                            AND s.month = %s
+                            AND s.branch_id = u.branch_id
                 LEFT OUTER JOIN wtm_module m
-                             ON s.d{int(stand_day[6:8])}_id = m.id
+                             ON s.d{int(stand_day[6:8])}_id = m.id AND m.branch_id = u.branch_id
                 LEFT OUTER JOIN (
                     SELECT * FROM wtm_contract WHERE (user_id, stand_date) IN
                     (
                         SELECT a.user_id, MIN(a.stand_date)
                         FROM
                         (
-                            SELECT user_id, MAX(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= '{stand_day}' GROUP BY user_id
+                            SELECT user_id, MAX(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= %s AND branch_id = %s GROUP BY user_id
                             UNION
-                            SELECT user_id, MIN(stand_date) as stand_date FROM wtm_contract WHERE stand_date > '{stand_day}' GROUP BY user_id
+                            SELECT user_id, MIN(stand_date) as stand_date FROM wtm_contract WHERE stand_date > %s AND branch_id = %s GROUP BY user_id
                             ) a
                             group by a.user_id
                         )
+                    AND branch_id = %s
                 ) c ON u.id = c.user_id
                 LEFT OUTER JOIN common_dept d
-                             ON u.dept = d.dept_name
+                             ON u.dept = d.dept_name AND d.branch_id = u.branch_id
                 LEFT OUTER JOIN common_position p
-                             ON u.position = p.position_name
+                             ON u.position = p.position_name AND p.branch_id = u.branch_id
             WHERE is_employee = TRUE
               and c.check_yn = 'Y'
-              and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_day}'
-              and (DATE_FORMAT(u.out_date, '%Y%m%d') is null OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_day}')
+              and u.branch_id = %s
+              and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
+              and (DATE_FORMAT(u.out_date, '%Y%m%d') is null OR DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
             ORDER BY do, po, join_date, emp_name
             '''
 
     try:
         with connection.cursor() as cur:
-            cur.execute(query)
+            cur.execute(
+                query,
+                [
+                    stand_day[0:4],
+                    stand_day[4:6],
+                    stand_day,
+                    branch.id,
+                    stand_day,
+                    branch.id,
+                    branch.id,
+                    branch.id,
+                    stand_day,
+                    stand_day,
+                ],
+            )
             base_rows = dictfetchall(cur)
 
         # 계산은 attendance 모듈에 위임
-        work_list = build_daily_attendance_for_users(base_rows, day)
+    work_list = build_daily_attendance_for_users(base_rows, day, branch=branch)
 
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')
 
-    module_list = Module.objects.all().order_by('order', 'id')  # 근로모듈을 입력하기 위함
+    module_list = Module.objects.filter(branch=branch).order_by('order', 'id')  # 근로모듈을 입력하기 위함
 
     context = {'stand_day': stand_day, 'days': days, 'user_list': user_list, 'work_list': work_list,
                'max_workers': max_workers, 'module_list': module_list}

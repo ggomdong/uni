@@ -85,8 +85,12 @@ def signup(request):
     else:
         form = UserForm()
 
-    dept_list = list(Dept.objects.values_list('dept_name', flat=True).order_by('order'))
-    position_list = list(Position.objects.values_list('position_name', flat=True).order_by('order'))
+    dept_list = list(
+        Dept.objects.filter(branch=request.user.branch).values_list('dept_name', flat=True).order_by('order')
+    )
+    position_list = list(
+        Position.objects.filter(branch=request.user.branch).values_list('position_name', flat=True).order_by('order')
+    )
     context = {'form': form, 'dept_list': dept_list, 'position_list': position_list}
     return render(request, 'common/signup.html', context)
 
@@ -115,26 +119,31 @@ def user_list(request):
         order_condition = order_condition.replace('asc', 'desc')
 
     stand_ym = datetime.today().strftime('%Y%m')
+    branch = request.user.branch
+    if branch is None:
+        messages.error(request, "지점 정보가 없습니다.")
+        return redirect("common:login")
+
+    where_clauses = ["u.is_employee = TRUE", "u.branch_id = %s"]
+    params: list = [branch.id]
 
     match search_work:
         case '전체':
-            work_condition = '1=1'
+            pass
         case '퇴사자':
-            work_condition = f'DATE_FORMAT(u.out_date, "%Y%m") < "{stand_ym}"'
+            where_clauses.append('DATE_FORMAT(u.out_date, "%Y%m") < %s')
+            params.append(stand_ym)
         case _:
-            work_condition = f'(out_date is null or DATE_FORMAT(u.out_date, "%Y%m") >= "{stand_ym}")'
+            where_clauses.append('(u.out_date is null or DATE_FORMAT(u.out_date, "%Y%m") >= %s)')
+            params.append(stand_ym)
 
-    match search_dept:
-        case '전체':
-            dept_condition = '1=1'
-        case _:
-            dept_condition = f'dept = "{search_dept}"'
+    if search_dept != '전체':
+        where_clauses.append("u.dept = %s")
+        params.append(search_dept)
 
-    match search_position:
-        case '전체':
-            position_condition = '1=1'
-        case _:
-            position_condition = f'position = "{search_position}"'
+    if search_position != '전체':
+        where_clauses.append("u.position = %s")
+        params.append(search_position)
 
     # User를 메인으로 Contract를 LEFT OUTER JOIN 하여, 계약이 있는 경우에만 리스트에 보여줌
     # 1. 현재(NOW())보다 과거인 기준일이 존재하면 max(과거 기준일)
@@ -150,27 +159,25 @@ def user_list(request):
                 SELECT a.user_id, min(a.stand_date)
                 FROM 
                 (
-                    SELECT user_id, max(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() GROUP BY user_id
+                    SELECT user_id, max(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() AND branch_id = %s GROUP BY user_id
                     UNION
-                    SELECT user_id, min(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() GROUP BY user_id
+                    SELECT user_id, min(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() AND branch_id = %s GROUP BY user_id
                     ) a
                     group by a.user_id
                 ) 
-            ) c
+            ) AND branch_id = %s
+        ) c
             on (u.id = c.user_id)
-            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
-			LEFT OUTER JOIN common_position p on (u.position = p.position_name)
-        WHERE is_employee = TRUE
-            and {work_condition}
-            and {dept_condition}
-            and {position_condition}
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
+			LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
+        WHERE {' AND '.join(where_clauses)}
         ORDER BY {order_condition}
         '''
 
     #print(raw_query)
 
     with connection.cursor() as cursor:
-        cursor.execute(raw_query)
+        cursor.execute(raw_query, [branch.id, branch.id, branch.id, *params])
         results = cursor.fetchall()
 
         x = cursor.description
@@ -185,10 +192,14 @@ def user_list(request):
 
     #print(query_set)
 
-    dept_list = list(Dept.objects.values_list('dept_name', flat=True).order_by('order'))
-    position_list = list(Position.objects.values_list('position_name', flat=True).order_by('order'))
+    dept_list = list(
+        Dept.objects.filter(branch=branch).values_list('dept_name', flat=True).order_by('order')
+    )
+    position_list = list(
+        Position.objects.filter(branch=branch).values_list('position_name', flat=True).order_by('order')
+    )
 
-    module_list = Module.objects.all()
+    module_list = Module.objects.filter(branch=branch)
     context = {'user_list': query_set, 'dept_list': dept_list, 'position_list': position_list,
                'module_list': module_list, 'order': order,
                'search_work': search_work, 'search_dept': search_dept, 'search_position': search_position}
@@ -203,7 +214,7 @@ def nametag(request, emp_name, position):
 
 @login_required(login_url='common:login')
 def user_modify(request, user_id):
-    user = get_object_or_404(User, pk=user_id)
+    user = get_object_or_404(User, pk=user_id, branch=request.user.branch)
 
     if request.method == 'POST':
         # 수정된 내용을 반영하기 위해, request에서 넘어온 값으로 덮어쓰라는 의미
@@ -223,10 +234,14 @@ def user_modify(request, user_id):
         form = UserModifyForm(instance=user)
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
-    dept_list = list(Dept.objects.values_list('dept_name', flat=True).order_by('order'))
-    position_list = list(Position.objects.values_list('position_name', flat=True).order_by('order'))
-    module_list = Module.objects.all()
-    contract_list = Contract.objects.filter(user_id=user_id).order_by('-stand_date')
+    dept_list = list(
+        Dept.objects.filter(branch=request.user.branch).values_list('dept_name', flat=True).order_by('order')
+    )
+    position_list = list(
+        Position.objects.filter(branch=request.user.branch).values_list('position_name', flat=True).order_by('order')
+    )
+    module_list = Module.objects.filter(branch=request.user.branch)
+    contract_list = Contract.objects.filter(user_id=user_id, branch=request.user.branch).order_by('-stand_date')
     context = {'form': form, 'dept_list': dept_list, 'position_list': position_list,
                'module_list': module_list, 'contract_list': contract_list, 'user_id': user_id}
     return render(request, 'common/user_modify.html', context)
@@ -234,7 +249,7 @@ def user_modify(request, user_id):
 
 @login_required(login_url='common:login')
 def password_change(request, user_id):
-    user = get_object_or_404(User, id=user_id)
+    user = get_object_or_404(User, id=user_id, branch=request.user.branch)
     if request.method == 'POST':
         form = PasswordChangeForm(request.POST)
         if form.is_valid():
@@ -249,7 +264,7 @@ def password_change(request, user_id):
 
 @login_required(login_url='common:login')
 def reset_device(request, user_id):
-    user = get_object_or_404(User, pk=user_id)
+    user = get_object_or_404(User, pk=user_id, branch=request.user.branch)
 
     if request.method == "POST":
         user.device_id = None
@@ -281,6 +296,7 @@ def dept(request):
                     posted_max += 1
                     dept.order = posted_max
 
+                dept.branch = request.user.branch
                 dept.reg_id = request.user
                 dept.reg_date = timezone.now()
                 dept.mod_id = request.user
@@ -290,7 +306,7 @@ def dept(request):
             messages.success(request, "부서 정보를 저장했습니다.")
             return redirect('common:dept')
     else:
-        formset = DeptFormSet(queryset=Dept.objects.order_by('order'))
+        formset = DeptFormSet(queryset=Dept.objects.filter(branch=request.user.branch).order_by('order'))
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     context = {'formset': formset}
@@ -320,6 +336,7 @@ def position(request):
                     posted_max += 1
                     position.order = posted_max
 
+                position.branch = request.user.branch
                 position.reg_id = request.user
                 position.reg_date = timezone.now()
                 position.mod_id = request.user
@@ -329,7 +346,7 @@ def position(request):
             messages.success(request, "직위 정보를 저장했습니다.")
             return redirect('common:position')
     else:
-        formset = PositionFormSet(queryset=Position.objects.order_by('order'))
+        formset = PositionFormSet(queryset=Position.objects.filter(branch=request.user.branch).order_by('order'))
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     context = {'formset': formset}
@@ -356,6 +373,7 @@ def holiday(request):
                 obj.delete()
 
             for holiday in holidays:
+                holiday.branch = request.user.branch
                 holiday.reg_id = request.user
                 holiday.reg_date = timezone.now()
                 holiday.mod_id = request.user
@@ -365,15 +383,20 @@ def holiday(request):
             messages.success(request, "공휴일 정보를 저장했습니다.")
             return redirect('common:holiday')
     else:
+        holiday_qs = Holiday.objects.filter(branch=request.user.branch).order_by('holiday', 'holiday_name')
         if search_year == '전체':
-            formset = HolidayFormSet(queryset=Holiday.objects.order_by('holiday', 'holiday_name'))
+            formset = HolidayFormSet(queryset=holiday_qs)
         else:
-            formset = HolidayFormSet(queryset=Holiday.objects.order_by('holiday', 'holiday_name').filter(holiday__year=search_year))
+            formset = HolidayFormSet(queryset=holiday_qs.filter(holiday__year=search_year))
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     # 년도별 공휴일을 검색하기 위해 QuerySet을 해당값만으로 리스트 구성(flat)하고, 중복제거(distinct)
-    year_list = list(Holiday.objects.annotate(
-        year=ExtractYear('holiday')).values_list('year', flat=True).distinct())
+    year_list = list(
+        Holiday.objects.filter(branch=request.user.branch)
+        .annotate(year=ExtractYear('holiday'))
+        .values_list('year', flat=True)
+        .distinct()
+    )
     context = {'formset': formset, 'year_list': year_list, 'search_year': search_year}
     return render(request, 'common/holiday.html', context)
 
@@ -395,6 +418,7 @@ def business(request):
                 obj.delete()
 
             for business in businesses:
+                business.branch = request.user.branch
                 business.reg_id = request.user
                 business.reg_date = timezone.now()
                 business.mod_id = request.user
@@ -404,7 +428,7 @@ def business(request):
             messages.success(request, "영업일 정보를 저장했습니다.")
             return redirect('common:business')
     else:
-        formset = BusinessFormSet()
+        formset = BusinessFormSet(queryset=Business.objects.filter(branch=request.user.branch))
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     context = {'formset': formset}
@@ -430,6 +454,7 @@ def code(request):
                 obj.delete()
 
             for code in codes:
+                code.branch = request.user.branch
                 code.reg_id = request.user
                 code.reg_date = timezone.now()
                 code.mod_id = request.user
@@ -439,14 +464,17 @@ def code(request):
             messages.success(request, "코드 정보를 저장했습니다.")
             return redirect('common:code')
     else:
+        base_qs = Code.objects.filter(branch=request.user.branch).order_by('code_name', 'order')
         if search == '전체':
-            qs = CodeFormSet(queryset=Code.objects.order_by('code_name', 'order'))
+            qs = CodeFormSet(queryset=base_qs)
         else:
-            qs = CodeFormSet(queryset=Code.objects.order_by('code_name', 'order').filter(code_name=search))
+            qs = CodeFormSet(queryset=base_qs.filter(code_name=search))
 
     # POST방식이지만 form에 오류가 있거나, GET방식일때 아래로 진행
     # 코드명 검색을 위해 QuerySet을 해당값만으로 리스트 구성(flat)하고, 중복제거(distinct)
     formset = qs
-    code_name_list = list(Code.objects.values_list('code_name', flat=True).distinct())  # [부서, 직위]
+    code_name_list = list(
+        Code.objects.filter(branch=request.user.branch).values_list('code_name', flat=True).distinct()
+    )  # [부서, 직위]
     context = {'formset': formset, 'code_name_list': code_name_list, 'search': search}
     return render(request, 'common/code.html', context)

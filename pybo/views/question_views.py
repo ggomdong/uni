@@ -16,6 +16,7 @@ def question_create(request):
             question = form.save(commit=False)
             question.author = request.user
             question.create_date = timezone.now()   # 실제 저장을 위해 작성일시 설정
+            question.branch = request.user.branch
             question.save()     # 실제로 저장
             return redirect('pybo:pybo_index')
     else:   # "질문 등록" 버튼을 눌러서 'pybo:question_create'를 호출하면 GET 방식이므로 질문 등록 화면을 보여줌
@@ -27,7 +28,7 @@ def question_create(request):
 
 @login_required(login_url='common:login')
 def question_modify(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
+    question = get_object_or_404(Question, pk=question_id, branch=request.user.branch)
     if request.user != question.author:
         messages.error(request, '수정권한이 없습니다.')
         return redirect('pybo:detail', question_id=question_id)
@@ -51,7 +52,7 @@ def question_modify(request, question_id):
 
 @login_required(login_url='common:login')
 def question_delete(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
+    question = get_object_or_404(Question, pk=question_id, branch=request.user.branch)
     if request.user != question.author:
         messages.error(request, '삭제 권한이 없습니다.')
         return redirect('pybo:detail', question_id=question.id)
@@ -61,7 +62,7 @@ def question_delete(request, question_id):
 
 @login_required(login_url='common:login')
 def question_vote(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
+    question = get_object_or_404(Question, pk=question_id, branch=request.user.branch)
     if request.user == question.author:
         messages.error(request, '본인이 작성한 글은 추천할 수 없습니다.')
     # 이미 추천한 경우, 다시 누르면 추천을 제거함

@@ -60,6 +60,18 @@ class Dept(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='dept_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="depts",
+        db_index=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["branch", "dept_name"], name="dept_unique_branch_name"),
+        ]
 
 
 class Position(models.Model):
@@ -69,6 +81,18 @@ class Position(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='position_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="positions",
+        db_index=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["branch", "position_name"], name="position_unique_branch_name"),
+        ]
 
 
 class Holiday(models.Model):
@@ -78,6 +102,18 @@ class Holiday(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='holiday_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="holidays",
+        db_index=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["branch", "holiday"], name="holiday_unique_branch_date"),
+        ]
 
 
 class Business(models.Model):
@@ -93,6 +129,18 @@ class Business(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='business_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="businesses",
+        db_index=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["branch", "stand_date"], name="business_unique_branch_date"),
+        ]
 
 
 class Code(models.Model):
@@ -103,3 +151,18 @@ class Code(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='code_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="codes",
+        db_index=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["branch", "code_name", "value"],
+                name="code_unique_branch_name_value",
+            ),
+        ]

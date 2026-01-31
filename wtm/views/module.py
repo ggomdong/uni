@@ -12,7 +12,7 @@ from ..forms import ModuleForm
 
 @login_required(login_url='common:login')
 def work_module(request):
-    obj = Module.objects.all().order_by('order', 'id')
+    obj = Module.objects.filter(branch=request.user.branch).order_by('order', 'id')
 
     context = {'work_module': obj}
     return render(request, 'wtm/work_module.html', context)
@@ -27,7 +27,7 @@ def work_module_reorder(request):
         return JsonResponse({'ok': False, 'msg': 'invalid ids'}, status=400)
 
     with transaction.atomic():
-        qs = Module.objects.select_for_update().filter(id__in=ids)
+        qs = Module.objects.select_for_update().filter(id__in=ids, branch=request.user.branch)
 
         # 멀티테넌시/사업장 범위가 있으면 반드시 제한
         # qs = qs.filter(branch=request.user.branch)
@@ -37,7 +37,7 @@ def work_module_reorder(request):
             return JsonResponse({'ok': False, 'msg': 'some ids not found'}, status=400)
 
         for idx, mid in enumerate(ids, start=1):
-            Module.objects.filter(id=mid).update(order=idx)
+            Module.objects.filter(id=mid, branch=request.user.branch).update(order=idx)
 
     return JsonResponse({'ok': True})
 
@@ -48,6 +48,7 @@ def work_module_reg(request):
         form = ModuleForm(request.POST)
         if form.is_valid():
             module = form.save(commit=False)
+            module.branch = request.user.branch
             module.reg_id = request.user
             module.reg_date = timezone.now()
             module.mod_id = request.user
@@ -64,7 +65,7 @@ def work_module_reg(request):
 
 @login_required(login_url='common:login')
 def work_module_modify(request, module_id):
-    module = get_object_or_404(Module, pk=module_id)
+    module = get_object_or_404(Module, pk=module_id, branch=request.user.branch)
 
     # if request.user != question.author:
     #     messages.error(request, '수정권한이 없습니다.')
@@ -96,7 +97,7 @@ def work_module_modify(request, module_id):
 
 @login_required(login_url='common:login')
 def work_module_delete(request, module_id):
-    module = get_object_or_404(Module, pk=module_id)
+    module = get_object_or_404(Module, pk=module_id, branch=request.user.branch)
     # if request.user != question.author:
     #     messages.error(request, '삭제 권한이 없습니다.')
     #     return redirect('pybo:detail', question_id=question.id)

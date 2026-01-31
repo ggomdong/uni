@@ -9,7 +9,7 @@ from ..models import Question, Answer
 
 @login_required(login_url='common:login')
 def answer_create(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
+    question = get_object_or_404(Question, pk=question_id, branch=request.user.branch)
 
     if request.method == 'POST':
         form = AnswerForm(request.POST)
@@ -18,6 +18,7 @@ def answer_create(request, question_id):
             answer.author = request.user
             answer.question = question
             answer.create_date = timezone.now()
+            answer.branch = question.branch
             answer.save()
             # return redirect('pybo:detail', question_id=question.id)
             return redirect('{}#answer_{}'.format(
@@ -31,7 +32,7 @@ def answer_create(request, question_id):
 
 @login_required(login_url='common:login')
 def answer_modify(request, answer_id):
-    answer = get_object_or_404(Answer, pk=answer_id)
+    answer = get_object_or_404(Answer, pk=answer_id, branch=request.user.branch)
     if request.user != answer.author:
         messages.error(request, '수정권한이 없습니다.')
         # return redirect('pybo:detail', question_id=answer.question.id)
@@ -59,7 +60,7 @@ def answer_modify(request, answer_id):
 
 @login_required(login_url='common:login')
 def answer_delete(request, answer_id):
-    answer = get_object_or_404(Answer, pk=answer_id)
+    answer = get_object_or_404(Answer, pk=answer_id, branch=request.user.branch)
     if request.user != answer.author:
         messages.error(request, '삭제 권한이 없습니다.')
     else:
@@ -71,7 +72,7 @@ def answer_delete(request, answer_id):
 
 @login_required(login_url='common:login')
 def answer_vote(request, answer_id):
-    answer = get_object_or_404(Answer, pk=answer_id)
+    answer = get_object_or_404(Answer, pk=answer_id, branch=request.user.branch)
     if request.user == answer.author:
         messages.error(request, '본인이 작성한 답변은 추천할 수 없습니다.')
     # 이미 추천한 경우, 다시 누르면 추천을 제거함
