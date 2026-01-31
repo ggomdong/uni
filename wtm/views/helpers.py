@@ -53,7 +53,7 @@ def build_contracts_by_user(user_list, schedule_date, *, branch):
         FROM wtm_contract
         WHERE branch_id = %s
           AND user_id IN ({placeholders})
-          AND DATE_FORMAT(stand_date, '%Y%m%d') <= %s
+          AND DATE_FORMAT(stand_date, '%%Y%%m%%d') <= %s
         ORDER BY user_id, stand_date
     '''
     params = [branch.id, *user_ids, schedule_date]
@@ -231,7 +231,7 @@ def fetch_log_users_for_day(stand_day: str, *, branch):
             u.emp_name,
             u.dept,
             u.position,
-            DATE_FORMAT(u.join_date, '%Y%m%d') AS join_date,
+            DATE_FORMAT(u.join_date, '%%Y%%m%%d') AS join_date,
             d.`order` AS dept_order,
             p.`order` AS position_order
         FROM common_user u
@@ -269,10 +269,10 @@ def fetch_log_users_for_day(stand_day: str, *, branch):
           AND c.check_yn = 'Y'
           AND s.year  = %s
           AND s.month = %s
-          AND DATE_FORMAT(u.join_date, '%Y%m') <= %s
+          AND DATE_FORMAT(u.join_date, '%%Y%%m') <= %s
           AND (
-                DATE_FORMAT(u.out_date, '%Y%m') IS NULL
-             OR DATE_FORMAT(u.out_date, '%Y%m') >= %s
+                DATE_FORMAT(u.out_date, '%%Y%%m') IS NULL
+             OR DATE_FORMAT(u.out_date, '%%Y%%m') >= %s
           )
         ORDER BY dept_order, position_order, u.join_date
     """

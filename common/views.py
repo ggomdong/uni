@@ -131,10 +131,10 @@ def user_list(request):
         case '전체':
             pass
         case '퇴사자':
-            where_clauses.append('DATE_FORMAT(u.out_date, "%Y%m") < %s')
+            where_clauses.append('DATE_FORMAT(u.out_date, "%%Y%%m") < %s')
             params.append(stand_ym)
         case _:
-            where_clauses.append('(u.out_date is null or DATE_FORMAT(u.out_date, "%Y%m") >= %s)')
+            where_clauses.append('(u.out_date is null or DATE_FORMAT(u.out_date, "%%Y%%m") >= %s)')
             params.append(stand_ym)
 
     if search_dept != '전체':
@@ -154,27 +154,30 @@ def user_list(request):
                 c.id as cid, c.stand_date, c.type, c.check_yn, c.mon_id as mon, c.tue_id as tue, c.wed_id as wed,
                 c.thu_id as thu, c.fri_id as fri, c.sat_id as sat, c.sun_id as sun,
                 d.order as do, p.order as po
-        FROM common_user u LEFT OUTER JOIN (SELECT * FROM wtm_contract WHERE (user_id, stand_date) in
-            (
-                SELECT a.user_id, min(a.stand_date)
-                FROM 
-                (
-                    SELECT user_id, max(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() AND branch_id = %s GROUP BY user_id
-                    UNION
-                    SELECT user_id, min(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() AND branch_id = %s GROUP BY user_id
-                    ) a
-                    group by a.user_id
-                ) 
-            ) AND branch_id = %s
-        ) c
-            on (u.id = c.user_id)
+        FROM common_user u 
+            LEFT OUTER JOIN (
+                SELECT *
+                FROM wtm_contract 
+                WHERE branch_id = %s
+                  AND (user_id, stand_date) in
+                    (
+                        SELECT a.user_id, min(a.stand_date)
+                        FROM 
+                        (
+                            SELECT user_id, max(stand_date) as stand_date FROM wtm_contract WHERE stand_date <= NOW() AND branch_id = %s GROUP BY user_id
+                            UNION
+                            SELECT user_id, min(stand_date) as stand_date FROM wtm_contract WHERE stand_date > NOW() AND branch_id = %s GROUP BY user_id
+                        ) a
+                        group by a.user_id
+                    ) 
+            ) c on (u.id = c.user_id)
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
-			LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
         WHERE {' AND '.join(where_clauses)}
         ORDER BY {order_condition}
         '''
 
-    #print(raw_query)
+    # print(raw_query)
 
     with connection.cursor() as cursor:
         cursor.execute(raw_query, [branch.id, branch.id, branch.id, *params])
@@ -190,7 +193,7 @@ def user_list(request):
                 i = i + 1
             query_set.append(d)
 
-    #print(query_set)
+    # print(query_set)
 
     dept_list = list(
         Dept.objects.filter(branch=branch).values_list('dept_name', flat=True).order_by('order')

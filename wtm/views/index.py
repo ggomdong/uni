@@ -3,7 +3,6 @@ from datetime import datetime, date
 from django.utils import timezone
 from django.shortcuts import render
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db import connection
 
 from common import context_processors
@@ -12,7 +11,6 @@ from .helpers import dictfetchall
 from ..models import Module
 
 
-@login_required(login_url="common:login")
 def index(request, stand_day=None):
     if stand_day is None:
         stand_day = datetime.today().strftime('%Y%m%d')
@@ -20,29 +18,37 @@ def index(request, stand_day=None):
     days = context_processors.get_days_korean(stand_day)
     branch = request.user.branch
 
+    day_num = int(stand_day[6:8])
+    if not 1 <= day_num <= 31:
+        raise ValueError("invalid day")
+
+    day_col = f"d{day_num}_id"  # 여기만 문자열 조립(식별자)
+
+    user_list = []
+    max_workers = 0
+    work_list = []
+
     ###### 1. 근무인원 현황 (화면 상단) ######
 
-    query = '''
+    query = f'''
         SELECT u.dept, u.position, u.emp_name,
             m.start_time, m.end_time,
-            case when STR_TO_DATE(m.start_time, '%H:%i') <= STR_TO_DATE('13:00', '%H:%i') then 1
+            case when STR_TO_DATE(m.start_time, '%%H:%%i') <= STR_TO_DATE('13:00', '%%H:%%i') then 1
                 else 0
             end as am,
-            case when STR_TO_DATE(m.end_time, '%H:%i') >= STR_TO_DATE('14:00', '%H:%i') then 1
+            case when STR_TO_DATE(m.end_time, '%%H:%%i') >= STR_TO_DATE('14:00', '%%H:%%i') then 1
                 else 0
             end as pm,
             d.order as do, p.order as po
         FROM common_user u
-            LEFT OUTER JOIN wtm_schedule s on (u.id = s.user_id AND s.branch_id = u.branch_id)
-            LEFT OUTER JOIN wtm_module m on (s.d{int(stand_day[6:8])}_id = m.id AND m.branch_id = u.branch_id)
+            LEFT OUTER JOIN wtm_schedule s on (u.id = s.user_id AND s.branch_id = u.branch_id AND s.year = %s AND s.month = %s)
+            LEFT OUTER JOIN wtm_module m on (s.{day_col} = m.id AND m.branch_id = u.branch_id)
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
             LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
         WHERE is_employee = TRUE
           and u.branch_id = %s
-          and s.year = %s
-          and s.month = %s
-          and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
-          and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
+          and DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+          and (DATE_FORMAT(u.out_date, '%%Y%%m%%d') is null or DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
         ORDER BY do, po, join_date, emp_name
         '''
     # print(query)
@@ -50,7 +56,7 @@ def index(request, stand_day=None):
         with connection.cursor() as cursor:
             cursor.execute(
                 query,
-                [branch.id, stand_day[0:4], stand_day[4:6], stand_day, stand_day],
+                [stand_day[0:4], stand_day[4:6], branch.id, stand_day, stand_day],
             )
             results = cursor.fetchall()
 
@@ -106,7 +112,7 @@ def index(request, stand_day=None):
     # SQL에 조건을 넣기가 애매해서, 1,2를 union한 후 min 값을 얻는 걸로 구현함
     query = f'''
             SELECT u.id as user_id, u.dept, u.position, u.emp_name,
-                s.d{int(stand_day[6:8])}_id as module_id,
+                s.{day_col} as module_id,
                 m.cat, m.name, m.start_time, m.end_time, m.rest1_start_time, m.rest1_end_time, m.rest2_start_time, m.rest2_end_time,
                 d.order as do, p.order as po
             FROM common_user u
@@ -116,7 +122,7 @@ def index(request, stand_day=None):
                             AND s.month = %s
                             AND s.branch_id = u.branch_id
                 LEFT OUTER JOIN wtm_module m
-                             ON s.d{int(stand_day[6:8])}_id = m.id AND m.branch_id = u.branch_id
+                             ON s.{day_col} = m.id AND m.branch_id = u.branch_id
                 LEFT OUTER JOIN (
                     SELECT * FROM wtm_contract WHERE (user_id, stand_date) IN
                     (
@@ -138,8 +144,8 @@ def index(request, stand_day=None):
             WHERE is_employee = TRUE
               and c.check_yn = 'Y'
               and u.branch_id = %s
-              and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
-              and (DATE_FORMAT(u.out_date, '%Y%m%d') is null OR DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
+              and DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+              and (DATE_FORMAT(u.out_date, '%%Y%%m%%d') is null OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
             ORDER BY do, po, join_date, emp_name
             '''
 
@@ -163,7 +169,7 @@ def index(request, stand_day=None):
             base_rows = dictfetchall(cur)
 
         # 계산은 attendance 모듈에 위임
-    work_list = build_daily_attendance_for_users(base_rows, day, branch=branch)
+        work_list = build_daily_attendance_for_users(base_rows, day, branch=branch)
 
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')

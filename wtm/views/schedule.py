@@ -11,7 +11,6 @@ from ..models import Module, Schedule, Contract
 from .helpers import build_contracts_by_user, get_contract_module_id, get_non_business_days
 
 
-@login_required(login_url='common:login')
 def work_schedule(request, stand_ym=None):
     branch = request.user.branch
     # 기준년월 값이 없으면 현재로 세팅
@@ -48,15 +47,15 @@ def work_schedule(request, stand_ym=None):
     # 대상 직원을 추출하여 schedule_list에 저장
     query_user = '''
             SELECT u.id, u.emp_name, u.dept, u.position,
-                    DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
+                    DATE_FORMAT(u.join_date, '%%Y%%m%%d') join_date, DATE_FORMAT(u.out_date, '%%Y%%m%%d') out_date,
                     d.`order` as do, p.`order` as po
             FROM common_user u
                 LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
                 LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
             WHERE is_employee = TRUE
                 and u.branch_id = %s
-                and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
-                and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
+                and DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+                and (DATE_FORMAT(u.out_date, '%%Y%%m%%d') is null or DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
             ORDER BY do, po, join_date, emp_name
             '''
 
@@ -137,10 +136,10 @@ def work_schedule(request, stand_ym=None):
         WHERE u.is_employee = TRUE
           AND u.branch_id = %s
           -- 해당 월에 단 하루라도 재직한 사람
-          AND DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
+          AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
           AND (
                 u.out_date IS NULL
-                OR DATE_FORMAT(u.out_date, '%Y%m%d') >= %s
+                OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s
               )
           -- 그 달 근무표가 1건도 없는 경우
           AND NOT EXISTS (
@@ -180,10 +179,10 @@ def work_schedule(request, stand_ym=None):
           AND s.month = %s
           -- "그 달 직원" 조건에 해당하지 않는 사람만
           AND NOT (
-                DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
+                DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
             AND (
                   u.out_date IS NULL
-                  OR DATE_FORMAT(u.out_date, '%Y%m%d') >= %s
+                  OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s
                 )
           )
         '''
@@ -415,15 +414,15 @@ def work_schedule_reg(request, stand_ym):
     # 대상 직원을 추출하여 user_list에 저장
     query_user = '''
         SELECT u.id, u.emp_name, u.dept, u.position,
-                DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
+                DATE_FORMAT(u.join_date, '%%Y%%m%%d') join_date, DATE_FORMAT(u.out_date, '%%Y%%m%%d') out_date,
                 d.order as do, p.order as po
         FROM common_user u
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
             LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
         WHERE is_employee = TRUE
             and u.branch_id = %s
-            and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
-            and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
+            and DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+            and (DATE_FORMAT(u.out_date, '%%Y%%m%%d') is null or DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
         ORDER BY do, po, join_date, emp_name
         '''
     with connection.cursor() as cursor:
@@ -772,15 +771,15 @@ def work_schedule_modify(request, stand_ym):
     # 1) stand_ym 대상 직원을 추출하여 user_list에 저장
     query_user = '''
         SELECT u.id, u.emp_name, u.dept, u.position,
-                DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
+                DATE_FORMAT(u.join_date, '%%Y%%m%%d') join_date, DATE_FORMAT(u.out_date, '%%Y%%m%%d') out_date,
                 d.order as do, p.order as po
         FROM common_user u
             LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
             LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
         WHERE is_employee = TRUE
             and u.branch_id = %s
-            and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
-            and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
+            and DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+            and (DATE_FORMAT(u.out_date, '%%Y%%m%%d') is null or DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
         ORDER BY do, po, join_date, emp_name
         '''
     with connection.cursor() as cursor:

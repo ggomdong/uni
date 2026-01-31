@@ -222,15 +222,15 @@ def schedule_excel_data(stand_ym: str, *, branch) -> dict:
 
     query_user = '''
                 SELECT u.id, u.emp_name, u.dept, u.position,
-                        DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
+                        DATE_FORMAT(u.join_date, '%%Y%%m%%d') join_date, DATE_FORMAT(u.out_date, '%%Y%%m%%d') out_date,
                         d.`order` as do, p.`order` as po
                 FROM common_user u
                     LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
                     LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
                 WHERE is_employee = TRUE
                     AND u.branch_id = %s
-                    and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
-                    and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
+                    and DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
+                    and (DATE_FORMAT(u.out_date, '%%Y%%m%%d') is null or DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
                 ORDER BY do, po, join_date, emp_name
                 '''
 
