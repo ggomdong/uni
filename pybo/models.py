@@ -1,5 +1,5 @@
 from django.db import models
-from common.models import User
+from common.models import User, Branch
 
 
 class Question(models.Model):
@@ -12,6 +12,13 @@ class Question(models.Model):
     # null : null 허용여부, blank : 데이터 검증 시 값이 없어도 되는지 여부
     modify_date = models.DateTimeField(null=True, blank=True)
     voter = models.ManyToManyField(User, related_name='voter_question')    # 추천인
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="questions",
+        db_index=True,
+    )
 
     def __str__(self):
         return self.subject
@@ -24,3 +31,10 @@ class Answer(models.Model):
     create_date = models.DateTimeField()
     modify_date = models.DateTimeField(null=True, blank=True)
     voter = models.ManyToManyField(User, related_name='voter_answer')
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="answers",
+        db_index=True,
+    )

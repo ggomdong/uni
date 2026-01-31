@@ -23,12 +23,21 @@ class Module(models.Model):
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='mod_id')
     mod_date = models.DateTimeField()
     order = models.PositiveIntegerField(default=0, db_index=True)
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="modules",
+        db_index=True,
+    )
 
     def save(self, *args, **kwargs):
         # 신규 등록이거나 sort_order가 0이면 맨 뒤로 붙이기
         if not self.order:
             from django.db.models import Max
-            max_order = Module.objects.aggregate(m=Max('order'))['m'] or 0
+            max_order = (
+                Module.objects.filter(branch=self.branch).aggregate(m=Max('order'))['m'] or 0
+            )
             self.order = max_order + 1
         super().save(*args, **kwargs)
 
@@ -50,6 +59,13 @@ class Contract(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='con_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="contracts",
+        db_index=True,
+    )
 
 
 # 근무표
@@ -92,6 +108,13 @@ class Schedule(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='sch_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="schedules",
+        db_index=True,
+    )
 
 
 # 근태기록
@@ -104,6 +127,13 @@ class Work(models.Model):
     work_code = models.CharField(max_length=1, choices=WorkCode.choices, verbose_name="근로코드")
     record_date = models.DateTimeField()
     record_day = models.DateField(editable=False, null=False, blank=False, db_index=True)
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="works",
+        db_index=True,
+    )
 
     class Meta:
         permissions = [

@@ -47,12 +47,13 @@ def determine_checkout_time(
 # 앱 캘린더에서 사용. 1인 * 1개월
 def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]:
     """한 사용자에 대한 '월간 근태' 리스트를 생성."""
+    branch = getattr(user, "branch", None)
     # 1. 근무표 조회 : Schedule 가져올 때 한 방에 join → 이후 schedule.d1… 접근 시 추가 쿼리 없음
     try:
         schedule = (
             Schedule.objects
             .select_related(*[f'd{i}' for i in range(1, 32)])
-            .get(user=user, year=str(year), month=f"{month:02d}")
+            .get(user=user, year=str(year), month=f"{month:02d}", branch=branch)
         )
     except Schedule.DoesNotExist:
         schedule = None
@@ -60,7 +61,7 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
     # 2. 근태기록 조회
     works = (
         Work.objects
-        .filter(user=user, record_day__year=year, record_day__month=month)
+        .filter(user=user, branch=branch, record_day__year=year, record_day__month=month)
         .values('record_day', 'work_code', 'record_date')
         .order_by('record_day', 'record_date')
     )
@@ -168,7 +169,7 @@ def build_monthly_attendance_for_user(user, year: int, month: int) -> list[dict]
 
 
 # 웹 TODAY 하단 근태현황에서 활용. 전체 사용자 * 1일
-def build_daily_attendance_for_users(base_rows: list[dict], day: date) -> list[dict]:
+def build_daily_attendance_for_users(base_rows: list[dict], day: date, *, branch) -> list[dict]:
     """
     인덱스 화면 하단 '근태현황'용 work_list를 생성한다.
     - base_rows: 뷰에서 실행한 기존 SQL 결과(dict 리스트). (dept, position, emp_name, start_time, end_time, cat 등 포함)
@@ -196,7 +197,7 @@ def build_daily_attendance_for_users(base_rows: list[dict], day: date) -> list[d
     # 2) 해당 일자 근태기록 일괄 조회 → 최초 IN / 최종 OUT
     works = (
         Work.objects
-        .filter(user_id__in=user_ids, record_day=day)
+        .filter(user_id__in=user_ids, branch=branch, record_day=day)
         .only("user_id", "work_code", "record_date")
         .order_by("record_date")
     )
@@ -274,7 +275,7 @@ def build_daily_attendance_for_users(base_rows: list[dict], day: date) -> list[d
     return work_list
 
 
-def prepare_month(users: list[int], year: int, month: int):
+def prepare_month(users: list[int], year: int, month: int, *, branch):
     """
     (단일 함수) 월 화면 공통 준비:
       - days: 월의 모든 일자 리스트
@@ -291,7 +292,7 @@ def prepare_month(users: list[int], year: int, month: int):
     cols = [f"d{d}_id" for d in range(1, last + 1)]
     sched_rows = (
         Schedule.objects
-        .filter(user_id__in=users, year=f"{year:04d}", month=f"{month:02d}")
+        .filter(user_id__in=users, year=f"{year:04d}", month=f"{month:02d}", branch=branch)
         .values("user_id", *cols)
     )
     sched_map: dict[int, dict[date, int | None]] = {uid: {} for uid in users}
@@ -305,12 +306,14 @@ def prepare_month(users: list[int], year: int, month: int):
                 module_ids.add(mid)
 
     # 3) 근로모듈 캐시
-    modules: dict[int, Module] = Module.objects.in_bulk(module_ids) if module_ids else {}
+    modules: dict[int, Module] = (
+        Module.objects.filter(branch=branch).in_bulk(module_ids) if module_ids else {}
+    )
 
     # 4) 근태기록 bulk
     works = (
         Work.objects
-        .filter(user_id__in=users, record_day__year=year, record_day__month=month)
+        .filter(user_id__in=users, branch=branch, record_day__year=year, record_day__month=month)
         .values("user_id", "record_day", "work_code", "record_date")
         .order_by("user_id", "record_day", "record_date")
     )
@@ -333,7 +336,7 @@ def prepare_month(users: list[int], year: int, month: int):
 
 # 웹 근태기록-월간집계(전체)에서 활용. 전체 사용자 * 1개월
 def build_monthly_attendance_summary_for_users(
-    *, users: list[int], year: int, month: int,
+    *, users: list[int], year: int, month: int, branch,
     out_ymd_map: dict[int, str | None] | None = None,
 ) -> dict[int, dict]:
     """
@@ -349,7 +352,7 @@ def build_monthly_attendance_summary_for_users(
     last_day_num = monthrange(year, month)[1]
 
     today = timezone.now().date()
-    days, sched_map, modules, logs_map = prepare_month(users, year, month)
+    days, sched_map, modules, logs_map = prepare_month(users, year, month, branch=branch)
 
     summary: dict[int, dict] = {}
     for uid in users:
@@ -489,7 +492,7 @@ def build_monthly_attendance_summary_for_users(
 
 # 웹 근태기록-월간집계(지표별)에서 활용. 전체 사용자 * 1개월
 def build_monthly_metric_details_for_users(
-    *, users: list[int], year: int, month: int, metric: str
+    *, users: list[int], year: int, month: int, metric: str, branch
 ) -> dict[int, dict]:
     """
     지각(late) / 조퇴(early) / 연장(overtime) / 휴근(holiday) 중 하나의 메트릭에 대해
@@ -518,7 +521,7 @@ def build_monthly_metric_details_for_users(
 
     today = timezone.now().date()
 
-    days, sched_map, modules, logs_map = prepare_month(users, year, month)
+    days, sched_map, modules, logs_map = prepare_month(users, year, month, branch=branch)
 
     result: dict[int, dict] = {}
     for uid in users:

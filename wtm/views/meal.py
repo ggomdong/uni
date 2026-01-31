@@ -8,13 +8,13 @@ from wtm.models import Schedule  # Schedule에 d1~d31 FK가 있다고 가정
 from .helpers import fetch_base_users_for_month
 
 
-def build_meal_status_rows(stand_ym: str | None):
+def build_meal_status_rows(stand_ym: str | None, *, branch):
     stand_ym = stand_ym or timezone.now().strftime("%Y%m")
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
     last_day_num = monthrange(year, month)[1]
 
     # 1) 대상자 : 전 직원
-    base_users = fetch_base_users_for_month(stand_ym, is_contract_checked=False)
+    base_users = fetch_base_users_for_month(stand_ym, branch=branch, is_contract_checked=False)
     if not base_users:
         return stand_ym, []
 
@@ -25,7 +25,7 @@ def build_meal_status_rows(stand_ym: str | None):
     schedules = (
         Schedule.objects
         .select_related(*rel_fields)
-        .filter(user_id__in=uid_list, year=str(year), month=f"{month:02d}")
+        .filter(user_id__in=uid_list, year=str(year), month=f"{month:02d}", branch=branch)
     )
     schedule_map = {s.user_id: s for s in schedules}
 
@@ -65,7 +65,7 @@ def build_meal_status_rows(stand_ym: str | None):
 
 @login_required(login_url="common:login")
 def work_meal_status(request, stand_ym: str | None = None):
-    stand_ym, rows = build_meal_status_rows(stand_ym)
+    stand_ym, rows = build_meal_status_rows(stand_ym, branch=request.user.branch)
 
     return render(request, "wtm/work_meal_status.html", {
         "stand_ym": stand_ym,
@@ -75,11 +75,12 @@ def work_meal_status(request, stand_ym: str | None = None):
 
 
 # 엑셀에서 가져갈 수 있도록 JSON 형태로 내려줌 -> 향후 제거 예정
+@login_required(login_url="common:login")
 def work_meal_json(request, stand_ym: str | None = None):
     stand_ym = stand_ym or request.GET.get("stand_ym") or timezone.now().strftime("%Y%m")
 
     # dept/position 등 포함된 rows를 만들어 주는 함수
-    stand_ym, rows = build_meal_status_rows(stand_ym)
+    stand_ym, rows = build_meal_status_rows(stand_ym, branch=request.user.branch)
 
     # 요청 형태로 단순화: [{"emp_name": "...", "total_amount": 123}, ...]
     simple_rows = []

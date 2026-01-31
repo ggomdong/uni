@@ -17,14 +17,14 @@ from .helpers import sec_to_hhmmss, fetch_base_users_for_month, get_non_business
 from .helpers_excel import header_fill, header_font, header_align, set_table_border, metric_excel_data, write_metric_sheet, schedule_excel_data, write_schedule_sheet
 
 
-def build_work_status_rows(stand_ym: str | None):
+def build_work_status_rows(stand_ym: str | None, *, branch):
     """
     근태기록-월간집계(전체)에서 사용하는 rows 공통 빌더.
     """
     stand_ym = stand_ym or timezone.now().strftime("%Y%m")
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
-    base_users = fetch_base_users_for_month(stand_ym)
+    base_users = fetch_base_users_for_month(stand_ym, branch=branch)
     if not base_users:
         return stand_ym, []
 
@@ -36,6 +36,7 @@ def build_work_status_rows(stand_ym: str | None):
         users=uid_list,
         year=year,
         month=month,
+        branch=branch,
         out_ymd_map=out_ymd_map,
     )
 
@@ -76,7 +77,7 @@ def build_work_status_rows(stand_ym: str | None):
 # 근태기록-월간집계(전체)
 @login_required(login_url="common:login")
 def work_status(request, stand_ym: str | None = None):
-    stand_ym, rows = build_work_status_rows(stand_ym)
+    stand_ym, rows = build_work_status_rows(stand_ym, branch=request.user.branch)
 
     return render(request, "wtm/work_status.html", {
         "stand_ym": stand_ym,
@@ -98,7 +99,7 @@ def work_status_excel(request, stand_ym: str | None = None):
         5) 연장근로
         6) 휴일근로
     """
-    stand_ym, rows = build_work_status_rows(stand_ym)
+    stand_ym, rows = build_work_status_rows(stand_ym, branch=request.user.branch)
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
     wb = openpyxl.Workbook()
@@ -208,7 +209,7 @@ def work_status_excel(request, stand_ym: str | None = None):
 
     # Sheet 2: 근무표
     ws_schedule = wb.create_sheet(title="근무표")
-    schedule_data = schedule_excel_data(stand_ym)
+    schedule_data = schedule_excel_data(stand_ym, branch=request.user.branch)
     write_schedule_sheet(ws_schedule, schedule_data)
 
     # Sheets 3~6: 지각/조퇴/연장근로/휴일근로
@@ -220,7 +221,7 @@ def work_status_excel(request, stand_ym: str | None = None):
     ]
     for metric, title in metric_specs:
         ws_metric = wb.create_sheet(title=title)
-        metric_data = metric_excel_data(stand_ym, metric)
+        metric_data = metric_excel_data(stand_ym, metric, branch=request.user.branch)
         write_metric_sheet(ws_metric, metric_data)
 
     response = HttpResponse(
@@ -252,7 +253,7 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
     # 1) 대상자 공통 헬퍼
-    base_users = fetch_base_users_for_month(stand_ym)
+    base_users = fetch_base_users_for_month(stand_ym, branch=request.user.branch)
 
     if not base_users:
         return render(request, "wtm/work_metric.html", {
@@ -266,11 +267,19 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
 
     # 2) 일자 리스트 (헤더용)
     day_list = context_processors.get_day_list(stand_ym)
-    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6])))
+    holiday_list = sorted(
+        get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6]), branch=request.user.branch)
+    )
 
     # 3) 메트릭 디테일 계산
     uid_list = [u["user_id"] for u in base_users]
-    detail_map = build_monthly_metric_details_for_users(users=uid_list, year=year, month=month, metric=metric)
+    detail_map = build_monthly_metric_details_for_users(
+        users=uid_list,
+        year=year,
+        month=month,
+        metric=metric,
+        branch=request.user.branch,
+    )
 
     # 4) 템플릿 rows 구성 (좌측: 부서/직급/성명/횟수/합계, 오른쪽: 일자별 초)
     days_order = list(range(1, monthrange(year, month)[1] + 1))

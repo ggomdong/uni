@@ -7,23 +7,25 @@ from datetime import datetime
 
 from common.models import User
 from common import context_processors
-from ..models import Module, Schedule
+from ..models import Module, Schedule, Contract
 from .helpers import build_contracts_by_user, get_contract_module_id, get_non_business_days
 
 
+@login_required(login_url='common:login')
 def work_schedule(request, stand_ym=None):
+    branch = request.user.branch
     # 기준년월 값이 없으면 현재로 세팅
     if stand_ym is None:
         stand_ym = str(datetime.today().year) + str(datetime.today().month).zfill(2)
 
     # stand_ym 기준 근무표가 없으면 패스
-    if Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).count() == 0:
+    if Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6], branch=branch).count() == 0:
         return render(request, 'wtm/work_schedule.html', {'stand_ym': stand_ym})
 
     day_list = context_processors.get_day_list(stand_ym)  # ex) {'1':'목', '2':'금', ..., '31':'토'}
 
     # 휴무일(미영업일+공휴일) 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
-    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6])))
+    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6]), branch=branch))
 
     # 기준이 되는 최종 일요일(이번달 말일이 일요일인 경우 or 다음달 첫 일요일) 날짜를 지정 -> 해당 날짜 기준으로 대상 직원 추출
     schedule_date = stand_ym + list(day_list)[-1]
@@ -40,25 +42,26 @@ def work_schedule(request, stand_ym=None):
         # 다음달 년월을 산출하고, 첫째 일요일인 날짜(6-last_day_weekday)를 붙여서 schedule_date를 재정의
         next_ym = context_processors.get_month(stand_ym, 1)[0:6]
         next_day_list = context_processors.get_day_list(next_ym, 6 - last_day_weekday)
-        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6])))
+        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6]), branch=branch))
         schedule_date = next_ym + str(6 - last_day_weekday).zfill(2)
 
     # 대상 직원을 추출하여 schedule_list에 저장
-    query_user = f'''
+    query_user = '''
             SELECT u.id, u.emp_name, u.dept, u.position,
                     DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
                     d.`order` as do, p.`order` as po
             FROM common_user u
-                LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
-                LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+                LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
+                LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
             WHERE is_employee = TRUE
-                and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
-                and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
+                and u.branch_id = %s
+                and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
+                and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
             ORDER BY do, po, join_date, emp_name
             '''
 
     with connection.cursor() as cursor:
-        cursor.execute(query_user)
+        cursor.execute(query_user, [branch.id, schedule_date, f"{stand_ym}01"])
         results = cursor.fetchall()
 
         x = cursor.description
@@ -79,6 +82,7 @@ def work_schedule(request, stand_ym=None):
         year=stand_ym[0:4],
         month=stand_ym[4:6],
         user_id__in=user_ids,
+        branch=branch,
     )
     schedule_map = {s.user_id: s for s in schedules_qs}
 
@@ -89,11 +93,12 @@ def work_schedule(request, stand_ym=None):
             year=next_ym[0:4],
             month=next_ym[4:6],
             user_id__in=user_ids,
+            branch=branch,
         )
         next_schedule_map = {s.user_id: s for s in next_schedules_qs}
 
     # 모듈 전체를 한 번에 가져와서 "id,cat,name,start,end,color" 문자열로 매핑
-    module_list = list(Module.objects.all())  # 나중에 context에도 그대로 사용
+    module_list = list(Module.objects.filter(branch=branch))  # 나중에 context에도 그대로 사용
     module_str_map = {}
     for m in module_list:
         module_str_map[m.id] = f"{m.id},{m.cat},{m.name},{m.start_time},{m.end_time},{m.color}"
@@ -126,28 +131,33 @@ def work_schedule(request, stand_ym=None):
         pre_dept = row['dept']
 
     # 근무표와 직원현황이 다른 경우 1 : 근무표 작성 이후 추가된 직원이 있는 경우 (user minus schedule)
-    raw_query = f'''
+    raw_query = '''
         SELECT u.emp_name
         FROM common_user u
         WHERE u.is_employee = TRUE
+          AND u.branch_id = %s
           -- 해당 월에 단 하루라도 재직한 사람
-          AND DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_ym + list(day_list)[-1]}'
+          AND DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
           AND (
                 u.out_date IS NULL
-                OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}'
+                OR DATE_FORMAT(u.out_date, '%Y%m%d') >= %s
               )
           -- 그 달 근무표가 1건도 없는 경우
           AND NOT EXISTS (
                 SELECT 1
                 FROM wtm_schedule s
                 WHERE s.user_id = u.id
-                  AND s.year  = '{stand_ym[0:4]}'
-                  AND s.month = '{stand_ym[4:6]}'
+                  AND s.year  = %s
+                  AND s.month = %s
+                  AND s.branch_id = u.branch_id
           )
         '''
 
     with connection.cursor() as cursor:
-        cursor.execute(raw_query)
+        cursor.execute(
+            raw_query,
+            [branch.id, f"{stand_ym}{list(day_list)[-1]}", f"{stand_ym}01", stand_ym[0:4], stand_ym[4:6]],
+        )
         results = cursor.fetchall()
 
         need_to_add = []
@@ -159,25 +169,30 @@ def work_schedule(request, stand_ym=None):
         redirect('wtm:work_schedule', stand_ym=stand_ym)
 
     # 근무표와 직원현황이 다른 경우 2 : 근무표 작성 이후 삭제 또는 입사일 변경 등 직원이 있는 경우 (schedule minus user)
-    raw_query = f'''
+    raw_query = '''
         SELECT DISTINCT u.emp_name
         FROM wtm_schedule s
         JOIN common_user u ON s.user_id = u.id
         WHERE u.is_employee = TRUE
-          AND s.year  = '{stand_ym[0:4]}'
-          AND s.month = '{stand_ym[4:6]}'
+          AND u.branch_id = %s
+          AND s.branch_id = u.branch_id
+          AND s.year  = %s
+          AND s.month = %s
           -- "그 달 직원" 조건에 해당하지 않는 사람만
           AND NOT (
-                DATE_FORMAT(u.join_date, '%Y%m%d') <= '{stand_ym + list(day_list)[-1]}'
+                DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
             AND (
                   u.out_date IS NULL
-                  OR DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}'
+                  OR DATE_FORMAT(u.out_date, '%Y%m%d') >= %s
                 )
           )
         '''
 
     with connection.cursor() as cursor:
-        cursor.execute(raw_query)
+        cursor.execute(
+            raw_query,
+            [branch.id, stand_ym[0:4], stand_ym[4:6], f"{stand_ym}{list(day_list)[-1]}", f"{stand_ym}01"],
+        )
         results = cursor.fetchall()
 
         need_to_sub = []
@@ -203,6 +218,7 @@ def work_schedule(request, stand_ym=None):
 
 @login_required(login_url='common:login')
 def work_schedule_reg(request, stand_ym):
+    branch = request.user.branch
     if request.method == 'POST':
         # -----------------------------
         # 1. POST 데이터 파싱
@@ -216,6 +232,10 @@ def work_schedule_reg(request, stand_ym):
             return base
 
         rows_by_user: dict[int, dict] = {}
+
+        allowed_module_ids = set(
+            Module.objects.filter(branch=branch).values_list("id", flat=True)
+        )
 
         for key, value in request.POST.items():
             if not key.startswith('sch_'):
@@ -232,6 +252,9 @@ def work_schedule_reg(request, stand_ym):
                 rows_by_user[user_id] = row
 
             module_id = int(value) if value else None
+            if module_id is not None and module_id not in allowed_module_ids:
+                messages.error(request, "지점에 속하지 않은 근로모듈입니다.")
+                return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
             if day_key.startswith('n'):
                 # n1 ~ n6
@@ -250,7 +273,7 @@ def work_schedule_reg(request, stand_ym):
         # 2. 기존 근무표 중복 체크
         # -----------------------------
         existing_users_this_month = set(
-            Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+            Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6], branch=branch)
             .values_list('user_id', flat=True)
         )
 
@@ -274,7 +297,7 @@ def work_schedule_reg(request, stand_ym):
         # -----------------------------
         # 4. User / 다음달 Schedule 한 번에 로딩
         # -----------------------------
-        users = User.objects.in_bulk(post_user_ids)  # {id: User}
+        users = User.objects.filter(branch=branch, id__in=post_user_ids).in_bulk()  # {id: User}
 
         next_schedule_map: dict[int, Schedule] = {}
         days_to_copy = 0
@@ -285,6 +308,7 @@ def work_schedule_reg(request, stand_ym):
                 year=next_ym[0:4],
                 month=next_ym[4:6],
                 user_id__in=post_user_ids,
+                branch=branch,
             )
             next_schedule_map = {s.user_id: s for s in next_qs}
 
@@ -310,6 +334,7 @@ def work_schedule_reg(request, stand_ym):
                         user_id=user_id,
                         year=stand_ym[0:4],
                         month=stand_ym[4:6],
+                        branch=branch,
                         reg_id=request.user,
                         reg_date=now,
                         mod_id=request.user,
@@ -341,6 +366,7 @@ def work_schedule_reg(request, stand_ym):
                             user_id=user_id,
                             year=next_ym[0:4],
                             month=next_ym[4:6],
+                            branch=branch,
                             reg_id=request.user,
                             reg_date=now,
                             mod_id=request.user,
@@ -387,20 +413,21 @@ def work_schedule_reg(request, stand_ym):
         schedule_date = next_ym + str(6-last_day_weekday).zfill(2)
 
     # 대상 직원을 추출하여 user_list에 저장
-    query_user = f'''
+    query_user = '''
         SELECT u.id, u.emp_name, u.dept, u.position,
                 DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
                 d.order as do, p.order as po
         FROM common_user u
-            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
-            LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
         WHERE is_employee = TRUE
-            and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
-            and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
+            and u.branch_id = %s
+            and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
+            and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
         ORDER BY do, po, join_date, emp_name
         '''
     with connection.cursor() as cursor:
-        cursor.execute(query_user)
+        cursor.execute(query_user, [branch.id, schedule_date, f"{stand_ym}01"])
         results = cursor.fetchall()
 
         x = cursor.description
@@ -414,13 +441,15 @@ def work_schedule_reg(request, stand_ym):
             user_list.append(d)
 
     # 직원별 계약 정보를 한 번에 불러와서 메모리에 적재
-    contracts_by_user = build_contracts_by_user(user_list, schedule_date)
+    contracts_by_user = build_contracts_by_user(user_list, schedule_date, branch=branch)
 
     # 휴무일(미영업일+공휴일) 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
-    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6])))
+    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6]), branch=branch))
 
     # 휴무일(미영업일+공휴일)은 OFF 모듈로 지정하기 위해 OFF 모듈의 ID 추출
-    off_module_list = list(Module.objects.filter(cat='OFF').values_list('id', flat=True))
+    off_module_list = list(
+        Module.objects.filter(branch=branch, cat='OFF').values_list('id', flat=True)
+    )
     off_module_id = (off_module_list[0] if off_module_list else None)
 
     # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
@@ -458,14 +487,23 @@ def work_schedule_reg(request, stand_ym):
         next_day_list_eng = {}
         for key, value in next_day_list.items():
             next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
-        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6])))
+        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6]), branch=branch))
 
         # 기존 근무표가 입력되어 있는 user_id를 가져옴
         next_schedule_user_list = list(
-            Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6]).values_list('user_id', flat=True))
+            Schedule.objects.filter(
+                year=next_ym[0:4],
+                month=next_ym[4:6],
+                branch=branch,
+            ).values_list('user_id', flat=True)
+        )
 
         # 근무표를 가져옴
-        next_schedule_origin = Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6])
+        next_schedule_origin = Schedule.objects.filter(
+            year=next_ym[0:4],
+            month=next_ym[4:6],
+            branch=branch,
+        )
 
         # user_list에 일자별 근로모듈을 매핑
         for user in user_list:
@@ -491,7 +529,7 @@ def work_schedule_reg(request, stand_ym):
                             target_date = datetime.strptime(next_ym + key.zfill(2), "%Y%m%d").date()
                             user["n" + key] = get_contract_module_id(contracts, target_date, value)
 
-    module_list = Module.objects.all().order_by('order', 'id')  # 근로모듈을 입력하기 위함
+    module_list = Module.objects.filter(branch=branch).order_by('order', 'id')  # 근로모듈을 입력하기 위함
 
     context = {'stand_ym': stand_ym, 'day_list': day_list, 'user_list': user_list, 'module_list': module_list,
                'holiday_list': holiday_list, 'next_day_list': next_day_list, 'next_holiday_list': next_holiday_list,
@@ -501,6 +539,7 @@ def work_schedule_reg(request, stand_ym):
 
 @login_required(login_url='common:login')
 def work_schedule_modify(request, stand_ym):
+    branch = request.user.branch
     if request.method == 'POST':
         # -----------------------------
         # 1. POST 데이터 파싱
@@ -516,6 +555,10 @@ def work_schedule_modify(request, stand_ym):
 
         rows_by_user: dict[int, dict] = {}
 
+        allowed_module_ids = set(
+            Module.objects.filter(branch=branch).values_list("id", flat=True)
+        )
+
         for key, value in request.POST.items():
             if not key.startswith('sch_'):
                 continue
@@ -530,6 +573,9 @@ def work_schedule_modify(request, stand_ym):
                 rows_by_user[user_id] = row
 
             module_id = int(value) if value else None
+            if module_id is not None and module_id not in allowed_module_ids:
+                messages.error(request, "지점에 속하지 않은 근로모듈입니다.")
+                return redirect('wtm:work_schedule', stand_ym=stand_ym)
 
             if day_key.startswith('n'):
                 # n1 ~ n6 그대로 사용
@@ -546,7 +592,7 @@ def work_schedule_modify(request, stand_ym):
         # -----------------------------
         # stand_ym 기준 기존 근무표가 입력되어 있는 user_id 전체 (삭제용)
         existing_users_this_month = set(
-            Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+            Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6], branch=branch)
             .values_list('user_id', flat=True)
         )
 
@@ -576,17 +622,19 @@ def work_schedule_modify(request, stand_ym):
                     year=stand_ym[0:4],
                     month=stand_ym[4:6],
                     user_id__in=users_to_delete,
+                    branch=branch,
                 ).delete()
 
             # (2) 이번 POST에 포함된 직원 정보 / 근무표 미리 로딩
             #     - User: join_date / out_date 비교용
             #     - Schedule: 수정/삽입용 (select_for_update 로 락 걸어도 좋음)
-            users = User.objects.in_bulk(post_user_ids)  # {id: User}
+            users = User.objects.filter(branch=branch, id__in=post_user_ids).in_bulk()  # {id: User}
 
             current_qs = Schedule.objects.filter(
                 year=stand_ym[0:4],
                 month=stand_ym[4:6],
                 user_id__in=post_user_ids,
+                branch=branch,
             )
             current_map = {s.user_id: s for s in current_qs}  # {user_id: Schedule}
 
@@ -597,6 +645,7 @@ def work_schedule_modify(request, stand_ym):
                     year=next_ym[0:4],
                     month=next_ym[4:6],
                     user_id__in=post_user_ids,
+                    branch=branch,
                 )
                 next_map = {s.user_id: s for s in next_qs}
 
@@ -627,6 +676,7 @@ def work_schedule_modify(request, stand_ym):
                             user_id=user_id,
                             year=stand_ym[0:4],
                             month=stand_ym[4:6],
+                            branch=branch,
                             reg_id=request.user,
                             reg_date=now,
                             mod_id=request.user,
@@ -669,6 +719,7 @@ def work_schedule_modify(request, stand_ym):
                             user_id=user_id,
                             year=next_ym[0:4],
                             month=next_ym[4:6],
+                            branch=branch,
                             reg_id=request.user,
                             reg_date=now,
                             mod_id=request.user,
@@ -719,20 +770,21 @@ def work_schedule_modify(request, stand_ym):
         schedule_date = next_ym + str(6 - last_day_weekday).zfill(2)
 
     # 1) stand_ym 대상 직원을 추출하여 user_list에 저장
-    query_user = f'''
+    query_user = '''
         SELECT u.id, u.emp_name, u.dept, u.position,
                 DATE_FORMAT(u.join_date, '%Y%m%d') join_date, DATE_FORMAT(u.out_date, '%Y%m%d') out_date,
                 d.order as do, p.order as po
         FROM common_user u
-            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name)
-            LEFT OUTER JOIN common_position p on (u.position = p.position_name)
+            LEFT OUTER JOIN common_dept d on (u.dept = d.dept_name AND d.branch_id = u.branch_id)
+            LEFT OUTER JOIN common_position p on (u.position = p.position_name AND p.branch_id = u.branch_id)
         WHERE is_employee = TRUE
-            and DATE_FORMAT(u.join_date, '%Y%m%d') <= '{schedule_date}'
-            and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= '{stand_ym + '01'}')
+            and u.branch_id = %s
+            and DATE_FORMAT(u.join_date, '%Y%m%d') <= %s
+            and (DATE_FORMAT(u.out_date, '%Y%m%d') is null or DATE_FORMAT(u.out_date, '%Y%m%d') >= %s)
         ORDER BY do, po, join_date, emp_name
         '''
     with connection.cursor() as cursor:
-        cursor.execute(query_user)
+        cursor.execute(query_user, [branch.id, schedule_date, f"{stand_ym}01"])
         results = cursor.fetchall()
 
         x = cursor.description
@@ -747,14 +799,20 @@ def work_schedule_modify(request, stand_ym):
 
     # 2) 공휴일, OFF 모듈
     # 휴무일(미영업일+공휴일) 날짜만 추출하여 list로 만듬. ex) [1, 9, 10, 11]
-    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6])))
+    holiday_list = sorted(get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6]), branch=branch))
 
     # 휴무일(미영업일+공휴일)은 OFF 모듈로 지정하기 위해 OFF 모듈의 ID 추출
-    off_module_list = list(Module.objects.filter(cat='OFF').values_list('id', flat=True))
+    off_module_list = list(
+        Module.objects.filter(branch=branch, cat='OFF').values_list('id', flat=True)
+    )
     off_module_id = (off_module_list[0] if off_module_list else None)
 
     # 3) 이번달 근무표 전체, dict로 매핑
-    schedule_origin = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6]).select_related()
+    schedule_origin = Schedule.objects.filter(
+        year=stand_ym[0:4],
+        month=stand_ym[4:6],
+        branch=branch,
+    ).select_related()
     schedule_user_list = list(schedule_origin.values_list('user_id', flat=True))
     schedule_map = {s.user_id: s for s in schedule_origin}
 
@@ -767,17 +825,19 @@ def work_schedule_modify(request, stand_ym):
         for key, value in next_day_list.items():
             next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
 
-        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6])))
+        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6]), branch=branch))
 
         next_schedule_origin = Schedule.objects.filter(
-            year=next_ym[0:4], month=next_ym[4:6]
+            year=next_ym[0:4],
+            month=next_ym[4:6],
+            branch=branch,
         ).select_related()
         next_schedule_user_list = list(next_schedule_origin.values_list('user_id', flat=True))
         next_schedule_map = {s.user_id: s for s in next_schedule_origin}
 
     # 5) 계약 전체를 한 번에 불러와 user별로 매핑
     # schedule_date는 위에서 '기준 마지막 일자(이번달 말 or 다음달 첫 일요일)'로 세팅해 둠
-    contracts_by_user = build_contracts_by_user(user_list, schedule_date)
+    contracts_by_user = build_contracts_by_user(user_list, schedule_date, branch=branch)
 
     # 부서간 구분선 표기를 위해 직전 직원의 부서명을 저장할 변수 설정
     pre_dept = None
@@ -794,22 +854,18 @@ def work_schedule_modify(request, stand_ym):
                     if int(key) in holiday_list:
                         user[key] = off_module_id
                     else:
-                        query = f'''
-                            SELECT c.val
-                            FROM
-                            (
-                            SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
-                            FROM wtm_contract
-                            WHERE user_id = {user['id']}
-                              and DATE_FORMAT(stand_date, '%Y%m%d') <= '{stand_ym + key.zfill(2)}'
-                            ) c
-                            WHERE rownum = 1
-                            '''
-                        with connection.cursor() as cursor:
-                            cursor.execute(query)
-                            r = cursor.fetchone()
-
-                        user[key] = (None if r == None else r[0])
+                        user[key] = (
+                            Contract.objects.filter(
+                                user_id=user["id"],
+                                branch=branch,
+                                stand_date__lte=datetime.strptime(
+                                    stand_ym + key.zfill(2), "%Y%m%d"
+                                ).date(),
+                            )
+                            .order_by("-stand_date")
+                            .values_list(f"{value}_id", flat=True)
+                            .first()
+                        )
 
         # 기존 근무표가 없는 경우 휴무일(미영업일+공휴일) 세팅 및 contract에서 가져옴달
         else:
@@ -823,22 +879,18 @@ def work_schedule_modify(request, stand_ym):
                 elif int(key) in holiday_list:
                     user[key] = off_module_id
                 else:
-                    query = f'''
-                        SELECT c.val
-                        FROM
-                        (
-                        SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
-                        FROM wtm_contract
-                        WHERE user_id = {user['id']}
-                          and DATE_FORMAT(stand_date, '%Y%m%d') <= '{stand_ym + key.zfill(2)}'
-                        ) c
-                        WHERE rownum = 1
-                        '''
-                    with connection.cursor() as cursor:
-                        cursor.execute(query)
-                        r = cursor.fetchone()
-
-                    user[key] = (None if r == None else r[0])
+                    user[key] = (
+                        Contract.objects.filter(
+                            user_id=user["id"],
+                            branch=branch,
+                            stand_date__lte=datetime.strptime(
+                                stand_ym + key.zfill(2), "%Y%m%d"
+                            ).date(),
+                        )
+                        .order_by("-stand_date")
+                        .values_list(f"{value}_id", flat=True)
+                        .first()
+                    )
 
         # 직전 직원의 부서명과 비교해서 같으면 'N'을 다르면 'Y' 세팅
         user['dept_diff'] = ('N' if pre_dept == user['dept'] else 'Y')
@@ -853,14 +905,23 @@ def work_schedule_modify(request, stand_ym):
         next_day_list_eng = {}
         for key, value in next_day_list.items():
             next_day_list_eng[key] = list(week_dict.keys())[list(week_dict.values()).index(value)]
-        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6])))
+        next_holiday_list = sorted(get_non_business_days(int(next_ym[0:4]), int(next_ym[4:6]), branch=branch))
 
         # 기존 근무표가 입력되어 있는 user_id를 가져옴
         next_schedule_user_list = list(
-            Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6]).values_list('user_id', flat=True))
+            Schedule.objects.filter(
+                year=next_ym[0:4],
+                month=next_ym[4:6],
+                branch=branch,
+            ).values_list('user_id', flat=True)
+        )
 
         # 근무표를 가져옴
-        next_schedule_origin = Schedule.objects.filter(year=next_ym[0:4], month=next_ym[4:6])
+        next_schedule_origin = Schedule.objects.filter(
+            year=next_ym[0:4],
+            month=next_ym[4:6],
+            branch=branch,
+        )
 
         # user_list에 일자별 근로모듈을 매핑
         for user in user_list:
@@ -880,24 +941,20 @@ def work_schedule_modify(request, stand_ym):
                     elif int(key) in next_holiday_list:
                         user["n" + key] = off_module_id
                     else:
-                        query = f'''
-                                SELECT c.val
-                                FROM
-                                (
-                                SELECT row_number() over (order by stand_date desc) as rownum , wtm_contract.{value}_id as val
-                                FROM wtm_contract
-                                WHERE user_id = {user['id']}
-                                  and DATE_FORMAT(stand_date, '%Y%m%d') <= '{next_ym + key.zfill(2)}'
-                                ) c
-                                WHERE rownum = 1
-                                '''
-                        with connection.cursor() as cursor:
-                            cursor.execute(query)
-                            r = cursor.fetchone()
+                        user["n" + key] = (
+                            Contract.objects.filter(
+                                user_id=user["id"],
+                                branch=branch,
+                                stand_date__lte=datetime.strptime(
+                                    next_ym + key.zfill(2), "%Y%m%d"
+                                ).date(),
+                            )
+                            .order_by("-stand_date")
+                            .values_list(f"{value}_id", flat=True)
+                            .first()
+                        )
 
-                        user["n" + key] = (None if r == None else r[0])
-
-    module_list = Module.objects.all().order_by('order', 'id')  # 근로모듈을 입력하기 위함
+    module_list = Module.objects.filter(branch=branch).order_by('order', 'id')  # 근로모듈을 입력하기 위함
     context = {'stand_ym': stand_ym, 'day_list': day_list, 'user_list': user_list, 'module_list': module_list,
                'holiday_list': holiday_list, 'next_day_list': next_day_list, 'next_holiday_list': next_holiday_list,
                'next_ym': next_ym}
@@ -906,7 +963,11 @@ def work_schedule_modify(request, stand_ym):
 
 @login_required(login_url='common:login')
 def work_schedule_delete(request, stand_ym):
-    schedule = Schedule.objects.filter(year=stand_ym[0:4], month=stand_ym[4:6])
+    schedule = Schedule.objects.filter(
+        year=stand_ym[0:4],
+        month=stand_ym[4:6],
+        branch=request.user.branch,
+    )
     # if request.user != question.author:
     #     messages.error(request, '삭제 권한이 없습니다.')
     #     return redirect('pybo:detail', question_id=question.id)
@@ -933,11 +994,19 @@ def work_schedule_popup(request):
         new_module_id = request.POST.get("module_id")
         column = f'd{str(int(new_stand_date[6:8]))}_id'
 
-        user = User.objects.get(pk=new_user_id)
+        branch = request.user.branch
+        user = User.objects.get(pk=new_user_id, branch=branch)
+        if new_module_id and not Module.objects.filter(id=new_module_id, branch=branch).exists():
+            messages.error(request, "지점에 속하지 않은 근로모듈입니다.")
+            return redirect('wtm:work_schedule', new_stand_date[0:6])
 
         try:
-            obj = Schedule.objects.filter(year=new_stand_date[0:4], month=new_stand_date[4:6],
-                                          user_id=new_user_id)
+            obj = Schedule.objects.filter(
+                year=new_stand_date[0:4],
+                month=new_stand_date[4:6],
+                user_id=new_user_id,
+                branch=branch,
+            )
 
             obj_to_update = obj[0]
 

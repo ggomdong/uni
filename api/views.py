@@ -148,12 +148,25 @@ class AttendanceAPIView(APIView):
             today = now.date()
 
         # 출근/퇴근 기록 조회
-        checkin = Work.objects.filter(user=user, work_code='I', record_day=today).order_by('record_date').first()
-        checkout = Work.objects.filter(user=user, work_code='O', record_day=today).order_by('-record_date').first()
+        checkin = (
+            Work.objects.filter(user=user, branch=user.branch, work_code='I', record_day=today)
+            .order_by('record_date')
+            .first()
+        )
+        checkout = (
+            Work.objects.filter(user=user, branch=user.branch, work_code='O', record_day=today)
+            .order_by('-record_date')
+            .first()
+        )
 
         # 오늘 근무표 정보 조회
         try:
-            schedule = Schedule.objects.get(user=user, year=str(today.year), month=f"{today.month:02}")
+            schedule = Schedule.objects.get(
+                user=user,
+                branch=user.branch,
+                year=str(today.year),
+                month=f"{today.month:02}",
+            )
             module = getattr(schedule, f"d{today.day}", None)
         except Schedule.DoesNotExist:
             module = None
@@ -284,7 +297,12 @@ class WorkCreateAPIView(APIView):
 
         with transaction.atomic():
             # 오늘 출근 여부 확인
-            checkin_exists = Work.objects.select_for_update().filter(user=user, work_code='I', record_day=today).exists()
+            checkin_exists = Work.objects.select_for_update().filter(
+                user=user,
+                branch=user.branch,
+                work_code='I',
+                record_day=today,
+            ).exists()
 
             # 근태기록이 없으면 출근, 있으면 퇴근으로 설정
             work_code = 'I' if not checkin_exists else 'O'
@@ -296,7 +314,7 @@ class WorkCreateAPIView(APIView):
             })
 
             if serializer.is_valid():
-                work = serializer.save()
+                work = serializer.save(branch=user.branch)
                 return Response({
                     "work": serializer.data,
                     "info": "출근하였습니다." if work_code == 'I' else "퇴근하였습니다."
@@ -323,19 +341,22 @@ class NonBusinessDayListAPIView(APIView):
             month = int(request.query_params.get("month", now.month))
         except ValueError:
             return Response({"detail": "year, month는 정수여야 합니다."}, status=400)
+        if request.user.branch is None:
+            return Response({"detail": "사용자의 지점정보가 없습니다."}, status=400)
 
         first_day = date(year, month, 1)
         last_day = date(year, month, monthrange(year, month)[1])
 
         # 1) Holiday 테이블 (법정 공휴일)
         holiday_qs = Holiday.objects.filter(
-            holiday__range=(first_day, last_day)
+            branch=request.user.branch,
+            holiday__range=(first_day, last_day),
         ).order_by("holiday")
         holiday_map = {h.holiday: h.holiday_name for h in holiday_qs}
 
         # 2) Business 테이블 (요일별 영업/비영업 패턴)
         business = (
-            Business.objects.filter(stand_date__lte=last_day)
+            Business.objects.filter(branch=request.user.branch, stand_date__lte=last_day)
             .order_by("-stand_date")
             .first()
         )

@@ -60,6 +60,13 @@ class Dept(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='dept_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="depts",
+        db_index=True,
+    )
 
 
 class Position(models.Model):
@@ -69,6 +76,13 @@ class Position(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='position_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="positions",
+        db_index=True,
+    )
 
 
 class Holiday(models.Model):
@@ -78,6 +92,13 @@ class Holiday(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='holiday_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="holidays",
+        db_index=True,
+    )
 
 
 class Business(models.Model):
@@ -93,6 +114,13 @@ class Business(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='business_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="businesses",
+        db_index=True,
+    )
 
 
 class Code(models.Model):
@@ -103,3 +131,10 @@ class Code(models.Model):
     reg_date = models.DateTimeField()
     mod_id = models.ForeignKey(User, on_delete=models.PROTECT, related_name='code_mod_id')
     mod_date = models.DateTimeField()
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="codes",
+        db_index=True,
+    )

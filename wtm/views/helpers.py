@@ -23,7 +23,7 @@ def sec_to_hhmmss(total_seconds: int) -> str:
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
-def build_contracts_by_user(user_list, schedule_date):
+def build_contracts_by_user(user_list, schedule_date, *, branch):
     """
     근무표 수정을 위한 헬퍼함수
     wtm_contract에서 기준일자(schedule_date)까지의 계약을 한 번에 읽어서 user_id별로 정리
@@ -37,6 +37,7 @@ def build_contracts_by_user(user_list, schedule_date):
         return {}
 
     # schedule_date는 'YYYYMMDD' 문자열
+    placeholders = ",".join(["%s"] * len(user_ids))
     query = f'''
         SELECT
             id,
@@ -50,15 +51,17 @@ def build_contracts_by_user(user_list, schedule_date):
             sat_id,
             sun_id
         FROM wtm_contract
-        WHERE user_id IN ({",".join(user_ids)})
-          AND DATE_FORMAT(stand_date, '%Y%m%d') <= '{schedule_date}'
+        WHERE branch_id = %s
+          AND user_id IN ({placeholders})
+          AND DATE_FORMAT(stand_date, '%Y%m%d') <= %s
         ORDER BY user_id, stand_date
     '''
+    params = [branch.id, *user_ids, schedule_date]
 
     contracts_by_user: dict[int, list[dict]] = {}
 
     with connection.cursor() as cursor:
-        cursor.execute(query)
+        cursor.execute(query, params)
         rows = cursor.fetchall()
         cols = [col[0] for col in cursor.description]
 
@@ -94,7 +97,7 @@ def get_contract_module_id(contracts, target_date, weekday_eng: str):
     return latest_val
 
 
-def get_non_business_days(year: int, month: int) -> set[int]:
+def get_non_business_days(year: int, month: int, *, branch) -> set[int]:
     """
     미영업일(day int) 집합 반환.
     - Holiday(법정 공휴일)
@@ -104,12 +107,12 @@ def get_non_business_days(year: int, month: int) -> set[int]:
     last_day = date(year, month, monthrange(year, month)[1])
 
     # 1) 공휴일
-    holiday_qs = Holiday.objects.filter(holiday__range=(first_day, last_day))
+    holiday_qs = Holiday.objects.filter(branch=branch, holiday__range=(first_day, last_day))
     holiday_set = set(h.holiday for h in holiday_qs)
 
     # 2) 비영업 요일 패턴 (가장 최근 stand_date 기준)
     business = (
-        Business.objects.filter(stand_date__lte=last_day)
+        Business.objects.filter(branch=branch, stand_date__lte=last_day)
         .order_by("-stand_date")
         .first()
     )
@@ -140,7 +143,7 @@ def get_non_business_days(year: int, month: int) -> set[int]:
     return non_business_days
 
 
-def fetch_base_users_for_month(stand_ym: str, *, is_contract_checked: bool = True) -> list[dict]:
+def fetch_base_users_for_month(stand_ym: str, *, branch, is_contract_checked: bool = True) -> list[dict]:
     """
     월 단위 대상 직원 리스트 조회
     - 근태확인(check_yn='Y') 여부는 is_contract_checked
@@ -161,37 +164,41 @@ def fetch_base_users_for_month(stand_ym: str, *, is_contract_checked: bool = Tru
                        FROM wtm_contract c
                       WHERE c.user_id = u.id
                         AND c.check_yn = 'Y'
+                        AND c.branch_id = %s
                         AND (c.user_id, c.stand_date) IN (
                             SELECT a.user_id, MIN(a.stand_date)
                               FROM (
-                                    SELECT user_id, MAX(stand_date) stand_date FROM wtm_contract WHERE stand_date <= %s GROUP BY user_id
+                                    SELECT user_id, MAX(stand_date) stand_date FROM wtm_contract WHERE stand_date <= %s AND branch_id = %s GROUP BY user_id
                                     UNION
-                                    SELECT user_id, MIN(stand_date) stand_date FROM wtm_contract WHERE stand_date > %s GROUP BY user_id
+                                    SELECT user_id, MIN(stand_date) stand_date FROM wtm_contract WHERE stand_date > %s AND branch_id = %s GROUP BY user_id
                                    ) a
                             GROUP BY a.user_id
                         )
                    )
             """
-        contract_params = [last_day, last_day]
+        contract_params = [branch.id, last_day, branch.id, last_day, branch.id]
 
     sql = f"""
             SELECT u.id, u.dept, u.position, u.emp_name, DATE_FORMAT(u.out_date, '%%Y%%m%%d') AS out_ymd
               FROM common_user u
               LEFT JOIN wtm_schedule s ON s.user_id = u.id
              WHERE u.is_employee = TRUE
+               AND u.branch_id = %s
+               AND s.branch_id = u.branch_id
                AND s.year  = %s
                AND s.month = %s
                AND DATE_FORMAT(u.join_date, '%%Y%%m%%d') <= %s
                AND (DATE_FORMAT(u.out_date, '%%Y%%m%%d') IS NULL OR DATE_FORMAT(u.out_date, '%%Y%%m%%d') >= %s)
                {contract_sql}
             GROUP BY u.id, u.dept, u.position, u.emp_name
-            ORDER BY (SELECT `order` FROM common_dept     d WHERE d.dept_name     = u.dept),
-                     (SELECT `order` FROM common_position p WHERE p.position_name = u.position),
+            ORDER BY (SELECT `order` FROM common_dept     d WHERE d.dept_name     = u.dept AND d.branch_id = u.branch_id),
+                     (SELECT `order` FROM common_position p WHERE p.position_name = u.position AND p.branch_id = u.branch_id),
                      u.join_date,
                      u.emp_name
         """
 
     params = [
+        branch.id,
         str(year),
         f"{month:02d}",
         last_day,  # join_date <= last_day
@@ -207,7 +214,7 @@ def fetch_base_users_for_month(stand_ym: str, *, is_contract_checked: bool = Tru
         ]
 
 
-def fetch_log_users_for_day(stand_day: str):
+def fetch_log_users_for_day(stand_day: str, *, branch):
     """
     근태기록-일별상세 화면에서 사용할 '대상 직원 목록'을 RAW SQL로 조회.
     - contract.check_yn = 'Y'
@@ -218,7 +225,7 @@ def fetch_log_users_for_day(stand_day: str):
     # stand_day: 'YYYYMMDD'
     day_no = int(stand_day[6:8])  # 1~31 → s.d{day_no}_id
 
-    query = f"""
+    query = """
         SELECT
             u.id AS user_id,
             u.emp_name,
@@ -230,6 +237,7 @@ def fetch_log_users_for_day(stand_day: str):
         FROM common_user u
             LEFT OUTER JOIN wtm_schedule s
                 ON u.id = s.user_id
+               AND s.branch_id = u.branch_id
             LEFT OUTER JOIN (
                 SELECT *
                   FROM wtm_contract
@@ -239,36 +247,52 @@ def fetch_log_users_for_day(stand_day: str):
                       FROM (
                             SELECT user_id, MAX(stand_date) AS stand_date
                               FROM wtm_contract
-                             WHERE stand_date <= '{stand_day}'
+                             WHERE stand_date <= %s AND branch_id = %s
                              GROUP BY user_id
                             UNION
                             SELECT user_id, MIN(stand_date) AS stand_date
                               FROM wtm_contract
-                             WHERE stand_date > '{stand_day}'
+                             WHERE stand_date > %s AND branch_id = %s
                              GROUP BY user_id
                            ) a
                      GROUP BY a.user_id
                  )
+                 AND branch_id = %s
             ) c
                 ON u.id = c.user_id
             LEFT OUTER JOIN common_dept d
-                ON u.dept = d.dept_name
+                ON u.dept = d.dept_name AND d.branch_id = u.branch_id
             LEFT OUTER JOIN common_position p
-                ON u.position = p.position_name
+                ON u.position = p.position_name AND p.branch_id = u.branch_id
         WHERE u.is_employee = TRUE
+          AND u.branch_id = %s
           AND c.check_yn = 'Y'
-          AND s.year  = '{stand_day[0:4]}'
-          AND s.month = '{stand_day[4:6]}'
-          AND DATE_FORMAT(u.join_date, '%Y%m') <= '{stand_day[0:6]}'
+          AND s.year  = %s
+          AND s.month = %s
+          AND DATE_FORMAT(u.join_date, '%Y%m') <= %s
           AND (
                 DATE_FORMAT(u.out_date, '%Y%m') IS NULL
-             OR DATE_FORMAT(u.out_date, '%Y%m') >= '{stand_day[0:6]}'
+             OR DATE_FORMAT(u.out_date, '%Y%m') >= %s
           )
         ORDER BY dept_order, position_order, u.join_date
     """
 
     with connection.cursor() as cur:
-        cur.execute(query)
+        cur.execute(
+            query,
+            [
+                stand_day,
+                branch.id,
+                stand_day,
+                branch.id,
+                branch.id,
+                branch.id,
+                stand_day[0:4],
+                stand_day[4:6],
+                stand_day[0:6],
+                stand_day[0:6],
+            ],
+        )
         rows = dictfetchall(cur)
 
     # 템플릿에서 쓰기 좋게 살짝 정리

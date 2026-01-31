@@ -1,15 +1,8 @@
 from django.shortcuts import render
 
-from ..models import Branch
-
 def work_privacy(request):
-    branch_code = request.GET.get("branch")
-    branch_name = None
-
-    if branch_code:
-        branch = Branch.objects.filter(code=branch_code).first()
-        if branch:
-            branch_name = branch.name
+    branch = getattr(request.user, "branch", None) if request.user.is_authenticated else None
+    branch_name = branch.name if branch else None
 
     context = {
         "branch_name": branch_name,

@@ -23,6 +23,24 @@ class ModuleForm(forms.ModelForm):
 
 
 class ContractForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.branch = kwargs.pop("branch", None)
+        super().__init__(*args, **kwargs)
+        if self.branch is not None:
+            module_qs = Module.objects.filter(branch=self.branch).order_by("order", "id")
+            for field in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]:
+                self.fields[field].queryset = module_qs
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.branch is None:
+            return cleaned_data
+        for field in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]:
+            module = cleaned_data.get(field)
+            if module and module.branch_id != self.branch.id:
+                raise forms.ValidationError("선택한 근로모듈이 현재 지점과 일치하지 않습니다.")
+        return cleaned_data
+
     class Meta:
         model = Contract
         fields = ['stand_date', 'type', 'check_yn', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']

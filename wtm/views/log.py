@@ -13,6 +13,7 @@ from .helpers import fetch_log_users_for_day
 
 @login_required(login_url='common:login')
 def work_log(request, stand_day=None):
+    branch = request.user.branch
     # 0) 검색어
     kw = request.GET.get("kw", "").strip()
 
@@ -33,7 +34,7 @@ def work_log(request, stand_day=None):
     # 2) 해당 날짜 근태기록
     log_list = (
         Work.objects
-        .filter(record_day=target_date)
+        .filter(record_day=target_date, branch=branch)
         .select_related('user')
         .order_by('-record_date')  # 최신 기록이 위로
     )
@@ -44,7 +45,7 @@ def work_log(request, stand_day=None):
 
     # 3) 모달에서 쓸 '대상 직원 목록' (RAW SQL)
     try:
-        user_list = fetch_log_users_for_day(stand_day)
+        user_list = fetch_log_users_for_day(stand_day, branch=branch)
     except Exception as e:
         messages.warning(request, f"대상 직원 조회 중 오류가 발생했습니다. ({e})")
         user_list = []
@@ -91,7 +92,7 @@ def work_log_save(request):
 
     # 수정모드
     if log_id:
-        obj = get_object_or_404(Work, pk=log_id)
+        obj = get_object_or_404(Work, pk=log_id, branch=request.user.branch)
         form = WorkForm(request.POST, instance=obj)
     else:
         user_id = request.POST.get("user_id")
@@ -99,7 +100,7 @@ def work_log_save(request):
             messages.error(request, "직원을 선택해 주세요.")
             return redirect('wtm:work_log', stand_day=stand_day)
 
-        target_user = get_object_or_404(User, pk=user_id)
+        target_user = get_object_or_404(User, pk=user_id, branch=request.user.branch)
         obj = Work(user=target_user)
         form = WorkForm(request.POST, instance=obj)
 
@@ -117,6 +118,7 @@ def work_log_save(request):
     # Work 모델의 pre_save 시그널에서 record_day = record_date.date() 자동 세팅
     if not log_id:
         obj.user = target_user
+        obj.branch = request.user.branch
     obj.save()
 
     messages.success(request, "근태기록이 저장되었습니다.")
@@ -136,7 +138,7 @@ def work_log_save(request):
 
 @login_required(login_url='common:login')
 def work_log_delete(request, log_id: int):
-    log = get_object_or_404(Work, pk=log_id)
+    log = get_object_or_404(Work, pk=log_id, branch=request.user.branch)
     stand_day = log.record_day.strftime('%Y%m%d')
 
     if request.method == "POST":
