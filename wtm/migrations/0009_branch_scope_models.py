@@ -11,7 +11,7 @@ def backfill_wtm_branch(apps, schema_editor):
 
     default_branch = Branch.objects.order_by("id").first()
     if default_branch is None:
-        return
+        default_branch = Branch.objects.create(code="DEFAULT", name="Default")
 
     for module in Module.objects.all().select_related("reg_id__branch"):
         branch = getattr(module, "reg_id", None) and getattr(module.reg_id, "branch", None)

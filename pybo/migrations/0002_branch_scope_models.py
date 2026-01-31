@@ -6,17 +6,20 @@ def backfill_pybo_branch(apps, schema_editor):
     Question = apps.get_model("pybo", "Question")
     Answer = apps.get_model("pybo", "Answer")
 
+    Branch = apps.get_model("common", "Branch")
+    default_branch = Branch.objects.order_by("id").first()
+    if default_branch is None:
+        default_branch = Branch.objects.create(code="DEFAULT", name="Default")
+
     for question in Question.objects.all().select_related("author__branch"):
         branch = getattr(question.author, "branch", None)
-        if branch:
-            question.branch_id = branch.id
-            question.save(update_fields=["branch"])
+        question.branch_id = (branch.id if branch else default_branch.id)
+        question.save(update_fields=["branch"])
 
     for answer in Answer.objects.all().select_related("question__branch"):
         branch = getattr(answer.question, "branch", None)
-        if branch:
-            answer.branch_id = branch.id
-            answer.save(update_fields=["branch"])
+        answer.branch_id = (branch.id if branch else default_branch.id)
+        answer.save(update_fields=["branch"])
 
 
 class Migration(migrations.Migration):

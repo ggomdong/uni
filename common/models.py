@@ -68,6 +68,11 @@ class Dept(models.Model):
         db_index=True,
     )
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["branch", "dept_name"], name="dept_unique_branch_name"),
+        ]
+
 
 class Position(models.Model):
     position_name = models.CharField(max_length=20)  # 직위명
@@ -84,6 +89,11 @@ class Position(models.Model):
         db_index=True,
     )
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["branch", "position_name"], name="position_unique_branch_name"),
+        ]
+
 
 class Holiday(models.Model):
     holiday = models.DateField()  # 일자
@@ -99,6 +109,11 @@ class Holiday(models.Model):
         related_name="holidays",
         db_index=True,
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["branch", "holiday"], name="holiday_unique_branch_date"),
+        ]
 
 
 class Business(models.Model):
@@ -122,6 +137,11 @@ class Business(models.Model):
         db_index=True,
     )
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["branch", "stand_date"], name="business_unique_branch_date"),
+        ]
+
 
 class Code(models.Model):
     code_name = models.CharField(max_length=20)  # 코드명
@@ -138,3 +158,11 @@ class Code(models.Model):
         related_name="codes",
         db_index=True,
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["branch", "code_name", "value"],
+                name="code_unique_branch_name_value",
+            ),
+        ]

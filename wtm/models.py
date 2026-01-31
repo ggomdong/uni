@@ -41,6 +41,11 @@ class Module(models.Model):
             self.order = max_order + 1
         super().save(*args, **kwargs)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["branch", "order"], name="module_branch_order_idx"),
+        ]
+
 
 # 근로계약
 class Contract(models.Model):
@@ -66,6 +71,11 @@ class Contract(models.Model):
         related_name="contracts",
         db_index=True,
     )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["branch", "user_id", "stand_date"], name="contract_branch_user_date_idx"),
+        ]
 
 
 # 근무표
@@ -116,6 +126,11 @@ class Schedule(models.Model):
         db_index=True,
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["branch", "year", "month", "user_id"], name="schedule_branch_ym_user_idx"),
+        ]
+
 
 # 근태기록
 class Work(models.Model):
@@ -138,6 +153,10 @@ class Work(models.Model):
     class Meta:
         permissions = [
             ("bypass_beacon", "비콘 바이패스 권한"),
+        ]
+        indexes = [
+            models.Index(fields=["branch", "record_day"], name="work_branch_day_idx"),
+            models.Index(fields=["branch", "user_id", "record_day"], name="work_branch_user_day_idx"),
         ]
 
 # Work 저장시 항상 record_day를 record_date에 맞춰 설정해줌

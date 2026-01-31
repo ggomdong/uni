@@ -12,7 +12,7 @@ def backfill_common_branch(apps, schema_editor):
 
     default_branch = Branch.objects.order_by("id").first()
     if default_branch is None:
-        return
+        default_branch = Branch.objects.create(code="DEFAULT", name="Default")
 
     def assign_branch(model_cls):
         for obj in model_cls.objects.all().select_related("reg_id__branch"):

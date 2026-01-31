@@ -20,6 +20,11 @@ class Question(models.Model):
         db_index=True,
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["branch", "create_date"], name="question_branch_created_idx"),
+        ]
+
     def __str__(self):
         return self.subject
 
@@ -38,3 +43,8 @@ class Answer(models.Model):
         related_name="answers",
         db_index=True,
     )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["branch", "create_date"], name="answer_branch_created_idx"),
+        ]
