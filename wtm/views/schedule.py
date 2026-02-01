@@ -12,7 +12,7 @@ from .helpers import build_contracts_by_user, get_contract_module_id, get_non_bu
 
 
 def work_schedule(request, stand_ym=None):
-    branch = request.user.branch
+    branch = request.branch
     # 기준년월 값이 없으면 현재로 세팅
     if stand_ym is None:
         stand_ym = str(datetime.today().year) + str(datetime.today().month).zfill(2)

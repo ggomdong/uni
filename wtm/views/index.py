@@ -1,9 +1,9 @@
 from datetime import datetime, date
 
-from django.utils import timezone
-from django.shortcuts import render
 from django.contrib import messages
 from django.db import connection
+from django.shortcuts import render
+from django.utils import timezone
 
 from common import context_processors
 from wtm.services.attendance import build_daily_attendance_for_users
@@ -16,7 +16,9 @@ def index(request, stand_day=None):
         stand_day = datetime.today().strftime('%Y%m%d')
 
     days = context_processors.get_days_korean(stand_day)
-    branch = request.user.branch
+
+    # common.middleware.py 에서 처리
+    branch = request.branch
 
     day_num = int(stand_day[6:8])
     if not 1 <= day_num <= 31:
@@ -61,27 +63,45 @@ def index(request, stand_day=None):
             results = cursor.fetchall()
 
             x = cursor.description
-            user_list = []
-            dept = ''
-            category = -1
+
+            # 0번 그룹: 의사(원장 포함) 고정
+            user_list = [[]]
+            dept = None
+            category = 0  # 0은 의사 그룹, 일반 부서는 1부터
+            DOCTOR_DEPTS = ("원장", "의사")
+
             for r in results:
-                # 부서가 달라지면, 새로운 리스트를 추가
-                if r[0] != '의사' and dept != r[0]:
-                    dept = r[0]
-                    category += 1
-                    user_list.append([])
+                row_dept = r[0]
                 # print(f'dept: {dept}, category: {category}')
                 i = 0
                 d = {}
                 while i < len(x):
                     d[x[i][0]] = r[i]
                     i = i + 1
+
+                # 원장 포함 의사는 항상 0번 그룹
+                if row_dept in DOCTOR_DEPTS:
+                    user_list[0].append(d)
+                    continue
+
+                # 일반 부서는 부서 변경 시 그룹 생성
+                if dept != row_dept:
+                    dept = row_dept
+                    category += 1
+                    user_list.append([])
                 user_list[category].append(d)
 
             # print(user_list)
-        i = 0
-        max_workers = 0
-        for i in range(category+1):
+
+        # (중요) 0번 그룹(원장+의사) 내부 순서: 원장 먼저 → 의사
+        if user_list and user_list[0]:
+            user_list[0].sort(key=lambda item: 0 if item.get("dept") == "원장" else 1)
+
+        # 빈 그룹 제거 + summary/max_workers 계산
+        final_groups = []
+        for i in range(len(user_list)):
+            if not user_list[i]:
+                continue
             # TODAY의 테이블 row 크기를 정하기 위해 max 값 계산
             # (틀린 로직) 오전 / 오후 근무인원과 비교하여 당일 최대 근무인원수 계산
             # max_workers = max(max_workers, d['sum_am'], d['sum_pm'])
@@ -95,8 +115,12 @@ def index(request, stand_day=None):
             d = {}
             d['sum_am'] = sum(item['am'] for item in user_list[i])
             d['sum_pm'] = sum(item['pm'] for item in user_list[i])
+            d['group_name'] = '의사' if i == 0 else user_list[i][0].get('dept')
 
             user_list[i].insert(0, d)
+            final_groups.append(user_list[i])
+
+        user_list = final_groups
 
     except Exception as e:
         messages.warning(request, f'오류가 발생했습니다. {e}')
