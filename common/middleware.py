@@ -27,7 +27,8 @@ class BranchGuardMiddleware:
         "/static/",
         "/favicon.ico",
         "/admin/",   # 원하면 admin도 지점 강제할 수 있지만 보통은 예외로 둠
-        "/api/"
+        "/api/",
+        "/privacy/"
     )
 
     def __init__(self, get_response):
