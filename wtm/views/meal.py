@@ -1,6 +1,6 @@
 from calendar import monthrange
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -65,7 +65,11 @@ def build_meal_status_rows(stand_ym: str | None, *, branch):
 
 @login_required(login_url="common:login")
 def work_meal_status(request, stand_ym: str | None = None):
-    stand_ym, rows = build_meal_status_rows(stand_ym, branch=request.user.branch)
+    branch = getattr(request, "branch", None)
+    if branch is None:
+        raise Http404("branch code is required")
+
+    stand_ym, rows = build_meal_status_rows(stand_ym, branch=branch)
 
     return render(request, "wtm/work_meal_status.html", {
         "stand_ym": stand_ym,
@@ -75,12 +79,15 @@ def work_meal_status(request, stand_ym: str | None = None):
 
 
 # 엑셀에서 가져갈 수 있도록 JSON 형태로 내려줌 -> 향후 제거 예정
-@login_required(login_url="common:login")
 def work_meal_json(request, stand_ym: str | None = None):
     stand_ym = stand_ym or request.GET.get("stand_ym") or timezone.now().strftime("%Y%m")
 
+    branch = getattr(request, "branch", None)
+    if branch is None:
+        raise Http404("branch code is required")
+
     # dept/position 등 포함된 rows를 만들어 주는 함수
-    stand_ym, rows = build_meal_status_rows(stand_ym, branch=request.user.branch)
+    stand_ym, rows = build_meal_status_rows(stand_ym, branch=branch)
 
     # 요청 형태로 단순화: [{"emp_name": "...", "total_amount": 123}, ...]
     simple_rows = []
