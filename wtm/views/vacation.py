@@ -1,6 +1,6 @@
 from calendar import monthrange
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 
 from django.contrib.auth.decorators import login_required
 
@@ -14,8 +14,9 @@ def build_vacation_rows(year: int, *, branch, is_contract_checked: bool = False)
     반환: [{"emp_name": "...", "date": "YYYY-MM-DD"}, ...]
     """
 
-    vacation_module_ids = list(
-        Module.objects.filter(branch=branch, name__iexact="연차").values_list("id", flat=True)
+    vacation_module_ids = set(
+        Module.objects.filter(branch=branch, name__iexact="연차")
+        .values_list("id", flat=True)
     )
     if not vacation_module_ids:
         return []
@@ -62,8 +63,7 @@ def build_vacation_rows(year: int, *, branch, is_contract_checked: bool = False)
     return rows
 
 
-# 엑셀에서 가져갈 수 있도록 JSON 형태로 내려줌
-@login_required(login_url="common:login")
+# 엑셀에서 비로그인으로 가져갈 수 있도록 JSON 형태로 내려줌
 def work_vacation_json(request, year: str | None = None):
     year = year or request.GET.get("year")
 
@@ -81,11 +81,15 @@ def work_vacation_json(request, year: str | None = None):
             json_dumps_params={"ensure_ascii": False},
         )
 
+    branch = getattr(request, "branch", None)
+    if branch is None:
+        raise Http404("branch code is required")
+
     # 필요하면 계약확인 대상만 뽑고 싶을 때 옵션화 가능
     # is_contract_checked = request.GET.get("contract_checked") == "1"
     is_contract_checked = False
 
-    rows = build_vacation_rows(y, branch=request.user.branch, is_contract_checked=is_contract_checked)
+    rows = build_vacation_rows(y, branch=branch, is_contract_checked=is_contract_checked)
 
     resp = JsonResponse(rows, safe=False, json_dumps_params={"ensure_ascii": False})
 

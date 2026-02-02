@@ -78,7 +78,7 @@ def work_meal_status(request, stand_ym: str | None = None):
     })
 
 
-# 엑셀에서 가져갈 수 있도록 JSON 형태로 내려줌 -> 향후 제거 예정
+# 엑셀에서 비로그인으로 가져갈 수 있도록 JSON 형태로 내려줌 -> 향후 제거 예정
 def work_meal_json(request, stand_ym: str | None = None):
     stand_ym = stand_ym or request.GET.get("stand_ym") or timezone.now().strftime("%Y%m")
 
