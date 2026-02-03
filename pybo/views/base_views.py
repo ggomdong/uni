@@ -8,9 +8,10 @@ from ..models import Question
 
 @login_required(login_url='common:login')
 def index(request):
+    branch = request.branch
     page = request.GET.get('page', '1')     # 페이지 default 값은 1
     kw = request.GET.get('kw', '')      # 검색어
-    question_list = Question.objects.filter(branch=request.user.branch).order_by('-create_date')
+    question_list = Question.objects.filter(branch=branch).order_by('-create_date')
     if kw:
         question_list = question_list.filter(       # icontains 는 대소문자 구별하지 않음 (contains는 구별)
             Q(subject__icontains=kw) |      # 제목 검색
@@ -28,6 +29,7 @@ def index(request):
 
 @login_required(login_url='common:login')
 def detail(request, question_id):
-    question = get_object_or_404(Question, pk=question_id, branch=request.user.branch)
+    branch = request.branch
+    question = get_object_or_404(Question, pk=question_id, branch=branch)
     context = {'question': question}
     return render(request, 'pybo/question_detail.html', context)

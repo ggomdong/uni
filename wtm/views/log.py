@@ -13,7 +13,7 @@ from .helpers import fetch_log_users_for_day
 
 @login_required(login_url='common:login')
 def work_log(request, stand_day=None):
-    branch = request.user.branch
+    branch = request.branch
     # 0) 검색어
     kw = request.GET.get("kw", "").strip()
 

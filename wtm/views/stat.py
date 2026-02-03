@@ -77,7 +77,8 @@ def build_work_status_rows(stand_ym: str | None, *, branch):
 # 근태기록-월간집계(전체)
 @login_required(login_url="common:login")
 def work_status(request, stand_ym: str | None = None):
-    stand_ym, rows = build_work_status_rows(stand_ym, branch=request.user.branch)
+    branch = request.branch
+    stand_ym, rows = build_work_status_rows(stand_ym, branch=branch)
 
     return render(request, "wtm/work_status.html", {
         "stand_ym": stand_ym,
@@ -99,7 +100,8 @@ def work_status_excel(request, stand_ym: str | None = None):
         5) 연장근로
         6) 휴일근로
     """
-    stand_ym, rows = build_work_status_rows(stand_ym, branch=request.user.branch)
+    branch = request.branch
+    stand_ym, rows = build_work_status_rows(stand_ym, branch=branch)
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
     wb = openpyxl.Workbook()
@@ -209,7 +211,7 @@ def work_status_excel(request, stand_ym: str | None = None):
 
     # Sheet 2: 근무표
     ws_schedule = wb.create_sheet(title="근무표")
-    schedule_data = schedule_excel_data(stand_ym, branch=request.user.branch)
+    schedule_data = schedule_excel_data(stand_ym, branch=branch)
     write_schedule_sheet(ws_schedule, schedule_data)
 
     # Sheets 3~6: 지각/조퇴/연장근로/휴일근로
@@ -221,7 +223,7 @@ def work_status_excel(request, stand_ym: str | None = None):
     ]
     for metric, title in metric_specs:
         ws_metric = wb.create_sheet(title=title)
-        metric_data = metric_excel_data(stand_ym, metric, branch=request.user.branch)
+        metric_data = metric_excel_data(stand_ym, metric, branch=branch)
         write_metric_sheet(ws_metric, metric_data)
 
     response = HttpResponse(
@@ -253,7 +255,8 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
     year, month = int(stand_ym[:4]), int(stand_ym[4:6])
 
     # 1) 대상자 공통 헬퍼
-    base_users = fetch_base_users_for_month(stand_ym, branch=request.user.branch)
+    branch = request.branch
+    base_users = fetch_base_users_for_month(stand_ym, branch=branch)
 
     if not base_users:
         return render(request, "wtm/work_metric.html", {
@@ -268,7 +271,7 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
     # 2) 일자 리스트 (헤더용)
     day_list = context_processors.get_day_list(stand_ym)
     holiday_list = sorted(
-        get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6]), branch=request.user.branch)
+        get_non_business_days(int(stand_ym[0:4]), int(stand_ym[4:6]), branch=branch)
     )
 
     # 3) 메트릭 디테일 계산
@@ -278,7 +281,7 @@ def work_metric(request, metric: str, stand_ym: str | None = None):
         year=year,
         month=month,
         metric=metric,
-        branch=request.user.branch,
+        branch=branch,
     )
 
     # 4) 템플릿 rows 구성 (좌측: 부서/직급/성명/횟수/합계, 오른쪽: 일자별 초)
