@@ -115,7 +115,7 @@
                         <div class="schedule-grid-cell head left2"></div>
 
                         {% for key, value in day_list.items %}
-                            <div class="schedule-grid-cell head day" data-col="{{ forloop.counter0 }}">
+                            <div class="schedule-grid-cell head day{% if value == '월' and not forloop.first %} week-start{% endif %}" data-col="{{ forloop.counter0 }}">
                                 <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                                      {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
                                     {{ key }}
@@ -124,7 +124,7 @@
                         {% endfor %}
 
                         {% for key, value in next_day_list.items %}
-                            <div class="schedule-grid-cell head day" data-col="{{ forloop.counter0|add:day_len }}">
+                            <div class="schedule-grid-cell head day{% if value == '월' %} week-start{% endif %}" data-col="{{ forloop.counter0|add:day_len }}">
                                 <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
                                     {{ key }}
                                 </div>
@@ -137,7 +137,7 @@
                         <div class="schedule-grid-cell head left2">성명</div>
 
                         {% for key, value in day_list.items %}
-                            <div class="schedule-grid-cell head day" data-col="{{ forloop.counter0 }}">
+                            <div class="schedule-grid-cell head day{% if value == '월' and not forloop.first %} week-start{% endif %}" data-col="{{ forloop.counter0 }}">
                                 <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                                      {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
                                     {{ value }}
@@ -146,7 +146,7 @@
                         {% endfor %}
 
                         {% for key, value in next_day_list.items %}
-                            <div class="schedule-grid-cell head day" data-col="{{ forloop.counter0|add:day_len }}">
+                            <div class="schedule-grid-cell head day{% if value == '월' %} week-start{% endif %}" data-col="{{ forloop.counter0|add:day_len }}">
                                 <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
                                     {{ value }}
                                 </div>
@@ -194,8 +194,8 @@
                             <div class="schedule-grid-cell left2 align-middle">{{ user.emp_name }}</div>
 
                             {% for key, value in day_list.items %}
-                                <div class="schedule-grid-cell day {% if yearmonth == stand_ym and key == today %}is-today{% endif %}"
-                                     data-col="{{ forloop.counter0 }}">
+                                <div class="schedule-grid-cell day{% if yearmonth == stand_ym and key == today %} is-today{% endif %}{% if value == '월' and not forloop.first %} week-start{% endif %}"
+                                    data-col="{{ forloop.counter0 }}">
                                     {% with user|get_index:key as schedule %}
                                         <input type="hidden" name="sch_{{ user.id }}_{{ key }}" id="sch_{{ user.id }}_{{ key }}"
                                                value="{{ schedule|default_if_none:'' }}">
@@ -241,8 +241,8 @@
                             {% endfor %}
 
                             {% for key, value in next_day_list.items %}
-                                <div class="schedule-grid-cell day"
-                                     data-col="{{ forloop.counter0|add:day_len }}">
+                                <div class="schedule-grid-cell day{% if value == '월' %} week-start{% endif %}"
+                                    data-col="{{ forloop.counter0|add:day_len }}">
                                     {% with user|get_next_index:key as schedule %}
                                         <input type="hidden" name="sch_{{ user.id }}_n{{ key }}" id="sch_{{ user.id }}_n{{ key }}"
                                                value="{{ schedule|default_if_none:'' }}">

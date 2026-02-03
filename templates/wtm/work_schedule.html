@@ -91,7 +91,7 @@
                     <div class="schedule-grid-cell head left2"></div>
 
                     {% for key, value in day_list.items %}
-                        <div class="schedule-grid-cell head day">
+                        <div class="schedule-grid-cell head day{% if value == '월' and not forloop.first %} week-start{% endif %}">
                             <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                                  {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
                                 {{ key }}
@@ -100,7 +100,7 @@
                     {% endfor %}
 
                     {% for key, value in next_day_list.items %}
-                        <div class="schedule-grid-cell head day">
+                        <div class="schedule-grid-cell head day{% if value == '월' %} week-start{% endif %}">
                             <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
                                 {{ key }}
                             </div>
@@ -113,7 +113,7 @@
                     <div class="schedule-grid-cell head left2">성명</div>
 
                     {% for key, value in day_list.items %}
-                        <div class="schedule-grid-cell head day">
+                        <div class="schedule-grid-cell head day{% if value == '월' and not forloop.first %} week-start{% endif %}">
                             <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                                  {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
                                 {{ value }}
@@ -122,7 +122,7 @@
                     {% endfor %}
 
                     {% for key, value in next_day_list.items %}
-                        <div class="schedule-grid-cell head day">
+                        <div class="schedule-grid-cell head day{% if value == '월' %} week-start{% endif %}">
                             <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
                                 {{ value }}
                             </div>
@@ -149,7 +149,7 @@
                         <div class="schedule-grid-cell left2 align-middle">{{ schedule.emp_name }}</div>
 
                         {% for key, value in day_list.items %}
-                            <div class="schedule-grid-cell day {% if yearmonth == stand_ym and key == today %}is-today{% endif %}">
+                            <div class="schedule-grid-cell day{% if yearmonth == stand_ym and key == today %} is-today{% endif %}{% if value == '월' and not forloop.first %} week-start{% endif %}">
                                 {% with schedule|get_day_index:key as day %}
                                     {% if stand_ym|concat_date:key < schedule.join_date or schedule.out_date < stand_ym|concat_date:key %}
                                         <div class="module_box-disabled"></div>
@@ -196,7 +196,7 @@
                         {% endfor %}
 
                         {% for key, value in next_day_list.items %}
-                            <div class="schedule-grid-cell day">
+                            <div class="schedule-grid-cell day{% if value == '월' %} week-start{% endif %}">
                                 {% with schedule|get_next_index:key as day %}
                                     {% if next_ym|concat_date:key < schedule.join_date or schedule.out_date < next_ym|concat_date:key %}
                                         <div class="module_box-disabled"></div>

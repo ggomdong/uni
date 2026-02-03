@@ -628,6 +628,26 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     }
 }
 
+/* 주 경계(week-start) 세로선: border로 폭이 바뀌는 걸 피하려고 pseudo-element로 그림 */
+.schedule-grid .schedule-grid-cell.day.week-start,
+.schedule-grid .schedule-grid-cell.head.day.week-start {
+  position: relative;
+}
+
+.schedule-grid .schedule-grid-cell.day.week-start::before,
+.schedule-grid .schedule-grid-cell.head.day.week-start::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  left: -1px;
+  width: 0;
+  border-left: 1px solid rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  z-index: 2; /* module_box 위로 올라오게 */
+}
+
+
 
 /****************************************************************/
 /* 근무표 등록/수정 (Schedule Edit)
