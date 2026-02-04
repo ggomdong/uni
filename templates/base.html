@@ -10,6 +10,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
     <!-- etc CSS -->
     <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+    {% block extra_css %}{% endblock %}
     <link rel="shortcut icon"
       href="{% static 'favicon' %}{% if env_label != 'PROD' %}-{{ env_label|lower }}{% endif %}.png">
     <title>

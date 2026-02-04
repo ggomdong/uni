@@ -1,0 +1,137 @@
+/* =========================
+   PRINT (근무표 출력 전용)
+   ========================= */
+
+@media print {
+
+  /* 0) 용지/여백 */
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  /* 1) 전역 리셋 (화면용 패딩/고정폭 제거) */
+  body {
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body .container { max-width: none !important; }
+  body .main { width: auto !important; }
+  .app-content { padding-top: 0 !important; }
+
+  /* schedule-page(화면용 padding-top) + bootstrap my-3 제거 */
+  .schedule-page {
+    padding-top: 0 !important;
+  }
+  .schedule-page.container.my-3 {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* 2) 인쇄 불필요 UI 숨김 */
+  nav.navbar,
+  header,
+  footer,
+  .app-footer,
+  .toast-container,
+  .schedule-toolbar,
+  .page-header {
+    display: none !important;
+  }
+
+  /* base.html의 footer 위 32px 스페이서 제거 (임시/핫픽스용) */
+  body > div[style*="height: 32px"] {
+    display: none !important;
+  }
+
+  /* 3) 출력 헤더 표시 */
+  .print-header {
+    display: block;
+    margin: 0 0 4px 0 !important;
+  }
+  .print-title {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .print-sub {
+    font-size: 12px;
+    color: #444;
+  }
+
+  /* 4) 근무표 레이아웃: 페이지 폭에 맞춰 수축 가능 */
+  .schedule-grid {
+    width: 100% !important;       /* max-content 무력화 */
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* sticky 해제(겹침 방지) */
+  .schedule-grid-header {
+    position: static !important;
+    top: auto !important;
+  }
+  .schedule-grid-cell.left1,
+  .schedule-grid-cell.left2 {
+    position: static !important;
+    left: auto !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+  }
+
+  /* 5) 인쇄용 사이즈 튜닝(최대 37일 대비) */
+  :root {
+    --wtm-dept-w: 52px;
+    --wtm-name-w: 54px;
+    --wtm-day-w: 28px;     /* 필요하면 26~30 조정 */
+    --wtm-sign-w: 85px;
+  }
+
+  .module_box,
+  .module_box-disabled {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 7px !important;
+    line-height: 1.05 !important;
+    border: 0.5px solid #777 !important;
+  }
+
+  /* 6) 서명 컬럼: 인쇄에서만 표시 + 컬럼 1칸 추가 */
+  .schedule-grid-cell.signcol {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  .schedule-grid-row {
+    grid-template-columns: var(--wtm-sign-w) var(--wtm-cols) !important;
+  }
+  .signature-box {
+    width: 100%;
+    height: 24px;
+    border: 1px solid #000;
+    background: #fff;
+  }
+
+  /* 7) 페이지 분할: 직원 1행 단위로 잘리지 않게 */
+  .schedule-grid-row-data,
+  .schedule-grid-divider-row,
+  .schedule-grid-spacer-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 8) 화면용 강조(hover/오늘) 제거 */
+  .schedule-grid-row-data:hover .schedule-grid-cell,
+  .schedule-grid-row-data:hover .schedule-grid-cell.left1,
+  .schedule-grid-row-data:hover .schedule-grid-cell.left2,
+  .schedule-grid-cell.day.is-today {
+    background: transparent !important;
+  }
+  .roundtext {
+    background: transparent !important;
+    border-radius: 0 !important;
+    font-weight: 600 !important; /* 원하면 normal */
+  }
+}

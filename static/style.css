@@ -641,7 +641,18 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
   pointer-events: none;
 }
 
+/* 서명 컬럼 폭 (원하는 값으로 조절) */
+:root {
+  --wtm-sign-w: 90px;
+}
 
+/* 기본(화면)에서는 서명 컬럼 숨김 */
+.schedule-grid-cell.signcol {
+  display: none;
+}
+
+/* 화면에서는 출력 헤더 숨김 */
+.print-header { display: none; }
 
 /****************************************************************/
 /* 근무표 등록/수정 (Schedule Edit)
