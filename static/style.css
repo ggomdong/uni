@@ -628,23 +628,17 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover { opacity: 0.5; }
     }
 }
 
-/* 주 경계(week-start) 세로선: border로 폭이 바뀌는 걸 피하려고 pseudo-element로 그림 */
-.schedule-grid .schedule-grid-cell.day.week-start,
-.schedule-grid .schedule-grid-cell.head.day.week-start {
-  position: relative;
+/* 원하는 주 단위 여백 폭 */
+:root {
+  --wtm-week-gap-w: 12px; /* 8~16px 사이 추천 */
 }
 
-.schedule-grid .schedule-grid-cell.day.week-start::before,
-.schedule-grid .schedule-grid-cell.head.day.week-start::before {
-  content: "";
-  position: absolute;
-  top: -1px;
-  bottom: -1px;
-  left: -1px;
-  width: 0;
-  border-left: 1px solid rgba(0, 0, 0, 0.18);
+/* 갭 셀은 완전 빈 칸 + 클릭 막기 */
+.schedule-grid .schedule-grid-cell.week-gap {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent;
   pointer-events: none;
-  z-index: 2; /* module_box 위로 올라오게 */
 }
 
 

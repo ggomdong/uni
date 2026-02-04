@@ -80,9 +80,24 @@
 
         {# grid 컬럼 정의를 커스텀 프로퍼티로 “한 번만” 만들어서 헤더/본문 공통으로 씀 #}
         <div class="schedule-grid"
-             style="--wtm-cols: var(--wtm-dept-w) var(--wtm-name-w)
-                    {% for key, value in day_list.items %} var(--wtm-day-w) {% endfor %}
-                    {% for key, value in next_day_list.items %} var(--wtm-day-w) {% endfor %};">
+              style="--wtm-cols: var(--wtm-dept-w) var(--wtm-name-w)
+                {% for key, value in day_list.items %}
+                  var(--wtm-day-w)
+                  {% if value == '일' %}
+                    {% if not forloop.last %}
+                      var(--wtm-week-gap-w)
+                    {% elif next_day_list %}
+                      var(--wtm-week-gap-w)
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                {% for key, value in next_day_list.items %}
+                  var(--wtm-day-w)
+                  {% if value == '일' and not forloop.last %}
+                    var(--wtm-week-gap-w)
+                  {% endif %}
+                {% endfor %}
+              ;">
 
             {# --------- GRID HEADER (sticky) --------- #}
             <div class="schedule-grid-header">
@@ -91,20 +106,30 @@
                     <div class="schedule-grid-cell head left2"></div>
 
                     {% for key, value in day_list.items %}
-                        <div class="schedule-grid-cell head day{% if value == '월' and not forloop.first %} week-start{% endif %}">
+                        <div class="schedule-grid-cell head day">
                             <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                                  {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
                                 {{ key }}
                             </div>
                         </div>
+                        {% if value == '일' %}
+                            {% if not forloop.last %}
+                                <div class="schedule-grid-cell week-gap"></div>
+                            {% elif next_day_list %}
+                                <div class="schedule-grid-cell week-gap"></div>
+                            {% endif %}
+                        {% endif %}
                     {% endfor %}
 
                     {% for key, value in next_day_list.items %}
-                        <div class="schedule-grid-cell head day{% if value == '월' %} week-start{% endif %}">
+                        <div class="schedule-grid-cell head day">
                             <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
                                 {{ key }}
                             </div>
                         </div>
+                        {% if value == '일' and not forloop.last %}
+                            <div class="schedule-grid-cell week-gap"></div>
+                        {% endif %}
                     {% endfor %}
                 </div>
 
@@ -113,20 +138,30 @@
                     <div class="schedule-grid-cell head left2">성명</div>
 
                     {% for key, value in day_list.items %}
-                        <div class="schedule-grid-cell head day{% if value == '월' and not forloop.first %} week-start{% endif %}">
+                        <div class="schedule-grid-cell head day">
                             <div {% if key|to_int in holiday_list %}style="color: red"{% endif %}
                                  {% if yearmonth == stand_ym and key == today %}class="roundtext"{% endif %}>
                                 {{ value }}
                             </div>
                         </div>
+                    {% if value == '일' %}
+    {% if not forloop.last %}
+      <div class="schedule-grid-cell week-gap"></div>
+    {% elif next_day_list %}
+      <div class="schedule-grid-cell week-gap"></div>
+    {% endif %}
+  {% endif %}
                     {% endfor %}
 
                     {% for key, value in next_day_list.items %}
-                        <div class="schedule-grid-cell head day{% if value == '월' %} week-start{% endif %}">
+                        <div class="schedule-grid-cell head day">
                             <div class="next" {% if key|to_int in next_holiday_list %}style="color: red"{% endif %}>
                                 {{ value }}
                             </div>
                         </div>
+                    {% if value == '일' and not forloop.last %}
+    <div class="schedule-grid-cell week-gap"></div>
+  {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -149,7 +184,7 @@
                         <div class="schedule-grid-cell left2 align-middle">{{ schedule.emp_name }}</div>
 
                         {% for key, value in day_list.items %}
-                            <div class="schedule-grid-cell day{% if yearmonth == stand_ym and key == today %} is-today{% endif %}{% if value == '월' and not forloop.first %} week-start{% endif %}">
+                            <div class="schedule-grid-cell day {% if yearmonth == stand_ym and key == today %}is-today{% endif %}">
                                 {% with schedule|get_day_index:key as day %}
                                     {% if stand_ym|concat_date:key < schedule.join_date or schedule.out_date < stand_ym|concat_date:key %}
                                         <div class="module_box-disabled"></div>
@@ -193,10 +228,17 @@
                                     {% endif %}
                                 {% endwith %}
                             </div>
+                        {% if value == '일' %}
+    {% if not forloop.last %}
+      <div class="schedule-grid-cell week-gap"></div>
+    {% elif next_day_list %}
+      <div class="schedule-grid-cell week-gap"></div>
+    {% endif %}
+  {% endif %}
                         {% endfor %}
 
                         {% for key, value in next_day_list.items %}
-                            <div class="schedule-grid-cell day{% if value == '월' %} week-start{% endif %}">
+                            <div class="schedule-grid-cell day">
                                 {% with schedule|get_next_index:key as day %}
                                     {% if next_ym|concat_date:key < schedule.join_date or schedule.out_date < next_ym|concat_date:key %}
                                         <div class="module_box-disabled"></div>
@@ -239,6 +281,9 @@
                                     {% endif %}
                                 {% endwith %}
                             </div>
+                        {% if value == '일' and not forloop.last %}
+    <div class="schedule-grid-cell week-gap"></div>
+  {% endif %}
                         {% endfor %}
                     </div>
                 {% endfor %}
