@@ -144,13 +144,13 @@
                                 {{ value }}
                             </div>
                         </div>
-                    {% if value == '일' %}
-    {% if not forloop.last %}
-      <div class="schedule-grid-cell week-gap"></div>
-    {% elif next_day_list %}
-      <div class="schedule-grid-cell week-gap"></div>
-    {% endif %}
-  {% endif %}
+                        {% if value == '일' %}
+                            {% if not forloop.last %}
+                                <div class="schedule-grid-cell week-gap"></div>
+                            {% elif next_day_list %}
+                                <div class="schedule-grid-cell week-gap"></div>
+                            {% endif %}
+                        {% endif %}
                     {% endfor %}
 
                     {% for key, value in next_day_list.items %}
@@ -159,9 +159,9 @@
                                 {{ value }}
                             </div>
                         </div>
-                    {% if value == '일' and not forloop.last %}
-    <div class="schedule-grid-cell week-gap"></div>
-  {% endif %}
+                        {% if value == '일' and not forloop.last %}
+                            <div class="schedule-grid-cell week-gap"></div>
+                        {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -228,13 +228,13 @@
                                     {% endif %}
                                 {% endwith %}
                             </div>
-                        {% if value == '일' %}
-    {% if not forloop.last %}
-      <div class="schedule-grid-cell week-gap"></div>
-    {% elif next_day_list %}
-      <div class="schedule-grid-cell week-gap"></div>
-    {% endif %}
-  {% endif %}
+                            {% if value == '일' %}
+                                {% if not forloop.last %}
+                                    <div class="schedule-grid-cell week-gap"></div>
+                                {% elif next_day_list %}
+                                    <div class="schedule-grid-cell week-gap"></div>
+                                {% endif %}
+                            {% endif %}
                         {% endfor %}
 
                         {% for key, value in next_day_list.items %}
@@ -281,9 +281,9 @@
                                     {% endif %}
                                 {% endwith %}
                             </div>
-                        {% if value == '일' and not forloop.last %}
-    <div class="schedule-grid-cell week-gap"></div>
-  {% endif %}
+                            {% if value == '일' and not forloop.last %}
+                                <div class="schedule-grid-cell week-gap"></div>
+                            {% endif %}
                         {% endfor %}
                     </div>
                 {% endfor %}
