@@ -47,7 +47,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         except User.DoesNotExist:
             raise AuthenticationFailed("아이디 혹은 비밀번호가 올바르지 않습니다.")
 
-        # 디바이스 검증
+        # 인증 먼저
+        data = super().validate(attrs)
+
+        # 디바이스 검증/등록은 로그인 성공 이후에만 수행
         if user.device_id:
             if user.is_employee and user.device_id != device_id:
                 raise ValidationError("등록되지 않은 기기입니다. 관리자에게 문의하세요.")
@@ -55,7 +58,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             user.device_id = device_id
             user.save()
 
-        return super().validate(attrs)
+        return data
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
