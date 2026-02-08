@@ -202,3 +202,82 @@ class Beacon(models.Model):
 
     def __str__(self):
         return f"{self.branch.name} - {self.name} ({self.major}/{self.minor})"
+
+
+class BranchMonthClose(models.Model):
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="month_closes",
+        db_index=True,
+    )
+    ym = models.CharField("마감월", max_length=6)
+    is_closed = models.BooleanField("마감여부", default=False)
+    closed_at = models.DateTimeField("마감일시", null=True, blank=True)
+    closed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="month_closes_closed_by",
+    )
+    snapshot_json = models.JSONField(null=True, blank=True)
+    reg_date = models.DateTimeField(auto_now_add=True)
+    mod_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("branch", "ym")
+        indexes = [
+            models.Index(fields=["branch", "ym"], name="branch_month_close_idx"),
+        ]
+
+
+class MealClaim(models.Model):
+    SOURCE_TYPE_CHOICES = [
+        ("MANUAL", "MANUAL"),
+    ]
+
+    branch = models.ForeignKey(
+        Branch,
+        verbose_name="지점",
+        on_delete=models.PROTECT,
+        related_name="meal_claims",
+        db_index=True,
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="meal_claims",
+        db_index=True,
+    )
+    used_date = models.DateField("사용일", db_index=True)
+    amount = models.IntegerField("금액")
+    memo = models.TextField("메모", null=True, blank=True)
+    source_type = models.CharField(
+        max_length=20,
+        choices=SOURCE_TYPE_CHOICES,
+        default="MANUAL",
+    )
+    is_deleted = models.BooleanField(default=False)
+    reg_date = models.DateTimeField(auto_now_add=True)
+    mod_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["branch", "used_date"], name="meal_claim_branch_date_idx"),
+            models.Index(fields=["user", "used_date"], name="meal_claim_user_date_idx"),
+        ]
+
+
+class MealClaimParticipant(models.Model):
+    claim = models.ForeignKey(
+        MealClaim,
+        on_delete=models.CASCADE,
+        related_name="participants",
+    )
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="meal_claim_participants")
+    amount = models.IntegerField("분배금액")
+
+    class Meta:
+        unique_together = ("claim", "user")
