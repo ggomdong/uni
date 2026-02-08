@@ -29,7 +29,7 @@ from wtm.views.log import (
     work_log_save,
     work_log_delete,
 )
-from wtm.views.meal import work_meal_status, work_meal_json
+from wtm.views.meal import work_meal_status, work_meal_json, meals_index, meals_new, meals_delete
 
 from wtm.views.vacation import work_vacation_json
 
@@ -65,8 +65,11 @@ urlpatterns = [
     path('log/<str:stand_day>', work_log, name='work_log'),
     path('log/save/', work_log_save, name='work_log_save'),
     path('log/<int:log_id>/delete/', work_log_delete, name='work_log_delete'),
-    path('meal/', work_meal_json, name='work_meal_json'),
-    path('meal/<str:stand_ym>', work_meal_json, name='work_meal_json'),
+    path("meal/", meals_index, name="meals_index"),
+    path("meal/new/", meals_new, name="meals_new"),
+    path("meal/<int:claim_id>/delete/", meals_delete, name="meals_delete"),
+    path("meal_json/", work_meal_json, name="work_meal_json"),
+    path("meal_json/<str:stand_ym>", work_meal_json, name="work_meal_json"),
     path('meal_status/', work_meal_status, name='work_meal_status'),
     path('meal_status/<str:stand_ym>', work_meal_status, name='work_meal_status'),
     path("vacation/<str:year>", work_vacation_json, name="work_vacation_json"),

@@ -1,0 +1,57 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}WTM{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'tw/tailwind.css' %}">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+    <div class="max-w-5xl mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                var cookies = document.cookie.split(";");
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.body.addEventListener("htmx:configRequest", function (event) {
+            event.detail.headers["X-CSRFToken"] = getCookie("csrftoken");
+        });
+
+        document.body.addEventListener("htmx:responseError", function (event) {
+            var errorBox = document.getElementById("meal-errors");
+            if (errorBox) {
+                errorBox.textContent = event.detail.xhr.responseText || "요청 처리 중 오류가 발생했습니다.";
+                errorBox.classList.remove("hidden");
+            }
+        });
+
+        document.body.addEventListener("htmx:afterRequest", function (event) {
+            var errorBox = document.getElementById("meal-errors");
+            if (!errorBox) {
+                return;
+            }
+            if (event.detail.xhr.status < 400) {
+                errorBox.textContent = "";
+                errorBox.classList.add("hidden");
+            }
+        });
+    </script>
+</body>
+</html>

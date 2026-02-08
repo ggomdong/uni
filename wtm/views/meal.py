@@ -1,10 +1,11 @@
 from calendar import monthrange
+from datetime import datetime, date
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse, Http404, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from wtm.models import Schedule  # Schedule에 d1~d31 FK가 있다고 가정
+from wtm.models import Schedule, MealClaim, BranchMonthClose  # Schedule에 d1~d31 FK가 있다고 가정
 from .helpers import fetch_base_users_for_month
 
 
@@ -76,6 +77,125 @@ def work_meal_status(request, stand_ym: str | None = None):
         "rows": rows,
         "active_metric": "meal",  # 메뉴 하이라이트/탭 구분용(선택)
     })
+
+
+def _get_branch_or_404(request):
+    branch = getattr(request, "branch", None) or getattr(request.user, "branch", None)
+    if branch is None:
+        raise Http404("branch code is required")
+    return branch
+
+
+def _resolve_ym(ym: str | None):
+    if not ym or len(ym) != 6 or not ym.isdigit():
+        return timezone.now().strftime("%Y%m")
+    return ym
+
+
+def _month_range(ym: str):
+    year = int(ym[:4])
+    month = int(ym[4:6])
+    last_day = monthrange(year, month)[1]
+    return date(year, month, 1), date(year, month, last_day)
+
+
+def _is_month_closed(branch, ym: str):
+    return BranchMonthClose.objects.filter(branch=branch, ym=ym, is_closed=True).exists()
+
+
+def _render_meal_table(request, branch, ym: str):
+    start_date, end_date = _month_range(ym)
+    claims = (
+        MealClaim.objects
+        .select_related("user")
+        .filter(branch=branch, is_deleted=False, used_date__gte=start_date, used_date__lte=end_date)
+        .order_by("used_date", "id")
+    )
+    is_closed = _is_month_closed(branch, ym)
+    return render(request, "wtm/_work_meals_table.html", {
+        "ym": ym,
+        "claims": claims,
+        "is_closed": is_closed,
+    })
+
+
+@login_required(login_url="common:login")
+def meals_index(request):
+    branch = _get_branch_or_404(request)
+    ym = _resolve_ym(request.GET.get("ym"))
+
+    if request.headers.get("HX-Request") == "true":
+        return _render_meal_table(request, branch, ym)
+
+    start_date, end_date = _month_range(ym)
+    claims = (
+        MealClaim.objects
+        .select_related("user")
+        .filter(branch=branch, is_deleted=False, used_date__gte=start_date, used_date__lte=end_date)
+        .order_by("used_date", "id")
+    )
+    is_closed = _is_month_closed(branch, ym)
+    return render(request, "wtm/work_meals.html", {
+        "ym": ym,
+        "claims": claims,
+        "is_closed": is_closed,
+    })
+
+
+@login_required(login_url="common:login")
+def meals_new(request):
+    branch = _get_branch_or_404(request)
+    used_date_str = request.POST.get("used_date")
+    amount_str = request.POST.get("amount")
+    memo = request.POST.get("memo") or None
+
+    if not used_date_str or not amount_str:
+        return HttpResponse("used_date와 amount는 필수입니다.", status=400)
+
+    try:
+        used_date = datetime.strptime(used_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return HttpResponse("used_date는 YYYY-MM-DD 형식이어야 합니다.", status=400)
+
+    try:
+        amount = int(amount_str)
+    except ValueError:
+        return HttpResponse("amount는 숫자여야 합니다.", status=400)
+
+    ym = used_date.strftime("%Y%m")
+    if _is_month_closed(branch, ym):
+        return HttpResponse("마감된 월은 등록할 수 없습니다.", status=403)
+
+    MealClaim.objects.create(
+        branch=branch,
+        user=request.user,
+        used_date=used_date,
+        amount=amount,
+        memo=memo,
+    )
+
+    return _render_meal_table(request, branch, ym)
+
+
+@login_required(login_url="common:login")
+def meals_delete(request, claim_id: int):
+    branch = _get_branch_or_404(request)
+    try:
+        claim = MealClaim.objects.get(id=claim_id, branch=branch, is_deleted=False)
+    except MealClaim.DoesNotExist:
+        raise Http404("meal claim not found")
+
+    if claim.user_id != request.user.id:
+        return HttpResponse("본인 항목만 삭제할 수 있습니다.", status=403)
+
+    ym = claim.used_date.strftime("%Y%m")
+    if _is_month_closed(branch, ym):
+        return HttpResponse("마감된 월은 삭제할 수 없습니다.", status=403)
+
+    claim.is_deleted = True
+    claim.save()
+
+    return _render_meal_table(request, branch, ym)
 
 
 # 엑셀에서 비로그인으로 가져갈 수 있도록 JSON 형태로 내려줌 -> 향후 제거 예정

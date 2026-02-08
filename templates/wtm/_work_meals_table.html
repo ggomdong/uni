@@ -1,0 +1,48 @@
+<div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <h2 class="text-lg font-semibold">{{ ym }} 사용 내역</h2>
+        {% if is_closed %}
+            <span class="text-xs text-rose-600">마감됨</span>
+        {% else %}
+            <span class="text-xs text-emerald-600">미마감</span>
+        {% endif %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+            <thead class="bg-slate-100 text-slate-700">
+                <tr>
+                    <th class="px-4 py-2 text-left">사용일</th>
+                    <th class="px-4 py-2 text-left">직원</th>
+                    <th class="px-4 py-2 text-right">금액</th>
+                    <th class="px-4 py-2 text-left">메모</th>
+                    <th class="px-4 py-2 text-right">관리</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for claim in claims %}
+                    <tr>
+                        <td class="px-4 py-2">{{ claim.used_date|date:"Y-m-d" }}</td>
+                        <td class="px-4 py-2">{{ claim.user.emp_name }}</td>
+                        <td class="px-4 py-2 text-right">{{ claim.amount }}</td>
+                        <td class="px-4 py-2">{{ claim.memo|default:"-" }}</td>
+                        <td class="px-4 py-2 text-right">
+                            <button
+                                {% if is_closed %}disabled{% endif %}
+                                hx-post="/wtm/meal/{{ claim.id }}/delete/"
+                                hx-target="#meal-table"
+                                hx-swap="outerHTML"
+                                class="rounded-md border px-2 py-1 text-xs {% if is_closed %}border-slate-200 text-slate-300{% else %}border-rose-300 text-rose-600 hover:bg-rose-50{% endif %}"
+                            >
+                                삭제
+                            </button>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-6 text-center text-slate-500">등록된 내역이 없습니다.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
