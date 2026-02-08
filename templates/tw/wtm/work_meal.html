@@ -1,4 +1,4 @@
-{% extends "base_tailwind.html" %}
+{% extends "tw/base.html" %}
 
 {% block title %}식대 관리{% endblock %}
 
@@ -33,7 +33,7 @@
     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 class="text-lg font-semibold mb-3">신규 입력</h2>
         <form
-            hx-post="/wtm/meal/new/"
+            hx-post="{% url 'wtm:meals_new' %}"
             hx-target="#meal-table"
             hx-swap="outerHTML"
             class="grid grid-cols-1 gap-3 md:grid-cols-4"
@@ -58,7 +58,7 @@
     </div>
 
     <div id="meal-table">
-        {% include "wtm/_work_meals_table.html" %}
+        {% include "tw/wtm/_work_meals_table.html" %}
     </div>
 </div>
 {% endblock %}

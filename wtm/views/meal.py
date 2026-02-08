@@ -112,7 +112,7 @@ def _render_meal_table(request, branch, ym: str):
         .order_by("used_date", "id")
     )
     is_closed = _is_month_closed(branch, ym)
-    return render(request, "wtm/_work_meals_table.html", {
+    return render(request, "tw/wtm/_work_meals_table.html", {
         "ym": ym,
         "claims": claims,
         "is_closed": is_closed,
@@ -135,7 +135,7 @@ def meals_index(request):
         .order_by("used_date", "id")
     )
     is_closed = _is_month_closed(branch, ym)
-    return render(request, "wtm/work_meals.html", {
+    return render(request, "tw/wtm/work_meal.html", {
         "ym": ym,
         "claims": claims,
         "is_closed": is_closed,
