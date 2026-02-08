@@ -26,6 +26,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', RedirectView.as_view(url='/wtm/index/', permanent=False)),
     path('api/', include('api.urls')),
+    path('api/v1/', include('api.urls_v1')),
+    path('api/v2/', include('api.urls_v2')),
     path('pybo/', include('pybo.urls')),
     path('common/', include('common.urls')),
     path('wtm/', include('wtm.urls')),
