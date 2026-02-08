@@ -3,9 +3,12 @@ from datetime import datetime, date
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, Http404, HttpResponse
 from django.shortcuts import render
+from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
-from wtm.models import Schedule, MealClaim, BranchMonthClose  # Schedule에 d1~d31 FK가 있다고 가정
+from common.models import User
+from wtm.models import Schedule, MealClaim, MealClaimParticipant, BranchMonthClose  # Schedule에 d1~d31 FK가 있다고 가정
 from .helpers import fetch_base_users_for_month
 
 
@@ -92,6 +95,16 @@ def _resolve_ym(ym: str | None):
     return ym
 
 
+def _resolve_month_input(month_value: str | None):
+    if not month_value:
+        return None
+    if len(month_value) == 7 and month_value[4] == "-":
+        return month_value.replace("-", "")
+    if len(month_value) == 6 and month_value.isdigit():
+        return month_value
+    return None
+
+
 def _month_range(ym: str):
     year = int(ym[:4])
     month = int(ym[4:6])
@@ -103,26 +116,127 @@ def _is_month_closed(branch, ym: str):
     return BranchMonthClose.objects.filter(branch=branch, ym=ym, is_closed=True).exists()
 
 
+def _get_branch_users(branch, used_date: date | None):
+    base_qs = User.objects.filter(branch=branch, is_active=True, is_employee=True)
+    if used_date:
+        base_qs = base_qs.filter(
+            join_date__lte=used_date
+        ).filter(
+            Q(out_date__isnull=True) | Q(out_date__gte=used_date)
+        )
+    return (
+        base_qs
+        .order_by("emp_name")
+    )
+
+
+def _annotate_claim_participants(claims):
+    for claim in claims:
+        participants = list(claim.participants.all())
+        claim.participant_count = len(participants)
+        claim.participant_sum = sum(p.amount for p in participants)
+        claim.participants_list = participants
+
+
 def _render_meal_table(request, branch, ym: str):
     start_date, end_date = _month_range(ym)
     claims = (
         MealClaim.objects
         .select_related("user")
+        .prefetch_related("participants__user")
         .filter(branch=branch, is_deleted=False, used_date__gte=start_date, used_date__lte=end_date)
         .order_by("used_date", "id")
     )
+    _annotate_claim_participants(claims)
     is_closed = _is_month_closed(branch, ym)
-    return render(request, "tw/wtm/_work_meals_table.html", {
+    return render(request, "tw/wtm/meal/_meal_table.html", {
         "ym": ym,
         "claims": claims,
         "is_closed": is_closed,
     })
 
 
+def _render_meal_row(request, claim):
+    return render(request, "tw/wtm/meal/_meal_row.html", {
+        "claim": claim,
+    })
+
+
+def _render_meal_row_edit(request, claim, branch_users):
+    return render(request, "tw/wtm/meal/_meal_row_edit.html", {
+        "claim": claim,
+        "users": branch_users,
+    })
+
+
+def _parse_amount(value: str, field_name: str):
+    if value is None or value == "":
+        return None, f"{field_name}는 필수입니다."
+    try:
+        amount = int(value)
+    except ValueError:
+        return None, f"{field_name}는 숫자여야 합니다."
+    if amount <= 0:
+        return None, f"{field_name}는 0보다 커야 합니다."
+    return amount, None
+
+
+def _parse_participants(post_data, branch, used_date: date):
+    user_ids = post_data.getlist("participant_user")
+    amounts = post_data.getlist("participant_amount")
+    participants = []
+    errors = []
+    empty_rows = 0
+    if len(user_ids) != len(amounts):
+        errors.append("참여자 정보가 올바르지 않습니다.")
+        return participants, errors
+
+    seen_users = set()
+    for raw_user_id, raw_amount in zip(user_ids, amounts):
+        if not raw_user_id and not raw_amount:
+            empty_rows += 1
+            continue
+        if not raw_user_id or not raw_amount:
+            errors.append("참여자와 금액을 모두 입력해야 합니다.")
+            continue
+        try:
+            user_id = int(raw_user_id)
+        except ValueError:
+            errors.append("참여자 정보가 올바르지 않습니다.")
+            continue
+        amount, error = _parse_amount(raw_amount, "분배금액")
+        if error:
+            errors.append(error)
+            continue
+        if user_id in seen_users:
+            errors.append("참여자는 중복될 수 없습니다.")
+            continue
+        seen_users.add(user_id)
+        participants.append((user_id, amount))
+
+    if not participants:
+        errors.append("참여자를 최소 1명 이상 입력해야 합니다.")
+        return participants, errors
+    if empty_rows:
+        errors.append("비어 있는 참여자 행을 제거하거나 입력하세요.")
+
+    valid_user_ids = set(
+        _get_branch_users(branch, used_date)
+        .filter(id__in=[user_id for user_id, _ in participants])
+        .values_list("id", flat=True)
+    )
+    for user_id, _ in participants:
+        if user_id not in valid_user_ids:
+            errors.append("지점 소속이 아닌 참여자가 포함되어 있습니다.")
+            break
+
+    return participants, errors
+
+
 @login_required(login_url="common:login")
 def meals_index(request):
     branch = _get_branch_or_404(request)
-    ym = _resolve_ym(request.GET.get("ym"))
+    ym = _resolve_month_input(request.GET.get("month")) or _resolve_ym(request.GET.get("ym"))
 
     if request.headers.get("HX-Request") == "true":
         return _render_meal_table(request, branch, ym)
@@ -131,14 +245,26 @@ def meals_index(request):
     claims = (
         MealClaim.objects
         .select_related("user")
+        .prefetch_related("participants__user")
         .filter(branch=branch, is_deleted=False, used_date__gte=start_date, used_date__lte=end_date)
         .order_by("used_date", "id")
     )
+    _annotate_claim_participants(claims)
     is_closed = _is_month_closed(branch, ym)
+    month_label = f"{ym[:4]}.{ym[4:]}"
+    today = date.today()
+    if today.strftime("%Y%m") == ym:
+        default_used_date = today
+    else:
+        default_used_date = date(int(ym[:4]), int(ym[4:6]), 1)
     return render(request, "tw/wtm/work_meal.html", {
         "ym": ym,
+        "month_label": month_label,
+        "month_value": f"{ym[:4]}-{ym[4:]}",
+        "used_date_default": default_used_date.strftime("%Y-%m-%d"),
         "claims": claims,
         "is_closed": is_closed,
+        "users": _get_branch_users(branch, default_used_date),
     })
 
 
@@ -147,33 +273,55 @@ def meals_new(request):
     branch = _get_branch_or_404(request)
     used_date_str = request.POST.get("used_date")
     amount_str = request.POST.get("amount")
-    memo = request.POST.get("memo") or None
+    approval_no = (request.POST.get("approval_no") or "").strip()
+    restaurant_name = (request.POST.get("restaurant_name") or "").strip()
 
     if not used_date_str or not amount_str:
-        return HttpResponse("used_date와 amount는 필수입니다.", status=400)
+        return HttpResponse("사용일과 총액은 필수입니다.", status=400)
+    if not approval_no:
+        return HttpResponse("승인번호는 필수입니다.", status=400)
+    if not restaurant_name:
+        return HttpResponse("식당명은 필수입니다.", status=400)
 
     try:
         used_date = datetime.strptime(used_date_str, "%Y-%m-%d").date()
     except ValueError:
-        return HttpResponse("used_date는 YYYY-MM-DD 형식이어야 합니다.", status=400)
+        return HttpResponse("사용일은 YYYY-MM-DD 형식이어야 합니다.", status=400)
 
-    try:
-        amount = int(amount_str)
-    except ValueError:
-        return HttpResponse("amount는 숫자여야 합니다.", status=400)
+    amount, error = _parse_amount(amount_str, "총액")
+    if error:
+        return HttpResponse(error, status=400)
+
+    participants, participant_errors = _parse_participants(request.POST, branch, used_date)
+    if participant_errors:
+        return HttpResponse("\n".join(participant_errors), status=400)
+
+    # Server-side validation ensures participant sum matches total amount.
+    if sum(p[1] for p in participants) != amount:
+        return HttpResponse("분배 합계가 총액과 일치해야 합니다.", status=400)
 
     ym = used_date.strftime("%Y%m")
     if _is_month_closed(branch, ym):
         return HttpResponse("마감된 월은 등록할 수 없습니다.", status=403)
 
-    MealClaim.objects.create(
-        branch=branch,
-        user=request.user,
-        used_date=used_date,
-        amount=amount,
-        memo=memo,
-    )
+    if MealClaim.objects.filter(branch=branch, approval_no=approval_no, is_deleted=False).exists():
+        return HttpResponse("동일한 승인번호가 이미 등록되어 있습니다.", status=400)
 
+    with transaction.atomic():
+        claim = MealClaim.objects.create(
+            branch=branch,
+            user=request.user,
+            used_date=used_date,
+            amount=amount,
+            approval_no=approval_no,
+            restaurant_name=restaurant_name,
+        )
+        MealClaimParticipant.objects.bulk_create([
+            MealClaimParticipant(claim=claim, user_id=user_id, amount=amount_value)
+            for user_id, amount_value in participants
+        ])
+
+    # HTMX swaps the table outerHTML after create/delete.
     return _render_meal_table(request, branch, ym)
 
 
@@ -185,9 +333,6 @@ def meals_delete(request, claim_id: int):
     except MealClaim.DoesNotExist:
         raise Http404("meal claim not found")
 
-    if claim.user_id != request.user.id:
-        return HttpResponse("본인 항목만 삭제할 수 있습니다.", status=403)
-
     ym = claim.used_date.strftime("%Y%m")
     if _is_month_closed(branch, ym):
         return HttpResponse("마감된 월은 삭제할 수 없습니다.", status=403)
@@ -196,6 +341,112 @@ def meals_delete(request, claim_id: int):
     claim.save()
 
     return _render_meal_table(request, branch, ym)
+
+
+@login_required(login_url="common:login")
+def meals_row(request, claim_id: int):
+    branch = _get_branch_or_404(request)
+    try:
+        claim = (
+            MealClaim.objects
+            .select_related("user")
+            .prefetch_related("participants__user")
+            .get(id=claim_id, branch=branch, is_deleted=False)
+        )
+    except MealClaim.DoesNotExist:
+        raise Http404("meal claim not found")
+
+    _annotate_claim_participants([claim])
+    return _render_meal_row(request, claim)
+
+
+@login_required(login_url="common:login")
+def meals_edit_row(request, claim_id: int):
+    branch = _get_branch_or_404(request)
+    try:
+        claim = (
+            MealClaim.objects
+            .select_related("user")
+            .prefetch_related("participants__user")
+            .get(id=claim_id, branch=branch, is_deleted=False)
+        )
+    except MealClaim.DoesNotExist:
+        raise Http404("meal claim not found")
+
+    _annotate_claim_participants([claim])
+    return _render_meal_row_edit(request, claim, _get_branch_users(branch, claim.used_date))
+
+
+@login_required(login_url="common:login")
+def meals_update(request, claim_id: int):
+    branch = _get_branch_or_404(request)
+    used_date_str = request.POST.get("used_date")
+    amount_str = request.POST.get("amount")
+    approval_no = (request.POST.get("approval_no") or "").strip()
+    restaurant_name = (request.POST.get("restaurant_name") or "").strip()
+
+    if not used_date_str or not amount_str:
+        return HttpResponse("사용일과 총액은 필수입니다.", status=400)
+    if not approval_no:
+        return HttpResponse("승인번호는 필수입니다.", status=400)
+    if not restaurant_name:
+        return HttpResponse("식당명은 필수입니다.", status=400)
+
+    try:
+        used_date = datetime.strptime(used_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return HttpResponse("사용일은 YYYY-MM-DD 형식이어야 합니다.", status=400)
+
+    amount, error = _parse_amount(amount_str, "총액")
+    if error:
+        return HttpResponse(error, status=400)
+
+    participants, participant_errors = _parse_participants(request.POST, branch, used_date)
+    if participant_errors:
+        return HttpResponse("\n".join(participant_errors), status=400)
+
+    # Server-side validation ensures participant sum matches total amount.
+    if sum(p[1] for p in participants) != amount:
+        return HttpResponse("분배 합계가 총액과 일치해야 합니다.", status=400)
+
+    ym = used_date.strftime("%Y%m")
+    if _is_month_closed(branch, ym):
+        return HttpResponse("마감된 월은 수정할 수 없습니다.", status=403)
+
+    if MealClaim.objects.filter(branch=branch, approval_no=approval_no, is_deleted=False).exclude(id=claim_id).exists():
+        return HttpResponse("동일한 승인번호가 이미 등록되어 있습니다.", status=400)
+
+    with transaction.atomic():
+        try:
+            claim = (
+                MealClaim.objects
+                .select_for_update()
+                .select_related("user")
+                .prefetch_related("participants__user")
+                .get(id=claim_id, branch=branch, is_deleted=False)
+            )
+        except MealClaim.DoesNotExist:
+            raise Http404("meal claim not found")
+
+        claim.used_date = used_date
+        claim.amount = amount
+        claim.approval_no = approval_no
+        claim.restaurant_name = restaurant_name
+        claim.save()
+        MealClaimParticipant.objects.filter(claim=claim).delete()
+        MealClaimParticipant.objects.bulk_create([
+            MealClaimParticipant(claim=claim, user_id=user_id, amount=amount_value)
+            for user_id, amount_value in participants
+        ])
+
+    claim = (
+        MealClaim.objects
+        .select_related("user")
+        .prefetch_related("participants__user")
+        .get(id=claim.id)
+    )
+    _annotate_claim_participants([claim])
+    return _render_meal_row(request, claim)
 
 
 # 엑셀에서 비로그인으로 가져갈 수 있도록 JSON 형태로 내려줌 -> 향후 제거 예정

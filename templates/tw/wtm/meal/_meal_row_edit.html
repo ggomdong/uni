@@ -1,0 +1,124 @@
+{% load humanize %}
+<tr id="meal-row-{{ claim.id }}" class="bg-slate-50">
+    <td colspan="7" class="px-4 py-4">
+        <form
+            hx-post="{% url 'wtm:meals_update' claim.id %}"
+            hx-target="#meal-row-{{ claim.id }}"
+            hx-swap="outerHTML"
+            class="flex flex-col gap-4"
+        >
+            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-12">
+                <div class="flex flex-col gap-1 min-w-0 lg:col-span-2">
+                    <label class="text-xs font-medium text-slate-600" for="meal-used-date-{{ claim.id }}">사용일</label>
+                    <input id="meal-used-date-{{ claim.id }}" type="date" name="used_date" value="{{ claim.used_date|date:'Y-m-d' }}" required class="h-9 w-full max-w-none rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200" />
+                </div>
+                <div class="flex flex-col gap-1 min-w-0 lg:col-span-3">
+                    <label class="text-xs font-medium text-slate-600" for="meal-approval-no-{{ claim.id }}">승인번호</label>
+                    <input id="meal-approval-no-{{ claim.id }}" type="text" name="approval_no" value="{{ claim.approval_no }}" required class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200" />
+                </div>
+                <div class="flex flex-col gap-1 min-w-0 lg:col-span-5">
+                    <label class="text-xs font-medium text-slate-600" for="meal-restaurant-{{ claim.id }}">식당명</label>
+                    <input id="meal-restaurant-{{ claim.id }}" type="text" name="restaurant_name" value="{{ claim.restaurant_name }}" required class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200" />
+                </div>
+                <div class="flex flex-col gap-1 min-w-0 lg:col-span-2">
+                    <label class="text-xs font-medium text-slate-600" for="meal-amount-{{ claim.id }}">총액</label>
+                    <input id="meal-amount-{{ claim.id }}" type="number" name="amount" min="1" value="{{ claim.amount }}" required class="h-9 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200" />
+                </div>
+            </div>
+
+            <div class="rounded-lg border border-slate-200 bg-white px-4 py-4" data-participants data-total-input="#meal-amount-{{ claim.id }}">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="text-xs font-semibold text-slate-700">참여자 분배</div>
+                    <div class="text-xs text-slate-600">
+                        합계 <span data-participant-sum class="font-semibold text-slate-900">0</span> / 총액 <span data-participant-total class="font-semibold text-slate-900">0</span>
+                        <span data-participant-warning class="ml-2 hidden rounded-full bg-rose-100 px-2 py-0.5 text-rose-700">합계 불일치</span>
+                    </div>
+                </div>
+                <div class="mt-3 space-y-2" data-participant-rows>
+                    {% for participant in claim.participants_list %}
+                        <div class="flex flex-wrap items-center gap-2" data-participant-row>
+                            <select name="participant_user" class="h-9 min-w-[160px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
+                                <option value="">참여자 선택</option>
+                                {% for user in users %}
+                                    <option value="{{ user.id }}" {% if user.id == participant.user.id %}selected{% endif %}>{{ user.emp_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <input
+                                type="number"
+                                name="participant_amount"
+                                min="1"
+                                value="{{ participant.amount }}"
+                                data-participant-amount
+                                class="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
+                            />
+                            <button type="button" data-participant-remove class="h-9 rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                                제거
+                            </button>
+                        </div>
+                    {% empty %}
+                        <div class="flex flex-wrap items-center gap-2" data-participant-row>
+                            <select name="participant_user" class="h-9 min-w-[160px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
+                                <option value="">참여자 선택</option>
+                                {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.emp_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <input
+                                type="number"
+                                name="participant_amount"
+                                min="1"
+                                data-participant-amount
+                                class="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
+                            />
+                            <button type="button" data-participant-remove class="h-9 rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                                제거
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+                <template data-participant-template>
+                    <div class="flex flex-wrap items-center gap-2" data-participant-row>
+                        <select name="participant_user" class="h-9 min-w-[160px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
+                            <option value="">참여자 선택</option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.emp_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input
+                            type="number"
+                            name="participant_amount"
+                            min="1"
+                            data-participant-amount
+                            class="h-9 w-32 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
+                        />
+                        <button type="button" data-participant-remove class="h-9 rounded-md border border-slate-300 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                            제거
+                        </button>
+                    </div>
+                </template>
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                    <button type="button" data-participant-add class="inline-flex items-center gap-2 text-xs font-semibold text-teal-700 hover:text-teal-800">
+                        + 참여자 추가
+                    </button>
+                    <button type="button" data-participant-distribute class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800">
+                        자동배분
+                    </button>
+                </div>
+            </div>
+            <div data-error-box id="meal-edit-errors-{{ claim.id }}" class="hidden rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"></div>
+
+            <div class="flex items-center justify-end gap-2">
+                <button type="button"
+                        hx-get="{% url 'wtm:meals_row' claim.id %}"
+                        hx-target="#meal-row-{{ claim.id }}"
+                        hx-swap="outerHTML"
+                        class="inline-flex items-center rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white">
+                    취소
+                </button>
+                <button type="submit" class="inline-flex items-center rounded-md bg-teal-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-teal-700">
+                    저장
+                </button>
+            </div>
+        </form>
+    </td>
+</tr>

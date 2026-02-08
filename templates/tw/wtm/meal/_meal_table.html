@@ -1,0 +1,27 @@
+{% load humanize %}
+<div id="meal-table" class="rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+    <div class="overflow-auto">
+        <table class="min-w-full text-sm">
+            <thead class="sticky top-0 z-10 bg-white/90 text-slate-700 backdrop-blur">
+                <tr class="border-b border-slate-200">
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">사용일</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">승인번호</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">식당명</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">총액</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">입력자</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">분배(요약)</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">관리</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for claim in claims %}
+                    {% include "tw/wtm/meal/_meal_row.html" with claim=claim %}
+                {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">등록된 내역이 없습니다.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

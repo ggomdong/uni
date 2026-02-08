@@ -64,7 +64,7 @@ class BranchGuardMiddleware:
 
     EXEMPT_PREFIXES = (
         "/static/",
-        "/favicon.ico",
+        "/favicon.png",
         "/admin/",
         "/api/",
         "/wtm/privacy/",

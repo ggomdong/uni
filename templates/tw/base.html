@@ -4,14 +4,33 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}WTM{% endblock %}</title>
+    <link rel="shortcut icon"
+      href="{% static 'favicon' %}{% if env_label != 'PROD' %}-{{ env_label|lower }}{% endif %}.png">
+    <title>
+        {% if env_label != "PROD" %}[{{ env_label }}] {% endif %}
+        {% block title %}Medi HR - YOU&I 인사관리{% endblock %}
+    </title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'tw/tailwind.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+        .htmx-indicator {
+            display: none;
+        }
+        .htmx-indicator.htmx-request {
+            display: inline-flex;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
-    <div class="max-w-5xl mx-auto px-4 py-6">
-        {% block content %}{% endblock %}
+<body class="min-h-screen bg-slate-50 text-slate-900">
+    {% include "tw/navbar.html" %}
+    <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(13,148,136,0.08),transparent_45%)] min-[1920px]:pl-60 flex flex-col">
+        <main class="pt-20 flex-1">
+            <div class="mx-auto w-full max-w-[1500px] px-4 pb-10 lg:px-6">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+        {% include "tw/footer.html" %}
     </div>
 
     <script>
@@ -35,7 +54,13 @@
         });
 
         document.body.addEventListener("htmx:responseError", function (event) {
-            var errorBox = document.getElementById("meal-errors");
+            var errorBox = null;
+            if (event.target && event.target.querySelector) {
+                errorBox = event.target.querySelector("[data-error-box]");
+            }
+            if (!errorBox) {
+                errorBox = document.getElementById("meal-errors") || document.getElementById("meal-errors-table");
+            }
             if (errorBox) {
                 errorBox.textContent = event.detail.xhr.responseText || "요청 처리 중 오류가 발생했습니다.";
                 errorBox.classList.remove("hidden");
@@ -43,7 +68,13 @@
         });
 
         document.body.addEventListener("htmx:afterRequest", function (event) {
-            var errorBox = document.getElementById("meal-errors");
+            var errorBox = null;
+            if (event.target && event.target.querySelector) {
+                errorBox = event.target.querySelector("[data-error-box]");
+            }
+            if (!errorBox) {
+                errorBox = document.getElementById("meal-errors") || document.getElementById("meal-errors-table");
+            }
             if (!errorBox) {
                 return;
             }
@@ -52,6 +83,21 @@
                 errorBox.classList.add("hidden");
             }
         });
+
+        document.body.addEventListener("click", function (event) {
+            var toggle = event.target.closest("[data-tw-toggle='mobile-nav']");
+            if (!toggle) {
+                return;
+            }
+            var targetId = toggle.getAttribute("data-target") || "tw-mobile-menu";
+            var target = document.getElementById(targetId);
+            if (!target) {
+                return;
+            }
+            var isHidden = target.classList.toggle("hidden");
+            toggle.setAttribute("aria-expanded", String(!isHidden));
+        });
     </script>
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

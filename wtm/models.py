@@ -253,7 +253,8 @@ class MealClaim(models.Model):
     )
     used_date = models.DateField("사용일", db_index=True)
     amount = models.IntegerField("금액")
-    memo = models.TextField("메모", null=True, blank=True)
+    approval_no = models.CharField("승인번호", max_length=64, default="")
+    restaurant_name = models.CharField("식당명", max_length=120, default="")
     source_type = models.CharField(
         max_length=20,
         choices=SOURCE_TYPE_CHOICES,
@@ -267,6 +268,7 @@ class MealClaim(models.Model):
         indexes = [
             models.Index(fields=["branch", "used_date"], name="meal_claim_branch_date_idx"),
             models.Index(fields=["user", "used_date"], name="meal_claim_user_date_idx"),
+            models.Index(fields=["branch", "approval_no"], name="meal_claim_branch_approval_idx"),
         ]
 
 
