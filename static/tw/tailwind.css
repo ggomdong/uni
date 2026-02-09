@@ -784,6 +784,10 @@ video {
   margin-top: 1rem;
 }
 
+.mt-0 {
+  margin-top: 0px;
+}
+
 .block {
   display: block;
 }
@@ -1046,6 +1050,10 @@ video {
   overflow: hidden;
 }
 
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
 .text-nowrap {
   text-wrap: nowrap;
 }
@@ -1222,6 +1230,10 @@ video {
 
 .bg-slate-200\/90 {
   background-color: rgb(226 232 240 / 0.9);
+}
+
+.bg-slate-900\/90 {
+  background-color: rgb(15 23 42 / 0.9);
 }
 
 .bg-\[radial-gradient\(circle_at_top\2c _rgba\(13\2c 148\2c 136\2c 0\.08\)\2c transparent_45\%\)\] {

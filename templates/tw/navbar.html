@@ -58,7 +58,7 @@
           </svg>
         </button>
 
-        <div class="absolute left-0 top-full mt-2 hidden w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
+        <div class="absolute left-0 top-full mt-0 hidden w-44 rounded-lg border border-slate-200 bg-white p-2 pt-3 shadow-lg
                     group-hover:block group-focus-within:block">
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
              href="{% url 'wtm:work_log' %}">일별상세</a>
@@ -78,7 +78,7 @@
           </svg>
         </button>
 
-        <div class="absolute left-0 top-full mt-2 hidden w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
+        <div class="absolute left-0 top-full mt-0 hidden w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
                     group-hover:block group-focus-within:block">
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
              href="{% url 'wtm:meals_index' %}">사용내역</a>
@@ -103,7 +103,7 @@
           </svg>
         </button>
 
-        <div class="absolute left-0 top-full mt-2 hidden w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
+        <div class="absolute left-0 top-full mt-0 hidden w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
                     group-hover:block group-focus-within:block">
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100" href="{% url 'common:dept' %}">부서관리</a>
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100" href="{% url 'common:position' %}">직위관리</a>
@@ -156,7 +156,7 @@
         <div class="mt-2 rounded-lg border border-slate-200 p-2">
           <div class="px-2 pb-1 text-xs font-semibold text-slate-500">식대관리</div>
           <a class="block rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100" href="{% url 'wtm:meals_index' %}">사용내역</a>
-          <a class="block rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100" href="{% url 'wtm:work_meal_status' %}">월간현황</a>
+          <a class="block rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100" href="{% url 'wtm:work_meal_status' %}">월간집계</a>
         </div>
         <a class="rounded-md px-3 py-2 text-sm font-medium {% if url_name == 'user_list' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}" href="{% url 'common:user_list' %}">직원관리</a>
 
