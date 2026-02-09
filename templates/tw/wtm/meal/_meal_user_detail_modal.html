@@ -1,0 +1,75 @@
+{% load humanize %}
+<div id="modal-slot" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+    <div
+        class="absolute inset-0"
+        hx-get="{% url 'wtm:work_meal_modal_close' %}"
+        hx-target="#modal-slot"
+        hx-swap="outerHTML"
+        aria-hidden="true"
+    ></div>
+    <div class="relative w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">{{ user.emp_name }} 식대 상세</h2>
+                <p class="text-xs text-slate-500">{{ month_value }} 기준 • 본인분 {{ total_personal|intcomma }}원</p>
+            </div>
+            <button
+                type="button"
+                hx-get="{% url 'wtm:work_meal_modal_close' %}"
+                hx-target="#modal-slot"
+                hx-swap="outerHTML"
+                class="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+            >
+                <span class="sr-only">닫기</span>
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M4.47 4.47a.75.75 0 0 1 1.06 0L10 8.94l4.47-4.47a.75.75 0 1 1 1.06 1.06L11.06 10l4.47 4.47a.75.75 0 0 1-1.06 1.06L10 11.06l-4.47 4.47a.75.75 0 0 1-1.06-1.06L8.94 10 4.47 5.53a.75.75 0 0 1 0-1.06z" />
+                </svg>
+            </button>
+        </div>
+        <div class="px-6 py-5">
+            <div class="mb-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <span class="rounded-full bg-slate-100 px-2 py-1">참여 {{ participants|length }}건</span>
+                <span class="rounded-full bg-slate-100 px-2 py-1">분배합계 {{ total_claim_amount|intcomma }}원</span>
+            </div>
+            <div class="overflow-auto rounded-xl border border-slate-200">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-slate-600">
+                        <tr class="border-b border-slate-200">
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">사용일</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">식당명</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">승인번호</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">총액</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">본인분</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">입력자</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        {% for participant in participants %}
+                            <tr class="transition hover:bg-slate-50">
+                                <td class="px-4 py-3 text-left text-slate-700">{{ participant.claim.used_date|date:"Y-m-d" }}</td>
+                                <td class="px-4 py-3 text-left text-slate-700">{{ participant.claim.restaurant_name }}</td>
+                                <td class="px-4 py-3 text-left text-slate-700">{{ participant.claim.approval_no }}</td>
+                                <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ participant.claim.amount|intcomma }}</td>
+                                <td class="px-4 py-3 text-right font-semibold text-teal-700">{{ participant.amount|intcomma }}</td>
+                                <td class="px-4 py-3 text-center text-slate-700">{{ participant.claim.user.emp_name }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <a
+                                        href="{% url 'wtm:meals_index' %}?ym={{ stand_ym }}#meal-row-{{ participant.claim.id }}"
+                                        class="inline-flex items-center rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                        승인건 열기
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">해당 월의 참여 내역이 없습니다.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

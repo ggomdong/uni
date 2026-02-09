@@ -1,0 +1,106 @@
+{% extends "tw/base.html" %}
+
+{% block content %}
+<div class="flex flex-col gap-6">
+    <section class="rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-xl font-semibold text-slate-900">식대 월간집계</h1>
+                <p class="text-sm text-slate-500">월별 식대 사용 현황과 상세내역을 확인합니다.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <button
+                    type="button"
+                    data-month-shift="-1"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+                    aria-label="이전 달"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M12.78 15.53a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 1 1 1.06 1.06L9.06 10l3.72 3.72a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <label class="sr-only" for="meal-status-month">조회 월</label>
+                <input
+                    id="meal-status-month"
+                    type="month"
+                    name="month"
+                    value="{{ month_value }}"
+                    hx-get="."
+                    hx-trigger="change"
+                    hx-target="#status-table"
+                    hx-swap="outerHTML"
+                    hx-push-url="true"
+                    hx-indicator="#status-month-indicator"
+                    class="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
+                />
+                <button
+                    type="button"
+                    data-month-shift="1"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+                    aria-label="다음 달"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M7.22 4.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 1 1-1.06-1.06L10.94 10 7.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    {% include "tw/wtm/meal/_work_meal_status_table.html" %}
+</div>
+<div id="status-month-indicator" class="htmx-indicator fixed right-6 top-20 z-50 text-slate-600">
+    <div class="flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-3 py-2 text-xs font-semibold shadow-lg">
+        <svg class="h-4 w-4 animate-spin text-teal-600" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+        </svg>
+        불러오는 중
+    </div>
+</div>
+<div id="modal-slot"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var monthInput = document.getElementById("meal-status-month");
+        function shiftMonth(value, delta) {
+            if (!value) {
+                return null;
+            }
+            var parts = value.split("-");
+            if (parts.length !== 2) {
+                return null;
+            }
+            var year = parseInt(parts[0], 10);
+            var month = parseInt(parts[1], 10);
+            if (Number.isNaN(year) || Number.isNaN(month)) {
+                return null;
+            }
+            month += delta;
+            if (month < 1) {
+                month = 12;
+                year -= 1;
+            }
+            if (month > 12) {
+                month = 1;
+                year += 1;
+            }
+            return year + "-" + String(month).padStart(2, "0");
+        }
+
+        document.addEventListener("click", function (event) {
+            var shiftButton = event.target.closest("[data-month-shift]");
+            if (shiftButton && monthInput) {
+                var delta = parseInt(shiftButton.getAttribute("data-month-shift"), 10);
+                var nextValue = shiftMonth(monthInput.value, delta);
+                if (nextValue) {
+                    monthInput.value = nextValue;
+                    monthInput.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+            }
+        });
+    })();
+</script>
+{% endblock %}

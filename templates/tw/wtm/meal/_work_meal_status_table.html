@@ -1,0 +1,59 @@
+{% load humanize %}
+<div id="status-table" class="rounded-2xl border border-slate-200/70 bg-white shadow-sm overflow-hidden">
+    <div class="overflow-auto">
+        <table class="min-w-full text-sm">
+            <thead class="sticky top-0 z-10 bg-slate-200/90 text-slate-700 backdrop-blur">
+                <tr class="border-b border-slate-200">
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">부서</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">직위</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">성명</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider">발생</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider">사용</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider">잔액</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for row in rows %}
+                    <tr class="transition hover:bg-slate-50">
+                        <td class="px-4 py-2 text-left text-xs text-slate-700">{{ row.dept }}</td>
+                        <td class="px-4 py-2 text-left text-xs text-slate-600">{{ row.position }}</td>
+                        <td class="px-4 py-2 text-left text-xs font-semibold text-slate-900">{{ row.emp_name }}</td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-700">
+                            {% if row.total_amount %}
+                                {{ row.total_amount|intcomma }}원
+                            {% else %}
+                                <span class="text-slate-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-2 text-right">
+                            {% if row.personal_amount %}
+                                <button
+                                    type="button"
+                                    hx-get="{% url 'wtm:work_meal_status_user_modal' row.user_id %}?ym={{ stand_ym }}"
+                                    hx-target="#modal-slot"
+                                    hx-swap="outerHTML"
+                                    class="text-xs font-semibold text-teal-700 hover:text-teal-800"
+                                >
+                                    {{ row.personal_amount|intcomma }}원
+                                </button>
+                            {% else %}
+                                <span class="text-slate-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-2 text-right text-xs text-slate-700">
+                            {% if row.balance %}
+                                {{ row.balance|intcomma }}원
+                            {% else %}
+                                <span class="text-slate-400">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-500">대상 직원이 없습니다.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

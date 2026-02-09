@@ -1,10 +1,11 @@
+import json
 from calendar import monthrange
 from datetime import datetime, date
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, Http404, HttpResponse
 from django.shortcuts import render
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count, Sum
 from django.utils import timezone
 
 from common.models import User
@@ -56,6 +57,7 @@ def build_meal_status_rows(stand_ym: str | None, *, branch):
                     total += int(amt)
 
         rows.append({
+            "user_id": u["user_id"],
             "dept": u["dept"],
             "position": u["position"],
             "emp_name": u["emp_name"],
@@ -67,19 +69,96 @@ def build_meal_status_rows(stand_ym: str | None, *, branch):
     return stand_ym, rows
 
 
+def _build_meal_usage_summary_map(ym: str, *, branch):
+    start_date, end_date = _month_range(ym)
+    summaries = (
+        MealClaimParticipant.objects
+        .filter(
+            claim__branch=branch,
+            claim__is_deleted=False,
+            claim__used_date__gte=start_date,
+            claim__used_date__lte=end_date,
+        )
+        .values("user_id")
+        .annotate(
+            claim_count=Count("claim_id", distinct=True),
+            personal_amount=Sum("amount"),
+            distributed_amount=Sum("claim__amount"),
+        )
+    )
+    return {summary["user_id"]: summary for summary in summaries}
+
+
 @login_required(login_url="common:login")
 def work_meal_status(request, stand_ym: str | None = None):
     branch = getattr(request, "branch", None)
     if branch is None:
         raise Http404("branch code is required")
 
+    requested_ym = _resolve_month_input(request.GET.get("month")) or request.GET.get("ym") or stand_ym
+    stand_ym = _resolve_ym(requested_ym)
     stand_ym, rows = build_meal_status_rows(stand_ym, branch=branch)
+    usage_map = _build_meal_usage_summary_map(stand_ym, branch=branch)
+    for row in rows:
+        summary = usage_map.get(row.get("user_id"))
+        personal_amount = summary.get("personal_amount", 0) if summary else 0
+        row["claim_count"] = summary.get("claim_count", 0) if summary else 0
+        row["personal_amount"] = personal_amount
+        row["distributed_amount"] = summary.get("distributed_amount", 0) if summary else 0
+        if row.get("total_amount") is not None:
+            row["balance"] = row["total_amount"] - personal_amount
 
-    return render(request, "wtm/work_meal_status.html", {
+    context = {
         "stand_ym": stand_ym,
+        "month_value": f"{stand_ym[:4]}-{stand_ym[4:]}",
         "rows": rows,
         "active_metric": "meal",  # 메뉴 하이라이트/탭 구분용(선택)
+    }
+
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "tw/wtm/meal/_work_meal_status_table.html", context)
+
+    return render(request, "tw/wtm/work_meal_status.html", context)
+
+
+@login_required(login_url="common:login")
+def work_meal_status_user_modal(request, user_id: int):
+    branch = _get_branch_or_404(request)
+    requested_ym = _resolve_month_input(request.GET.get("month")) or request.GET.get("ym")
+    stand_ym = _resolve_ym(requested_ym)
+    start_date, end_date = _month_range(stand_ym)
+    try:
+        target_user = User.objects.get(id=user_id, branch=branch)
+    except User.DoesNotExist:
+        raise Http404("user not found")
+
+    participants = list(
+        MealClaimParticipant.objects
+        .select_related("claim", "claim__user")
+        .filter(
+            user_id=user_id,
+            claim__branch=branch,
+            claim__is_deleted=False,
+            claim__used_date__gte=start_date,
+            claim__used_date__lte=end_date,
+        )
+        .order_by("claim__used_date", "claim__id")
+    )
+    total_personal = sum(p.amount for p in participants)
+    total_claim_amount = sum(p.claim.amount for p in participants)
+    return render(request, "tw/wtm/meal/_meal_user_detail_modal.html", {
+        "stand_ym": stand_ym,
+        "month_value": f"{stand_ym[:4]}-{stand_ym[4:]}",
+        "user": target_user,
+        "participants": participants,
+        "total_personal": total_personal,
+        "total_claim_amount": total_claim_amount,
     })
+
+
+@login_required(login_url="common:login")
+def work_meal_modal_close(request):
+    return render(request, "tw/wtm/meal/_modal_slot_empty.html")
 
 
 def _get_branch_or_404(request):
@@ -322,7 +401,9 @@ def meals_new(request):
         ])
 
     # HTMX swaps the table outerHTML after create/delete.
-    return _render_meal_table(request, branch, ym)
+    resp = _render_meal_table(request, branch, ym)
+    resp["HX-Trigger"] = json.dumps({"toast": {"message": "등록되었습니다.", "level": "success"}})
+    return resp
 
 
 @login_required(login_url="common:login")
@@ -340,7 +421,9 @@ def meals_delete(request, claim_id: int):
     claim.is_deleted = True
     claim.save()
 
-    return _render_meal_table(request, branch, ym)
+    resp = _render_meal_table(request, branch, ym)
+    resp["HX-Trigger"] = json.dumps({"toast": {"message": "삭제되었습니다.", "level": "success"}})
+    return resp
 
 
 @login_required(login_url="common:login")
@@ -446,7 +529,10 @@ def meals_update(request, claim_id: int):
         .get(id=claim.id)
     )
     _annotate_claim_participants([claim])
-    return _render_meal_row(request, claim)
+
+    resp = _render_meal_row(request, claim)
+    resp["HX-Trigger"] = json.dumps({"toast": {"message": "수정되었습니다.", "level": "success"}})
+    return resp
 
 
 # 엑셀에서 비로그인으로 가져갈 수 있도록 JSON 형태로 내려줌 -> 향후 제거 예정

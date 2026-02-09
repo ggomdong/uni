@@ -32,6 +32,8 @@ from wtm.views.log import (
 from wtm.views.meal import (
     work_meal_status,
     work_meal_json,
+    work_meal_status_user_modal,
+    work_meal_modal_close,
     meals_index,
     meals_new,
     meals_update,
@@ -84,6 +86,8 @@ urlpatterns = [
     path("meal_json/<str:stand_ym>", work_meal_json, name="work_meal_json"),
     path('meal_status/', work_meal_status, name='work_meal_status'),
     path('meal_status/<str:stand_ym>', work_meal_status, name='work_meal_status'),
+    path("meal_status/user/<int:user_id>/", work_meal_status_user_modal, name="work_meal_status_user_modal"),
+    path("meal_status/modal/close/", work_meal_modal_close, name="work_meal_modal_close"),
     path("vacation/<str:year>", work_vacation_json, name="work_vacation_json"),
     path('privacy/', work_privacy, name='work_privacy'),
 ]
