@@ -25,7 +25,7 @@
 <body class="min-h-screen bg-slate-50 text-slate-900">
     {% include "tw/navbar.html" %}
     <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(13,148,136,0.08),transparent_45%)] min-[1920px]:pl-60 flex flex-col">
-        <main class="pt-20 flex-1">
+        <main class="pt-20 min-[1920px]:pt-6 flex-1">
             <div class="mx-auto w-full max-w-[1500px] px-4 pb-10 lg:px-6">
                 <div id="page-errors" class="hidden mb-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"></div>
                 {% block content %}{% endblock %}

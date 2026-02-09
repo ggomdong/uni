@@ -4,8 +4,10 @@
 <nav class="fixed top-0 z-50 w-full border-b
   {% if env_label == 'DEV' %}bg-amber-100 border-amber-200
   {% elif env_label == 'LOCAL' %}bg-sky-100 border-sky-200
-  {% else %}bg-white/80 border-slate-200 backdrop-blur{% endif %}">
-  <div class="mx-auto flex h-16 max-w-[1500px] items-center gap-4 px-4 lg:px-6">
+  {% else %}bg-white/80 border-slate-200 backdrop-blur{% endif %}
+  min-[1920px]:left-0 min-[1920px]:top-0 min-[1920px]:h-screen min-[1920px]:w-60 min-[1920px]:border-b-0 min-[1920px]:border-r">
+  <div class="mx-auto flex h-16 max-w-[1500px] items-center gap-4 px-4 lg:px-6
+              min-[1920px]:mx-0 min-[1920px]:h-full min-[1920px]:max-w-none min-[1920px]:flex-col min-[1920px]:items-stretch min-[1920px]:gap-6 min-[1920px]:px-4 min-[1920px]:py-6">
 
     <!-- Brand -->
     <a href="{% url 'wtm:index' %}" class="flex items-center gap-3">
@@ -19,7 +21,7 @@
     {% endif %}
 
     <!-- Spacer -->
-    <div class="flex-1"></div>
+    <div class="flex-1 min-[1920px]:hidden"></div>
 
     <!-- Mobile toggle -->
     <button
@@ -34,23 +36,23 @@
     </button>
 
     <!-- Desktop menu -->
-    <div class="hidden lg:flex items-center gap-1">
+    <div class="hidden lg:flex items-center gap-1 min-[1920px]:flex-1 min-[1920px]:flex-col min-[1920px]:items-stretch min-[1920px]:gap-2">
       <a href="{% url 'wtm:index' %}"
-         class="rounded-md px-3 py-2 text-sm font-medium {% if url_name == 'index' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+         class="rounded-md px-3 py-2 text-sm font-medium min-[1920px]:w-full {% if url_name == 'index' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
         TODAY
       </a>
 
       <a href="{% url 'wtm:work_schedule' %}"
-         class="rounded-md px-3 py-2 text-sm font-medium {% if url_name == 'work_schedule' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+         class="rounded-md px-3 py-2 text-sm font-medium min-[1920px]:w-full {% if url_name == 'work_schedule' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
         근무표
       </a>
 
       {% if user.is_authenticated %}
 
       <!-- 근태기록 dropdown (hover + focus-within) -->
-      <div class="relative group">
-        <button type="button"
-          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium
+      <div class="relative group min-[1920px]:w-full">
+        <button type="button" data-nav-toggle
+          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium min-[1920px]:w-full min-[1920px]:justify-between
           {% if url_name == 'work_log' or url_name == 'work_status' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
           근태기록
           <svg class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -58,8 +60,9 @@
           </svg>
         </button>
 
-        <div class="absolute left-0 top-full mt-0 hidden w-44 rounded-lg border border-slate-200 bg-white p-2 pt-3 shadow-lg
-                    group-hover:block group-focus-within:block">
+        <div data-nav-menu class="absolute left-0 top-full mt-0 hidden w-44 rounded-lg border border-slate-200 bg-white p-2 pt-3 shadow-lg
+                    max-[1919px]:group-hover:block max-[1919px]:group-focus-within:block
+                    min-[1920px]:static min-[1920px]:mt-1 min-[1920px]:w-full min-[1920px]:bg-slate-50 min-[1920px]:shadow-none min-[1920px]:pt-2">
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
              href="{% url 'wtm:work_log' %}">일별상세</a>
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
@@ -68,9 +71,9 @@
       </div>
 
       <!-- 식대관리 dropdown -->
-      <div class="relative group">
-        <button type="button"
-          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium
+      <div class="relative group min-[1920px]:w-full">
+        <button type="button" data-nav-toggle
+          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium min-[1920px]:w-full min-[1920px]:justify-between
           {% if url_name == 'meals_index' or url_name == 'work_meal_status' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
           식대관리
           <svg class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -78,8 +81,9 @@
           </svg>
         </button>
 
-        <div class="absolute left-0 top-full mt-0 hidden w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
-                    group-hover:block group-focus-within:block">
+        <div data-nav-menu class="absolute left-0 top-full mt-0 hidden w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
+                    max-[1919px]:group-hover:block max-[1919px]:group-focus-within:block
+                    min-[1920px]:static min-[1920px]:mt-1 min-[1920px]:w-full min-[1920px]:bg-slate-50 min-[1920px]:shadow-none">
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
              href="{% url 'wtm:meals_index' %}">사용내역</a>
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
@@ -88,14 +92,14 @@
       </div>
 
       <a href="{% url 'common:user_list' %}"
-         class="rounded-md px-3 py-2 text-sm font-medium {% if url_name == 'user_list' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+         class="rounded-md px-3 py-2 text-sm font-medium min-[1920px]:w-full {% if url_name == 'user_list' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
         직원관리
       </a>
 
       <!-- 설정 dropdown -->
-      <div class="relative group">
-        <button type="button"
-          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium
+      <div class="relative group min-[1920px]:w-full">
+        <button type="button" data-nav-toggle
+          class="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium min-[1920px]:w-full min-[1920px]:justify-between
           {% if url_name == 'dept' or url_name == 'position' or url_name == 'work_module' or url_name == 'holiday' or url_name == 'business' or url_name == 'code' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
           설정
           <svg class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -103,8 +107,9 @@
           </svg>
         </button>
 
-        <div class="absolute left-0 top-full mt-0 hidden w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
-                    group-hover:block group-focus-within:block">
+        <div data-nav-menu class="absolute left-0 top-full mt-0 hidden w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg
+                    max-[1919px]:group-hover:block max-[1919px]:group-focus-within:block
+                    min-[1920px]:static min-[1920px]:mt-1 min-[1920px]:w-full min-[1920px]:bg-slate-50 min-[1920px]:shadow-none">
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100" href="{% url 'common:dept' %}">부서관리</a>
           <a class="block rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100" href="{% url 'common:position' %}">직위관리</a>
           <div class="my-1 border-t border-slate-200"></div>
@@ -118,14 +123,14 @@
       </div>
 
       <a href="{% url 'pybo:pybo_index' %}"
-         class="rounded-md px-3 py-2 text-sm font-medium {% if url_name == 'pybo_index' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
+         class="rounded-md px-3 py-2 text-sm font-medium min-[1920px]:w-full {% if url_name == 'pybo_index' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-100{% endif %}">
         공지사항
       </a>
 
       {% endif %}
 
       <!-- auth -->
-      <div class="ml-2 pl-2 border-l border-slate-200">
+      <div class="ml-2 pl-2 border-l border-slate-200 min-[1920px]:ml-0 min-[1920px]:border-l-0 min-[1920px]:border-t min-[1920px]:border-slate-200 min-[1920px]:pt-2">
         {% if user.is_authenticated %}
           <form id="logout-form" method="post" action="{% url 'common:logout' %}" class="hidden">{% csrf_token %}</form>
           <a class="rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
@@ -189,3 +194,61 @@
 </nav>
 
 {% endwith %}
+
+<script>
+  (function () {
+    var nav = document.querySelector("nav");
+    if (!nav) {
+      return;
+    }
+    var mq = window.matchMedia("(min-width: 1920px)");
+
+    function closeAllMenus(except) {
+      var menus = nav.querySelectorAll("[data-nav-menu]");
+      menus.forEach(function (menu) {
+        if (menu !== except) {
+          menu.classList.add("hidden");
+        }
+      });
+    }
+
+    nav.addEventListener("click", function (event) {
+      var toggle = event.target.closest("[data-nav-toggle]");
+      if (!toggle || !mq.matches) {
+        return;
+      }
+      var group = toggle.closest(".group");
+      if (!group) {
+        return;
+      }
+      var menu = group.querySelector("[data-nav-menu]");
+      if (!menu) {
+        return;
+      }
+      event.preventDefault();
+      var isHidden = menu.classList.contains("hidden");
+      closeAllMenus(isHidden ? menu : null);
+      if (isHidden) {
+        menu.classList.remove("hidden");
+      } else {
+        menu.classList.add("hidden");
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!mq.matches) {
+        return;
+      }
+      if (event.target.closest("nav")) {
+        return;
+      }
+      closeAllMenus(null);
+    });
+
+    mq.addEventListener("change", function () {
+      if (!mq.matches) {
+        closeAllMenus(null);
+      }
+    });
+  })();
+</script>
