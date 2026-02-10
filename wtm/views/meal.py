@@ -248,6 +248,40 @@ def _render_meal_row_edit(request, claim, branch_users):
     })
 
 
+def _parse_approval_no(
+    value: str | None,
+    *,
+    branch,
+    used_date: date,
+    exclude_claim_id: int | None = None,
+):
+    v = (value or "").strip()
+    if not v:
+        return None, "승인번호는 필수입니다."
+    if not v.isdigit():
+        return None, "승인번호는 숫자만 입력할 수 있습니다."
+    if len(v) != 8:
+        return None, "승인번호는 8자리여야 합니다."
+
+    ym = used_date.strftime("%Y%m")
+    start_date, end_date = _month_range(ym)
+
+    qs = MealClaim.objects.filter(
+        branch=branch,
+        approval_no=v,
+        is_deleted=False,
+        used_date__gte=start_date,
+        used_date__lte=end_date,
+    )
+    if exclude_claim_id is not None:
+        qs = qs.exclude(id=exclude_claim_id)
+
+    if qs.exists():
+        return None, "동일한 승인번호가 이번 달에 이미 등록되어 있습니다. (날짜 오입력 여부 확인 필요)"
+
+    return v, None
+
+
 def _parse_amount(value: str, field_name: str):
     if value is None or value == "":
         return None, f"{field_name}는 필수입니다."
@@ -352,13 +386,10 @@ def meals_new(request):
     branch = _get_branch_or_404(request)
     used_date_str = request.POST.get("used_date")
     amount_str = request.POST.get("amount")
-    approval_no = (request.POST.get("approval_no") or "").strip()
     merchant_name = (request.POST.get("merchant_name") or "").strip()
 
     if not used_date_str or not amount_str:
         return HttpResponse("사용일과 총액은 필수입니다.", status=400)
-    if not approval_no:
-        return HttpResponse("승인번호는 필수입니다.", status=400)
     if not merchant_name:
         return HttpResponse("가맹점명은 필수입니다.", status=400)
 
@@ -371,6 +402,15 @@ def meals_new(request):
     if error:
         return HttpResponse(error, status=400)
 
+    approval_no, err = _parse_approval_no(
+        request.POST.get("approval_no"),
+        branch=branch,
+        used_date=used_date,
+        # 신규는 exclude_claim_id 없음
+    )
+    if err:
+        return HttpResponse(err, status=400)
+
     participants, participant_errors = _parse_participants(request.POST, branch, used_date)
     if participant_errors:
         return HttpResponse("\n".join(participant_errors), status=400)
@@ -382,9 +422,6 @@ def meals_new(request):
     ym = used_date.strftime("%Y%m")
     if _is_month_closed(branch, ym):
         return HttpResponse("마감된 월은 등록할 수 없습니다.", status=403)
-
-    if MealClaim.objects.filter(branch=branch, approval_no=approval_no, is_deleted=False).exists():
-        return HttpResponse("동일한 승인번호가 이미 등록되어 있습니다.", status=400)
 
     with transaction.atomic():
         claim = MealClaim.objects.create(
@@ -465,13 +502,10 @@ def meals_update(request, claim_id: int):
     branch = _get_branch_or_404(request)
     used_date_str = request.POST.get("used_date")
     amount_str = request.POST.get("amount")
-    approval_no = (request.POST.get("approval_no") or "").strip()
     merchant_name = (request.POST.get("merchant_name") or "").strip()
 
     if not used_date_str or not amount_str:
         return HttpResponse("사용일과 총액은 필수입니다.", status=400)
-    if not approval_no:
-        return HttpResponse("승인번호는 필수입니다.", status=400)
     if not merchant_name:
         return HttpResponse("가맹점명은 필수입니다.", status=400)
 
@@ -484,6 +518,15 @@ def meals_update(request, claim_id: int):
     if error:
         return HttpResponse(error, status=400)
 
+    approval_no, err = _parse_approval_no(
+        request.POST.get("approval_no"),
+        branch=branch,
+        used_date=used_date,
+        exclude_claim_id=claim_id,  # 수정에서는 자기 자신 제외
+    )
+    if err:
+        return HttpResponse(err, status=400)
+
     participants, participant_errors = _parse_participants(request.POST, branch, used_date)
     if participant_errors:
         return HttpResponse("\n".join(participant_errors), status=400)
@@ -495,9 +538,6 @@ def meals_update(request, claim_id: int):
     ym = used_date.strftime("%Y%m")
     if _is_month_closed(branch, ym):
         return HttpResponse("마감된 월은 수정할 수 없습니다.", status=403)
-
-    if MealClaim.objects.filter(branch=branch, approval_no=approval_no, is_deleted=False).exclude(id=claim_id).exists():
-        return HttpResponse("동일한 승인번호가 이미 등록되어 있습니다.", status=400)
 
     with transaction.atomic():
         try:
