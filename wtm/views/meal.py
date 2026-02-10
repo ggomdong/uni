@@ -267,7 +267,7 @@ def _parse_participants(post_data, branch, used_date: date):
     errors = []
     empty_rows = 0
     if len(user_ids) != len(amounts):
-        errors.append("참여자 정보가 올바르지 않습니다.")
+        errors.append("대상자 정보가 올바르지 않습니다.")
         return participants, errors
 
     seen_users = set()
@@ -276,28 +276,28 @@ def _parse_participants(post_data, branch, used_date: date):
             empty_rows += 1
             continue
         if not raw_user_id or not raw_amount:
-            errors.append("참여자와 금액을 모두 입력해야 합니다.")
+            errors.append("대상자와 금액을 모두 입력해야 합니다.")
             continue
         try:
             user_id = int(raw_user_id)
         except ValueError:
-            errors.append("참여자 정보가 올바르지 않습니다.")
+            errors.append("대상자 정보가 올바르지 않습니다.")
             continue
         amount, error = _parse_amount(raw_amount, "분배금액")
         if error:
             errors.append(error)
             continue
         if user_id in seen_users:
-            errors.append("참여자는 중복될 수 없습니다.")
+            errors.append("대상자는 중복될 수 없습니다.")
             continue
         seen_users.add(user_id)
         participants.append((user_id, amount))
 
     if not participants:
-        errors.append("참여자를 최소 1명 이상 입력해야 합니다.")
+        errors.append("대상자를 최소 1명 이상 입력해야 합니다.")
         return participants, errors
     if empty_rows:
-        errors.append("비어 있는 참여자 행을 제거하거나 입력하세요.")
+        errors.append("비어 있는 대상자 행을 제거하거나 입력하세요.")
 
     valid_user_ids = set(
         _get_branch_users(branch, used_date)
@@ -306,7 +306,7 @@ def _parse_participants(post_data, branch, used_date: date):
     )
     for user_id, _ in participants:
         if user_id not in valid_user_ids:
-            errors.append("지점 소속이 아닌 참여자가 포함되어 있습니다.")
+            errors.append("지점 소속이 아닌 대상자가 포함되어 있습니다.")
             break
 
     return participants, errors
@@ -353,14 +353,14 @@ def meals_new(request):
     used_date_str = request.POST.get("used_date")
     amount_str = request.POST.get("amount")
     approval_no = (request.POST.get("approval_no") or "").strip()
-    restaurant_name = (request.POST.get("restaurant_name") or "").strip()
+    merchant_name = (request.POST.get("merchant_name") or "").strip()
 
     if not used_date_str or not amount_str:
         return HttpResponse("사용일과 총액은 필수입니다.", status=400)
     if not approval_no:
         return HttpResponse("승인번호는 필수입니다.", status=400)
-    if not restaurant_name:
-        return HttpResponse("식당명은 필수입니다.", status=400)
+    if not merchant_name:
+        return HttpResponse("가맹점명은 필수입니다.", status=400)
 
     try:
         used_date = datetime.strptime(used_date_str, "%Y-%m-%d").date()
@@ -393,7 +393,7 @@ def meals_new(request):
             used_date=used_date,
             amount=amount,
             approval_no=approval_no,
-            restaurant_name=restaurant_name,
+            merchant_name=merchant_name,
         )
         MealClaimParticipant.objects.bulk_create([
             MealClaimParticipant(claim=claim, user_id=user_id, amount=amount_value)
@@ -466,14 +466,14 @@ def meals_update(request, claim_id: int):
     used_date_str = request.POST.get("used_date")
     amount_str = request.POST.get("amount")
     approval_no = (request.POST.get("approval_no") or "").strip()
-    restaurant_name = (request.POST.get("restaurant_name") or "").strip()
+    merchant_name = (request.POST.get("merchant_name") or "").strip()
 
     if not used_date_str or not amount_str:
         return HttpResponse("사용일과 총액은 필수입니다.", status=400)
     if not approval_no:
         return HttpResponse("승인번호는 필수입니다.", status=400)
-    if not restaurant_name:
-        return HttpResponse("식당명은 필수입니다.", status=400)
+    if not merchant_name:
+        return HttpResponse("가맹점명은 필수입니다.", status=400)
 
     try:
         used_date = datetime.strptime(used_date_str, "%Y-%m-%d").date()
@@ -514,7 +514,7 @@ def meals_update(request, claim_id: int):
         claim.used_date = used_date
         claim.amount = amount
         claim.approval_no = approval_no
-        claim.restaurant_name = restaurant_name
+        claim.merchant_name = merchant_name
         claim.save()
         MealClaimParticipant.objects.filter(claim=claim).delete()
         MealClaimParticipant.objects.bulk_create([

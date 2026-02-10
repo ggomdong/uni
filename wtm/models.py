@@ -254,7 +254,7 @@ class MealClaim(models.Model):
     used_date = models.DateField("사용일", db_index=True)
     amount = models.IntegerField("금액")
     approval_no = models.CharField("승인번호", max_length=64, default="")
-    restaurant_name = models.CharField("식당명", max_length=120, default="")
+    merchant_name = models.CharField("가맹점명", max_length=120, default="")
     source_type = models.CharField(
         max_length=20,
         choices=SOURCE_TYPE_CHOICES,

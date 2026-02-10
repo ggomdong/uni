@@ -2,7 +2,7 @@
 <tr id="meal-row-{{ claim.id }}" class="transition hover:bg-slate-50">
     <td class="px-4 py-3 text-center text-xs text-slate-700">{{ claim.used_date|date:"Y-m-d" }}</td>
     <td class="px-4 py-3 font-medium text-xs text-slate-800">{{ claim.approval_no }}</td>
-    <td class="px-4 py-3 text-center text-xs text-slate-700">{{ claim.restaurant_name }}</td>
+    <td class="px-4 py-3 text-center text-xs text-slate-700">{{ claim.merchant_name }}</td>
     <td class="px-4 py-3 text-right font-semibold text-xs text-slate-900 tabular-nums">{{ claim.amount|intcomma }}</td>
     <td class="px-4 py-3 text-center text-xs text-slate-700">{{ claim.user.emp_name }}</td>
     <td class="px-4 py-3 text-center text-slate-700">

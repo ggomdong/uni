@@ -16,8 +16,8 @@
                 <input id="meal-approval-no" type="text" name="approval_no" required class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200" />
             </div>
             <div class="flex flex-col gap-1 min-w-0 lg:col-span-4">
-                <label class="text-sm font-medium text-slate-700" for="meal-restaurant">식당명</label>
-                <input id="meal-restaurant" type="text" name="restaurant_name" required class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200" />
+                <label class="text-sm font-medium text-slate-700" for="meal-merchant">가맹점명</label>
+                <input id="meal-merchant" type="text" name="merchant_name" required class="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200" />
             </div>
             <div class="flex flex-col gap-1 min-w-0 lg:col-span-2">
                 <label class="text-sm font-medium text-slate-700" for="meal-amount">총액</label>
@@ -28,7 +28,7 @@
         <div class="rounded-xl border border-slate-200/70 bg-slate-50 px-4 py-4" data-participants data-total-input="#meal-amount">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <div class="text-sm font-semibold text-slate-800">참여자 분배</div>
+                    <div class="text-sm font-semibold text-slate-800">대상자 분배</div>
                     <div class="text-xs text-slate-500">분배 합계가 총액과 같아야 합니다.</div>
                 </div>
                 <div class="text-xs text-slate-600">
@@ -39,7 +39,7 @@
             <div class="mt-4 space-y-2" data-participant-rows>
                 <div class="flex flex-wrap items-center gap-2" data-participant-row>
                     <select name="participant_user" class="h-10 min-w-[160px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
-                        <option value="">참여자 선택</option>
+                        <option value="">대상자 선택</option>
                         {% for user in users %}
                             <option value="{{ user.id }}" {% if user.id == request.user.id %}selected{% endif %}>{{ user.emp_name }}</option>
                         {% endfor %}
@@ -60,7 +60,7 @@
             <template data-participant-template>
                 <div class="flex flex-wrap items-center gap-2" data-participant-row>
                     <select name="participant_user" class="h-10 min-w-[160px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200">
-                        <option value="">참여자 선택</option>
+                        <option value="">대상자 선택</option>
                         {% for user in users %}
                             <option value="{{ user.id }}">{{ user.emp_name }}</option>
                         {% endfor %}
@@ -80,7 +80,7 @@
             </template>
             <div class="mt-3 flex flex-wrap items-center gap-3">
                 <button type="button" data-participant-add class="inline-flex items-center gap-2 text-sm font-semibold text-teal-700 hover:text-teal-800">
-                    + 참여자 추가
+                    + 대상자 추가
                 </button>
                 <button type="button" data-participant-distribute class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-800">
                     자동배분

@@ -11,7 +11,7 @@
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
                 <h2 class="text-lg font-semibold text-slate-900">{{ user.emp_name }} 식대 상세</h2>
-                <p class="text-xs text-slate-500">{{ month_value }} 기준 • 본인분 {{ total_personal|intcomma }}원</p>
+                <p class="text-xs text-slate-500">{{ month_value }} 기준 • 본인부담 {{ total_personal|intcomma }}원</p>
             </div>
             <button
                 type="button"
@@ -28,7 +28,7 @@
         </div>
         <div class="px-6 py-5">
             <div class="mb-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                <span class="rounded-full bg-slate-100 px-2 py-1">참여 {{ participants|length }}건</span>
+                <span class="rounded-full bg-slate-100 px-2 py-1">대상 {{ participants|length }}건</span>
                 <span class="rounded-full bg-slate-100 px-2 py-1">분배합계 {{ total_claim_amount|intcomma }}원</span>
             </div>
             <div class="overflow-auto rounded-xl border border-slate-200">
@@ -36,11 +36,11 @@
                     <thead class="bg-slate-50 text-slate-600">
                         <tr class="border-b border-slate-200">
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">사용일</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">식당명</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">가맹점명</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">승인번호</th>
                             <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">총액</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">본인분</th>
-                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">입력자</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">본인부담</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">등록자</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">관리</th>
                         </tr>
                     </thead>
@@ -48,7 +48,7 @@
                         {% for participant in participants %}
                             <tr class="transition hover:bg-slate-50">
                                 <td class="px-4 py-3 text-left text-slate-700">{{ participant.claim.used_date|date:"Y-m-d" }}</td>
-                                <td class="px-4 py-3 text-left text-slate-700">{{ participant.claim.restaurant_name }}</td>
+                                <td class="px-4 py-3 text-left text-slate-700">{{ participant.claim.merchant_name }}</td>
                                 <td class="px-4 py-3 text-left text-slate-700">{{ participant.claim.approval_no }}</td>
                                 <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ participant.claim.amount|intcomma }}</td>
                                 <td class="px-4 py-3 text-right font-semibold text-teal-700">{{ participant.amount|intcomma }}</td>
@@ -64,7 +64,7 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">해당 월의 참여 내역이 없습니다.</td>
+                                <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">해당 월의 대상 내역이 없습니다.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
