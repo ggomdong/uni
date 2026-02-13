@@ -776,6 +776,10 @@ video {
   margin-top: 0px;
 }
 
+.mt-0\.5 {
+  margin-top: 0.125rem;
+}
+
 .mt-1 {
   margin-top: 0.25rem;
 }
@@ -794,10 +798,6 @@ video {
 
 .mt-auto {
   margin-top: auto;
-}
-
-.mt-0\.5 {
-  margin-top: 0.125rem;
 }
 
 .block {
@@ -860,10 +860,6 @@ video {
   height: 9px;
 }
 
-.h-\[8px\] {
-  height: 8px;
-}
-
 .min-h-screen {
   min-height: 100vh;
 }
@@ -888,8 +884,8 @@ video {
   width: 14rem;
 }
 
-.w-\[240px\] {
-  width: 240px;
+.w-\[200px\] {
+  width: 200px;
 }
 
 .w-\[92vw\] {
@@ -906,14 +902,6 @@ video {
 
 .w-full {
   width: 100%;
-}
-
-.w-\[200px\] {
-  width: 200px;
-}
-
-.w-\[8px\] {
-  width: 8px;
 }
 
 .min-w-0 {
@@ -1059,12 +1047,6 @@ video {
   --tw-space-y-reverse: 0;
   margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
-}
-
-.space-y-4 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-y-reverse: 0;
-  margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
-  margin-bottom: calc(1rem * var(--tw-space-y-reverse));
 }
 
 .space-y-6 > :not([hidden]) ~ :not([hidden]) {
@@ -1300,11 +1282,6 @@ video {
   background-color: rgb(255 255 255 / 0.95);
 }
 
-.bg-\[\#02b3bb\] {
-  --tw-bg-opacity: 1;
-  background-color: rgb(2 179 187 / var(--tw-bg-opacity, 1));
-}
-
 .bg-\[radial-gradient\(circle_at_top\2c _rgba\(13\2c 148\2c 136\2c 0\.08\)\2c transparent_45\%\)\] {
   background-image: radial-gradient(circle at top, rgba(13,148,136,0.08),transparent 45%);
 }
@@ -1428,11 +1405,6 @@ video {
   padding-bottom: 2px;
 }
 
-.py-\[1px\] {
-  padding-top: 1px;
-  padding-bottom: 1px;
-}
-
 .pb-1 {
   padding-bottom: 0.25rem;
 }
@@ -1493,16 +1465,20 @@ video {
   vertical-align: middle;
 }
 
+.text-\[10px\] {
+  font-size: 10px;
+}
+
 .text-\[11px\] {
   font-size: 11px;
 }
 
-.text-\[13px\] {
-  font-size: 13px;
+.text-\[12px\] {
+  font-size: 12px;
 }
 
-.text-\[9px\] {
-  font-size: 9px;
+.text-\[13px\] {
+  font-size: 13px;
 }
 
 .text-lg {
@@ -1515,22 +1491,9 @@ video {
   line-height: 1.25rem;
 }
 
-.text-xl {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-}
-
 .text-xs {
   font-size: 0.75rem;
   line-height: 1rem;
-}
-
-.text-\[10px\] {
-  font-size: 10px;
-}
-
-.text-\[12px\] {
-  font-size: 12px;
 }
 
 .font-medium {
@@ -1565,10 +1528,6 @@ video {
 
 .leading-tight {
   line-height: 1.25;
-}
-
-.leading-none {
-  line-height: 1;
 }
 
 .tracking-wider {
