@@ -207,7 +207,15 @@ def index(request, stand_day=None):
     module_list = Module.objects.filter(branch=branch).order_by('order', 'id')  # 근로모듈을 입력하기 위함
 
     stand_day_iso = f"{stand_day[:4]}-{stand_day[4:6]}-{stand_day[6:8]}"
+    nav_url_template = "/wtm/index/{compact}/"
+    if only_today:
+        nav_url_template += "?only_today=1"
+    nav = {
+        "mode": "day",
+        "value": stand_day_iso,
+        "url_template": nav_url_template,
+    }
 
     context = {'stand_day': stand_day, 'stand_day_iso': stand_day_iso, 'days': days, 'user_list': user_list, 'work_list': work_list,
-               'max_workers': max_workers, 'module_list': module_list, "only_today": only_today,}
+               'max_workers': max_workers, 'module_list': module_list, "only_today": only_today, "nav": nav}
     return render(request, 'tw/wtm/index.html', context)

@@ -113,6 +113,15 @@ def work_meal_status(request, stand_ym: str | None = None):
         "month_value": f"{stand_ym[:4]}-{stand_ym[4:]}",
         "rows": rows,
         "active_metric": "meal",  # 메뉴 하이라이트/탭 구분용(선택)
+        "nav": {
+            "mode": "month",
+            "value": f"{stand_ym[:4]}-{stand_ym[4:]}",
+            "url_template": ".?month={value}",
+            "hx_target": "#status-table",
+            "hx_swap": "outerHTML",
+            "hx_push_url": "true",
+            "hx_indicator": "#status-month-indicator",
+        },
     }
 
     if request.headers.get("HX-Request") == "true":
@@ -378,6 +387,15 @@ def meals_index(request):
         "claims": claims,
         "is_closed": is_closed,
         "users": _get_branch_users(branch, default_used_date),
+        "nav": {
+            "mode": "month",
+            "value": f"{ym[:4]}-{ym[4:]}",
+            "url_template": ".?month={value}",
+            "hx_target": "#meal-table",
+            "hx_swap": "outerHTML",
+            "hx_push_url": "true",
+            "hx_indicator": "#meal-month-indicator",
+        },
     })
 
 

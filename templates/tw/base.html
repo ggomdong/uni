@@ -13,6 +13,7 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'tw/tailwind.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="{% static 'tw/wtm/day_nav.js' %}"></script>
     <style>
         .htmx-indicator {
             display: none;
@@ -20,6 +21,7 @@
         .htmx-indicator.htmx-request {
             display: inline-flex;
         }
+        .htmx-request .htmx-indicator { display: inline-flex; }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900">

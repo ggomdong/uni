@@ -1,0 +1,18 @@
+<label class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+    <input
+        id="only-today-toggle"
+        type="checkbox"
+        name="only_today"
+        value="1"
+        class="h-4 w-4 accent-teal-600"
+        hx-get="/wtm/index/{{ stand_day }}/"
+        hx-trigger="change"
+        hx-target="#today-content"
+        hx-select="#today-content"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        {% if only_today %}checked{% endif %}
+    />
+    오늘 근무자만
+</label>
+{% include "tw/wtm/_parts/_day_nav.html" with nav=nav %}

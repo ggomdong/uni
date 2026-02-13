@@ -2,43 +2,7 @@
 {% load pybo_filter %}
 {% block content %}
 <div id="today-content" class="flex flex-col gap-6">
-    <section class="rounded-2xl border border-slate-200/70 bg-white shadow-sm">
-        <div class="flex flex-col gap-4 px-6 py-3 md:flex-row md:items-center md:justify-between">
-            <div>
-                <h1 class="text-lg font-semibold text-slate-900">Today</h1>
-                <p class="mt-0.5 text-sm text-slate-500">오늘 근무자 현황과 근태 상태를 확인합니다.</p>
-            </div>
-
-            <div class="flex items-center gap-3">
-                {# 날짜 네비 기준 좌측: 토글/버튼 #}
-                <div class="flex items-center gap-2">
-                    <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                        <input
-                            id="only-today-toggle"
-                            type="checkbox"
-                            name="only_today"
-                            value="1"
-                            class="h-4 w-4 accent-teal-600"
-                            hx-get="/wtm/index/{{ stand_day }}/"
-                            hx-trigger="change"
-                            hx-target="#today-content"
-                            hx-select="#today-content"
-                            hx-swap="outerHTML"
-                            hx-push-url="true"
-                            {% if only_today %}checked{% endif %}
-                        />
-                        오늘 근무자만
-                    </label>
-                </div>
-
-                {# 우측 고정 날짜 네비(공용) #}
-
-                {% with nav_value=stand_day_iso nav_query=only_today|yesno:"only_today=1" %}
-                    {% include "tw/wtm/_parts/_day_nav.html" with nav_mode="day" nav_value=nav_value nav_base_path="/wtm/index/" nav_query=nav_query %}
-                {% endwith %}
-            </div>
-        </div>
-    </section>
+    {% with page_title="Today" page_description="오늘 근무자 현황과 근태 상태를 확인합니다." page_actions_template="tw/wtm/_parts/_today_header_actions.html" %}{% include "tw/wtm/_parts/_page_header.html" %}{% endwith %}
 
     {% if user_list %}
         <div class="space-y-6">

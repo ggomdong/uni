@@ -10,6 +10,8 @@ logs
 __init__.py
 .DS_Store
 /static/*
+!/static/tw/
+!/static/tw/**
 !/static/.gitkeep
 
 # Node
