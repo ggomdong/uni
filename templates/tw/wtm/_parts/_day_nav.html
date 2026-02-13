@@ -1,0 +1,223 @@
+{# templates/tw/wtm/_parts/_day_nav.html #}
+<!-- --------------------------------------------------------------------
+    Required context
+    - nav_mode: "day" | "month"
+    - nav_value: "YYYY-MM-DD"(day) or "YYYY-MM"(month)
+    - nav_base_path: url prefix before date, e.g. "/wtm/index/" or "/wtm/work_meal/"
+    Optional
+    - nav_style: "path" | "query" (default: "path")
+    - nav_param: query param name when nav_style="query" (default: "stand")
+    - nav_query: querystring without "?", e.g. "only_today=1"
+    - nav_hx_target: CSS selector for HTMX target (when set, use htmx.ajax)
+    - nav_hx_swap: swap strategy (default: "outerHTML")
+    - nav_hx_push_url: "true" | "false" (default: "true")
+    - nav_hx_indicator: CSS selector for indicator (optional)
+----------------------------------------------------------------------->
+
+<div
+    class="flex items-center gap-2"
+    data-nav-mode="{{ nav_mode }}"
+    data-nav-base="{{ nav_base_path }}"
+    data-nav-query="{{ nav_query|default:'' }}"
+    data-nav-style="{{ nav_style|default:'path' }}"
+    data-nav-param="{{ nav_param|default:'stand' }}"
+    data-nav-hx-target="{{ nav_hx_target|default:'' }}"
+    data-nav-hx-swap="{{ nav_hx_swap|default:'outerHTML' }}"
+    data-nav-hx-push-url="{{ nav_hx_push_url|default:'true' }}"
+    data-nav-hx-indicator="{{ nav_hx_indicator|default:'' }}"
+>
+    <button
+        type="button"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+        aria-label="이전"
+        onclick="WTM_DAYNAV.step(this, -1)"
+    >
+        ‹
+    </button>
+
+    {% if nav_mode == "day" %}
+        <input
+            type="date"
+            class="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
+            value="{{ nav_value }}"
+            onchange="WTM_DAYNAV.goFromInput(this)"
+            onkeydown="return false"
+            onfocus="this.showPicker && this.showPicker()"
+        />
+    {% else %}
+        <input
+            type="month"
+            class="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
+            value="{{ nav_value }}"
+            onchange="WTM_DAYNAV.goFromInput(this)"
+            onkeydown="return false"
+            onfocus="this.showPicker && this.showPicker()"
+        />
+    {% endif %}
+
+    <button
+        type="button"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+        aria-label="다음"
+        onclick="WTM_DAYNAV.step(this, +1)"
+    >
+        ›
+    </button>
+</div>
+
+<script>
+    window.WTM_DAYNAV = window.WTM_DAYNAV || (function () {
+        function compact(value) {
+            return (value || "").replace(/-/g, "");
+        }
+
+        function ymdToCompact(ymd) {
+            return (ymd || "").replace(/-/g, "");
+        }
+
+        function ymToCompact(ym) {
+            return (ym || "").replace(/-/g, "");
+        }
+
+        function addDays(ymd, delta) {
+            var y = parseInt(ymd.slice(0, 4), 10);
+            var m = parseInt(ymd.slice(5, 7), 10) - 1;
+            var d = parseInt(ymd.slice(8, 10), 10);
+
+            var dt = new Date(y, m, d);
+            dt.setDate(dt.getDate() + delta);
+
+            var yy = String(dt.getFullYear());
+            var mm = String(dt.getMonth() + 1).padStart(2, "0");
+            var dd = String(dt.getDate()).padStart(2, "0");
+
+            return yy + "-" + mm + "-" + dd;
+        }
+
+        function addMonths(ym, delta) {
+            var y = parseInt(ym.slice(0, 4), 10);
+            var m = parseInt(ym.slice(5, 7), 10) - 1;
+
+            var dt = new Date(y, m, 1);
+            dt.setMonth(dt.getMonth() + delta);
+
+            var yy = String(dt.getFullYear());
+            var mm = String(dt.getMonth() + 1).padStart(2, "0");
+
+            return yy + "-" + mm;
+        }
+
+        function buildPathUrl(wrap, compactValue) {
+            var base = (wrap.dataset.navBase || "").trim();
+            var q = (wrap.dataset.navQuery || "").trim();
+
+            if (base && !base.endsWith("/")) {
+                base += "/";
+            }
+
+            var url = base + compactValue + "/";
+
+            if (q) {
+                url += "?" + q;
+            }
+
+            return url;
+        }
+
+        function buildQueryUrl(wrap, value) {
+            var base = (wrap.dataset.navBase || "").trim();
+            var q = (wrap.dataset.navQuery || "").trim();
+            var param = (wrap.dataset.navParam || "stand").trim();
+
+            var sep = base.indexOf("?") >= 0 ? "&" : "?";
+            var url = base + sep + encodeURIComponent(param) + "=" + encodeURIComponent(value);
+
+            if (q) {
+                url += "&" + q;
+            }
+
+            return url;
+        }
+
+        function buildUrl(wrap, value, compactValue) {
+            var style = (wrap.dataset.navStyle || "path").trim();
+            if (style === "query") {
+                return buildQueryUrl(wrap, value);
+            }
+            return buildPathUrl(wrap, compactValue);
+        }
+
+        function doNavigate(wrap, url) {
+            var hxTarget = (wrap.dataset.navHxTarget || "").trim();
+            if (hxTarget && window.htmx) {
+                var swap = (wrap.dataset.navHxSwap || "outerHTML").trim() || "outerHTML";
+                var pushUrl = (wrap.dataset.navHxPushUrl || "true").trim() !== "false";
+                var indicator = (wrap.dataset.navHxIndicator || "").trim();
+
+                var opts = {
+                    target: hxTarget,
+                    swap: swap,
+                    pushUrl: pushUrl
+                };
+                if (indicator) {
+                    opts.indicator = indicator;
+                }
+                window.htmx.ajax("GET", url, opts);
+                return;
+            }
+
+            location.href = url;
+        }
+
+        function step(btn, delta) {
+            var wrap = btn.closest("[data-nav-mode]");
+            if (!wrap) {
+                return;
+            }
+
+            var mode = wrap.dataset.navMode;
+            var input = wrap.querySelector("input[type='date'], input[type='month']");
+            if (!input) {
+                return;
+            }
+
+            if (mode === "day") {
+                var next = addDays(input.value, delta);
+                input.value = next;
+                var url = buildUrl(wrap, next, ymdToCompact(next));
+                doNavigate(wrap, url);
+                return;
+            }
+
+            var nextm = addMonths(input.value, delta);
+            input.value = nextm;
+            var urlm = buildUrl(wrap, nextm, ymToCompact(nextm));
+            doNavigate(wrap, urlm);
+        }
+
+        function goFromInput(input) {
+            var wrap = input.closest("[data-nav-mode]");
+            if (!wrap) {
+                return;
+            }
+
+            var mode = wrap.dataset.navMode;
+
+            if (mode === "day") {
+                var v = input.value;
+                var url = buildUrl(wrap, v, ymdToCompact(v));
+                doNavigate(wrap, url);
+                return;
+            }
+
+            var vm = input.value;
+            var urlm = buildUrl(wrap, vm, ymToCompact(vm));
+            doNavigate(wrap, urlm);
+        }
+
+        return {
+            step: step,
+            goFromInput: goFromInput,
+        };
+    })();
+</script>

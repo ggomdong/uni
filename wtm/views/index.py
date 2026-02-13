@@ -20,6 +20,8 @@ def index(request, stand_day=None):
     # common.middleware.py 에서 처리
     branch = request.branch
 
+    only_today = request.GET.get("only_today") == "1"
+
     day_num = int(stand_day[6:8])
     if not 1 <= day_num <= 31:
         raise ValueError("invalid day")
@@ -78,6 +80,10 @@ def index(request, stand_day=None):
                 while i < len(x):
                     d[x[i][0]] = r[i]
                     i = i + 1
+
+                # 토글 ON이면 상단 카드에서만 “오늘 근무자” 필터
+                if only_today and not (d.get("am") == 1 or d.get("pm") == 1):
+                    continue
 
                 # 원장 포함 의사는 항상 0번 그룹
                 if row_dept in DOCTOR_DEPTS:
@@ -200,6 +206,8 @@ def index(request, stand_day=None):
 
     module_list = Module.objects.filter(branch=branch).order_by('order', 'id')  # 근로모듈을 입력하기 위함
 
-    context = {'stand_day': stand_day, 'days': days, 'user_list': user_list, 'work_list': work_list,
-               'max_workers': max_workers, 'module_list': module_list}
-    return render(request, 'wtm/index.html', context)
+    stand_day_iso = f"{stand_day[:4]}-{stand_day[4:6]}-{stand_day[6:8]}"
+
+    context = {'stand_day': stand_day, 'stand_day_iso': stand_day_iso, 'days': days, 'user_list': user_list, 'work_list': work_list,
+               'max_workers': max_workers, 'module_list': module_list, "only_today": only_today,}
+    return render(request, 'tw/wtm/index.html', context)

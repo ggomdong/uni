@@ -1,0 +1,124 @@
+{# templates/tw/wtm/index/_att_table.html #}
+{% load pybo_filter %}
+{% now "Ymd" as today_ymd %}
+{% now "Hi" as now_hi %}
+
+<section class="rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <div>
+            <div class="text-sm font-semibold text-slate-800">근태 현황</div>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-[1200px] w-full text-[13px]">
+            <thead class="sticky top-0 bg-slate-100 text-slate-700">
+                <tr class="border-b border-slate-200">
+                    <th class="px-3 py-2 text-center font-semibold">부서</th>
+                    <th class="px-3 py-2 text-center font-semibold">직위</th>
+                    <th class="px-3 py-2 text-center font-semibold">성명</th>
+                    <th class="px-3 py-2 text-center font-semibold">근로구분</th>
+                    <th class="px-3 py-2 text-center font-semibold">시업</th>
+                    <th class="px-3 py-2 text-center font-semibold">종업</th>
+                    <th class="px-3 py-2 text-center font-semibold">출근</th>
+                    <th class="px-3 py-2 text-center font-semibold">퇴근</th>
+                    <th class="px-3 py-2 text-center font-semibold">상태</th>
+                    <th class="px-3 py-2 text-center font-semibold">지각</th>
+                    <th class="px-3 py-2 text-center font-semibold">조퇴</th>
+                    <th class="px-3 py-2 text-center font-semibold">연장</th>
+                    <th class="px-3 py-2 text-center font-semibold">휴일</th>
+                </tr>
+            </thead>
+
+            {% if work_list %}
+                <tbody class="text-slate-800">
+                    {% for work in work_list %}
+                        {% ifchanged work.dept %}
+                            {% if not forloop.first %}
+                                <tr>
+                                    <td colspan="13" class="p-0">
+                                        <div class="h-[1px] bg-gradient-to-r from-teal-200/30 via-teal-200/40 to-teal-200/30"></div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endifchanged %}
+
+                        <tr class="border-b border-slate-100 hover:bg-teal-50/40">
+                            <td class="px-3 py-2 whitespace-nowrap text-left">{{ work.dept }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap text-center">{{ work.position }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap text-center font-semibold">{{ work.emp_name }}</td>
+                            <td class="px-3 py-2 text-center">{{ work.cat }}</td>
+                            <td class="px-3 py-2 text-center">{{ work.start_time }}</td>
+                            <td class="px-3 py-2 text-center">{{ work.end_time }}</td>
+
+                            <td class="
+                                px-3 py-2 text-center
+                                {% if work.cat == 'OFF' and work.checkin_time %} bg-amber-50{% endif %}
+                                {% if work.cat == '소정근로' or work.cat == '휴일근로' %}
+                                    {% if stand_day <= today_ymd and not work.checkin_time %}
+                                        {% with start_hi=work.start_time|default:''|cut:':' %}
+                                            {% if start_hi and now_hi >= start_hi %}bg-amber-50{% endif %}
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endif %}
+                            ">
+                                {{ work.checkin_time|default_if_none:"" }}
+                            </td>
+
+                            <td class="px-3 py-2 text-center {% if work.cat == 'OFF' and work.checkout_time %}bg-amber-50{% endif %}">
+                                {{ work.checkout_time|default_if_none:"" }}
+                            </td>
+
+                            <td class="px-3 py-2 text-center">
+                                {% if work.status_codes %}
+                                    {% if 'ERROR' in work.status_codes %}
+                                        <button
+                                            type="button"
+                                            class="att-error-btn inline-flex items-center rounded-md bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-700"
+                                            data-user-id="{{ work.user_id }}"
+                                            data-emp-name="{{ work.emp_name }}"
+                                            data-dept="{{ work.dept }}"
+                                            data-position="{{ work.position }}"
+                                            data-stand-day="{{ stand_day }}"
+                                            data-module-id="{{ work.module_id|default_if_none:'' }}"
+                                        >
+                                            오류
+                                        </button>
+                                    {% elif 'PAY' in work.status_codes or 'NOPAY' in work.status_codes or 'OFF' in work.status_codes %}
+                                        -
+                                    {% else %}
+                                        {{ work.status }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+
+                            <td class="px-3 py-2 text-center {% if work.late_seconds %}text-rose-600 font-semibold{% endif %}">
+                                {% if work.late_seconds %}{{ work.late_seconds|ss_to_hhmmss }}{% endif %}
+                            </td>
+
+                            <td class="px-3 py-2 text-center {% if work.early_seconds %}text-rose-600 font-semibold{% endif %}">
+                                {% if work.early_seconds %}{{ work.early_seconds|ss_to_hhmmss }}{% endif %}
+                            </td>
+
+                            <td class="px-3 py-2 text-center {% if work.overtime_seconds %}text-blue-600 font-semibold{% endif %}">
+                                {% if work.overtime_seconds %}{{ work.overtime_seconds|ss_to_hhmmss }}{% endif %}
+                            </td>
+
+                            <td class="px-3 py-2 text-center {% if work.holiday_seconds %}text-blue-600 font-semibold{% endif %}">
+                                {% if work.holiday_seconds %}{{ work.holiday_seconds|ss_to_hhmmss }}{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            {% else %}
+                <tbody>
+                    <tr>
+                        <td colspan="13" class="px-6 py-8 text-center text-slate-500">
+                            오늘 근무 데이터가 없습니다.
+                        </td>
+                    </tr>
+                </tbody>
+            {% endif %}
+        </table>
+    </div>
+</section>

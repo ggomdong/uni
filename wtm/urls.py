@@ -50,7 +50,7 @@ app_name = 'wtm'
 
 urlpatterns = [
     path('index/', index, name='index'),
-    path('index/<str:stand_day>', index, name='index'),
+    path('index/<str:stand_day>/', index, name='index'),
     path('module/', work_module, name='work_module'),
     path('work/module/reorder/', work_module_reorder, name='work_module_reorder'),
     path('module_reg/', work_module_reg, name='work_module_reg'),

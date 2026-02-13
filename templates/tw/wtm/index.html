@@ -1,0 +1,225 @@
+{% extends "tw/base.html" %}
+{% load pybo_filter %}
+{% block content %}
+<div class="flex flex-col gap-6">
+    <section class="rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 px-6 py-3 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-lg font-semibold text-slate-900">Today</h1>
+                <p class="mt-0.5 text-sm text-slate-500">오늘 근무자 현황과 근태 상태를 확인합니다.</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                {# 날짜 네비 기준 좌측: 토글/버튼 #}
+                <div class="flex items-center gap-2">
+                    <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                        <input
+                            id="only-today-toggle"
+                            type="checkbox"
+                            class="h-4 w-4 accent-teal-600"
+                            {% if only_today %}checked{% endif %}
+                        />
+                        오늘 근무자만
+                    </label>
+                </div>
+
+                {# 우측 고정 날짜 네비(공용) #}
+
+                {% with nav_value=stand_day_iso nav_query=only_today|yesno:"only_today=1" %}
+                    {% include "tw/wtm/_parts/_day_nav.html" with nav_mode="day" nav_value=nav_value nav_base_path="/wtm/index/" nav_query=nav_query %}
+                {% endwith %}
+            </div>
+        </div>
+    </section>
+
+    {% if user_list %}
+        <div class="space-y-6">
+            {% include "tw/wtm/index/_dept_row.html" %}
+            {% include "tw/wtm/index/_att_table.html" %}
+        </div>
+    {% else %}
+        <div class="rounded-2xl border border-slate-200/70 bg-white p-8 text-center text-slate-500 shadow-sm">
+            근무표 데이터가 없습니다.
+        </div>
+    {% endif %}
+
+    {# 오류 버튼용 인라인 메뉴 + 모달은 기존 재사용(bootstrap 기반) #}
+    <div
+        id="errorInlineMenu"
+        class="hidden fixed z-[1080] min-w-[140px] rounded-xl border border-slate-200 bg-white shadow-lg"
+    >
+        <div class="flex flex-col text-sm">
+            <button type="button" class="px-4 py-2 text-left hover:bg-slate-50" data-action="schedule">
+                근무표 수정
+            </button>
+            <button type="button" class="px-4 py-2 text-left hover:bg-slate-50" data-action="log">
+                근태기록 등록
+            </button>
+        </div>
+    </div>
+
+    {% include "wtm/modal_schedule.html" %}
+    {% include "wtm/modal_log.html" %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+    {% load static %}
+    <script src="{% static 'modal_log.js' %}"></script>
+
+    <script>
+        (function () {
+            var toggle = document.getElementById("only-today-toggle");
+
+            function buildUrl(ymd, onlyTodayChecked) {
+                var url = "/wtm/index/" + ymd + "/";
+
+                if (onlyTodayChecked) {
+                    url += "?only_today=1";
+                }
+
+                return url;
+            }
+
+            if (toggle) {
+                toggle.addEventListener("change", function () {
+                    location.href = buildUrl("{{ stand_day }}", this.checked);
+                });
+            }
+        })();
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+
+            const errorButtons = document.querySelectorAll(".att-error-btn");
+            const menu = document.getElementById("errorInlineMenu");
+            let currentError = null;
+
+            function hideMenu() {
+                if (!menu) return;
+                menu.classList.add("hidden");
+            }
+
+            function showMenuAt(x, y) {
+                if (!menu) return;
+                menu.style.left = x + "px";
+                menu.style.top = (y + 4) + "px";
+                menu.classList.remove("hidden");
+            }
+
+            errorButtons.forEach(function (btn) {
+                btn.style.cursor = isAuthenticated ? "pointer" : "default";
+                btn.addEventListener("click", function (e) {
+                    if (!isAuthenticated) return;
+                    e.stopPropagation();
+
+                    currentError = {
+                        userId: this.dataset.userId,
+                        empName: this.dataset.empName || "",
+                        dept: this.dataset.dept || "",
+                        position: this.dataset.position || "",
+                        standDay: this.dataset.standDay,
+                        moduleId: this.dataset.moduleId || ""
+                    };
+
+                    const rect = this.getBoundingClientRect();
+                    const x = rect.right + window.scrollX + 8;
+                    const y = rect.top + window.scrollY - 6;
+                    showMenuAt(x, y);
+                });
+            });
+
+            document.addEventListener("click", function () {
+                hideMenu();
+            });
+
+            if (menu) {
+                menu.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                });
+
+                const scheduleBtn = menu.querySelector("[data-action='schedule']");
+                const logBtn = menu.querySelector("[data-action='log']");
+
+                if (scheduleBtn) {
+                    scheduleBtn.addEventListener("click", function () {
+                        if (!currentError) return;
+                        hideMenu();
+                        openScheduleModal(currentError);
+                    });
+                }
+
+                if (logBtn) {
+                    logBtn.addEventListener("click", function () {
+                        if (!currentError) return;
+                        hideMenu();
+                        openLogModal(currentError);
+                    });
+                }
+            }
+
+            function openScheduleModal(err) {
+                const modalEl = document.getElementById("scheduleModal");
+                if (!modalEl) {
+                    alert("근무표 수정 모달(scheduleModal)이 이 화면에 포함되어 있지 않습니다.");
+                    return;
+                }
+
+                const userInput = modalEl.querySelector("input[name='user_id']");
+                const dateInput = modalEl.querySelector("input[name='stand_date']");
+                const moduleInput = modalEl.querySelector("input[name='module_id']");
+                const fromIndexInput = modalEl.querySelector("input[name='from_index']");
+                const infoDiv = modalEl.querySelector("#module_info");
+
+                if (userInput) userInput.value = err.userId || "";
+                if (dateInput) dateInput.value = err.standDay || "";
+                if (moduleInput) moduleInput.value = err.moduleId || "";
+                if (fromIndexInput) fromIndexInput.value = "1";
+
+                if (err.moduleId) {
+                    const radio = modalEl.querySelector(
+                        "input[type='radio'][name='module'][value='" + err.moduleId + "']"
+                    );
+                    if (radio) radio.checked = true;
+                }
+
+                if (infoDiv) {
+                    const y = err.standDay.substring(0, 4);
+                    const m = err.standDay.substring(4, 6);
+                    const d = err.standDay.substring(6, 8);
+                    infoDiv.textContent = err.position + " " + err.empName + "(" + err.dept + "), " + y + "-" + m + "-" + d;
+                }
+
+                const bsModal = new bootstrap.Modal(modalEl);
+                bsModal.show();
+            }
+
+            function openLogModal(err) {
+                const modalEl = document.getElementById("logModal");
+                if (!modalEl) return;
+
+                modalEl.dataset.mode = "create";
+                modalEl.dataset.userId = err.userId || "";
+                modalEl.dataset.id = "";
+                modalEl.dataset.workCode = "";
+                modalEl.dataset.recordTime = "";
+
+                const standDayEl = document.getElementById("logStandDayInput");
+                const fromIndexEl = document.getElementById("logFromIndexInput");
+                if (standDayEl) standDayEl.value = err.standDay || "";
+                if (fromIndexEl) fromIndexEl.value = "1";
+
+                const userSelect = document.getElementById("logUserSelect");
+                if (userSelect) {
+                    const label = `${err.dept} / ${err.position} / ${err.empName}`;
+                    userSelect.innerHTML = `<option value="${err.userId}">${label}</option>`;
+                    userSelect.value = err.userId || "";
+                }
+
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,48 +1,14 @@
 {% extends "tw/base.html" %}
-
+{% load pybo_filter %}
 {% block content %}
 <div class="flex flex-col gap-6">
     <section class="rounded-2xl border border-slate-200/70 bg-white shadow-sm">
-        <div class="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col gap-4 px-6 py-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-slate-900">식대 사용내역</h1>
-                <p class="text-sm text-slate-500">카드 승인 건별로 식대 사용 내역을 등록하고 분배 내역을 관리합니다.</p>
+                <h1 class="text-lg font-semibold text-slate-900">식대 사용내역</h1>
+                <p class="mt-0.5 text-sm text-slate-500">카드 승인 건별로 식대 사용 내역을 등록하고 분배 내역을 관리합니다.</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <button
-                    type="button"
-                    data-month-shift="-1"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
-                    aria-label="이전 달"
-                >
-                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M12.78 15.53a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 1 1 1.06 1.06L9.06 10l3.72 3.72a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-                <label class="sr-only" for="meal-month">조회 월</label>
-                <input
-                    id="meal-month"
-                    type="month"
-                    name="month"
-                    value="{{ month_value }}"
-                    hx-get="."
-                    hx-trigger="change"
-                    hx-target="#meal-table"
-                    hx-swap="outerHTML"
-                    hx-push-url="true"
-                    hx-indicator="#meal-month-indicator"
-                    class="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
-                />
-                <button
-                    type="button"
-                    data-month-shift="1"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
-                    aria-label="다음 달"
-                >
-                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M7.22 4.47a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 1 1-1.06-1.06L10.94 10 7.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-                    </svg>
-                </button>
                 <button
                     type="button"
                     data-modal-open
@@ -50,6 +16,8 @@
                 >
                     신규 등록
                 </button>
+
+                {% include "tw/wtm/_parts/_day_nav.html" with nav_mode="month" nav_value=month_value nav_style="query" nav_param="month" nav_base_path="." nav_hx_target="#meal-table" nav_hx_swap="outerHTML" nav_hx_push_url="true" nav_hx_indicator="#meal-month-indicator" %}
             </div>
         </div>
     </section>
@@ -221,15 +189,6 @@
                     modalToClose.classList.remove("flex");
                 }
             }
-            var shiftButton = event.target.closest("[data-month-shift]");
-            if (shiftButton && monthInput) {
-                var delta = parseInt(shiftButton.getAttribute("data-month-shift"), 10);
-                var nextValue = shiftMonth(monthInput.value, delta);
-                if (nextValue) {
-                    monthInput.value = nextValue;
-                    monthInput.dispatchEvent(new Event("change", { bubbles: true }));
-                }
-            }
         });
 
         document.addEventListener("input", function (event) {
@@ -238,32 +197,6 @@
                 recalc(editor);
             }
         });
-
-        var monthInput = document.getElementById("meal-month");
-        function shiftMonth(value, delta) {
-            if (!value) {
-                return null;
-            }
-            var parts = value.split("-");
-            if (parts.length !== 2) {
-                return null;
-            }
-            var year = parseInt(parts[0], 10);
-            var month = parseInt(parts[1], 10);
-            if (Number.isNaN(year) || Number.isNaN(month)) {
-                return null;
-            }
-            month += delta;
-            if (month < 1) {
-                month = 12;
-                year -= 1;
-            }
-            if (month > 12) {
-                month = 1;
-                year += 1;
-            }
-            return year + "-" + String(month).padStart(2, "0");
-        }
 
         document.body.addEventListener("htmx:afterSwap", function (event) {
             initEditors(event.target);
