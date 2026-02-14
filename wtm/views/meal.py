@@ -355,6 +355,58 @@ def _parse_participants(post_data, branch, used_date: date):
     return participants, errors
 
 
+def parse_participants_json(participants_list, branch, used_date: date):
+    participants = []
+    errors = []
+    if participants_list is None:
+        errors.append("대상자를 최소 1명 이상 입력해야 합니다.")
+        return participants, errors
+    if not isinstance(participants_list, list):
+        errors.append("대상자 정보가 올바르지 않습니다.")
+        return participants, errors
+
+    seen_users = set()
+    for raw_item in participants_list:
+        if not isinstance(raw_item, dict):
+            errors.append("대상자 정보가 올바르지 않습니다.")
+            continue
+        raw_user_id = raw_item.get("user_id")
+        raw_amount = raw_item.get("amount")
+        if raw_user_id is None or raw_amount is None:
+            errors.append("대상자와 금액을 모두 입력해야 합니다.")
+            continue
+        try:
+            user_id = int(raw_user_id)
+        except (TypeError, ValueError):
+            errors.append("대상자 정보가 올바르지 않습니다.")
+            continue
+        amount, error = _parse_amount(raw_amount, "분배금액")
+        if error:
+            errors.append(error)
+            continue
+        if user_id in seen_users:
+            errors.append("대상자는 중복될 수 없습니다.")
+            continue
+        seen_users.add(user_id)
+        participants.append((user_id, amount))
+
+    if not participants:
+        errors.append("대상자를 최소 1명 이상 입력해야 합니다.")
+        return participants, errors
+
+    valid_user_ids = set(
+        _get_branch_users(branch, used_date)
+        .filter(id__in=[user_id for user_id, _ in participants])
+        .values_list("id", flat=True)
+    )
+    for user_id, _ in participants:
+        if user_id not in valid_user_ids:
+            errors.append("지점 소속이 아닌 대상자가 포함되어 있습니다.")
+            break
+
+    return participants, errors
+
+
 @login_required(login_url="common:login")
 def meals_index(request):
     branch = _get_branch_or_404(request)
