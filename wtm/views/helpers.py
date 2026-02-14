@@ -1,8 +1,6 @@
 from django.db import connection
-from datetime import date
-from calendar import monthrange
 
-from common.models import Holiday, Business
+from wtm.services.calendar_rules import get_non_business_days as _get_non_business_days
 from wtm.services.base_users import fetch_base_users_for_month as _fetch_base_users_for_month
 
 
@@ -99,49 +97,7 @@ def get_contract_module_id(contracts, target_date, weekday_eng: str):
 
 
 def get_non_business_days(year: int, month: int, *, branch) -> set[int]:
-    """
-    미영업일(day int) 집합 반환.
-    - Holiday(법정 공휴일)
-    - Business(요일별 영업/비영업 패턴: mon~sun, 'Y'=영업, 그 외=비영업)
-    """
-    first_day = date(year, month, 1)
-    last_day = date(year, month, monthrange(year, month)[1])
-
-    # 1) 공휴일
-    holiday_qs = Holiday.objects.filter(branch=branch, holiday__range=(first_day, last_day))
-    holiday_set = set(h.holiday for h in holiday_qs)
-
-    # 2) 비영업 요일 패턴 (가장 최근 stand_date 기준)
-    business = (
-        Business.objects.filter(branch=branch, stand_date__lte=last_day)
-        .order_by("-stand_date")
-        .first()
-    )
-
-    def is_business_open(d: date) -> bool:
-        if business is None:
-            return True  # 패턴 없으면 전 요일 영업으로 가정 (view와 동일)
-        weekday = d.weekday()  # 0=월..6=일
-        code = {
-            0: business.mon,
-            1: business.tue,
-            2: business.wed,
-            3: business.thu,
-            4: business.fri,
-            5: business.sat,
-            6: business.sun,
-        }[weekday]
-        return code == "Y"
-
-    non_business_days: set[int] = set()
-    for day in range(1, last_day.day + 1):
-        d = date(year, month, day)
-        is_holiday = d in holiday_set
-        open_flag = is_business_open(d)
-        if is_holiday or (not open_flag):
-            non_business_days.add(day)
-
-    return non_business_days
+    return _get_non_business_days(year, month, branch=branch)
 
 
 def fetch_base_users_for_month(stand_ym: str, *, branch, is_contract_checked: bool = True) -> list[dict]:

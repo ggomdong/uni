@@ -1,4 +1,3 @@
-from calendar import monthrange
 from datetime import datetime, date
 
 from django.utils import timezone
@@ -7,9 +6,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
-from common.models import Holiday, Business
 from wtm.models import Work, Schedule
 from wtm.services.attendance import build_monthly_attendance_for_user
+from wtm.services.calendar_rules import get_non_business_calendar
 from api.serializers import AttendanceSerializer, MonthlyAttendanceDaySerializer
 
 from .common import ensure_active_employee_or_403
@@ -165,75 +164,13 @@ class NonBusinessDayListAPIView(APIView):
         if request.user.branch is None:
             return Response({"detail": "사용자의 지점정보가 없습니다."}, status=400)
 
-        first_day = date(year, month, 1)
-        last_day = date(year, month, monthrange(year, month)[1])
-
-        # 1) Holiday 테이블 (법정 공휴일)
-        holiday_qs = Holiday.objects.filter(
-            branch=request.user.branch,
-            holiday__range=(first_day, last_day),
-        ).order_by("holiday")
-        holiday_map = {h.holiday: h.holiday_name for h in holiday_qs}
-
-        # 2) Business 테이블 (요일별 영업/비영업 패턴)
-        business = (
-            Business.objects.filter(branch=request.user.branch, stand_date__lte=last_day)
-            .order_by("-stand_date")
-            .first()
+        day_numbers, non_business_weekdays = get_non_business_calendar(
+            year, month, branch=request.user.branch
         )
-
-        def is_business_open(d: date) -> bool:
-            """
-            해당 날짜 d가 영업일인지 판별.
-            Business 없으면 '모든 요일 영업'으로 가정.
-            mon~sun 필드는 'Y'=영업, 'N'=비영업
-            """
-            if business is None:
-                return True
-
-            weekday = d.weekday()  # 0=월, ..., 6=일
-            code = {
-                0: business.mon,
-                1: business.tue,
-                2: business.wed,
-                3: business.thu,
-                4: business.fri,
-                5: business.sat,
-                6: business.sun,
-            }[weekday]
-
-            return code == "Y"
-
-        # 비영업 '요일' 리스트 (월=1, ..., 일=7 : Dart/TableCalendar 기준)
-        non_business_weekdays: list[int] = []
-        if business is not None:
-            day_codes = [
-                (business.mon, 1),  # 월
-                (business.tue, 2),  # 화
-                (business.wed, 3),  # 수
-                (business.thu, 4),  # 목
-                (business.fri, 5),  # 금
-                (business.sat, 6),  # 토
-                (business.sun, 7),  # 일
-            ]
-            # 여기서 'Y'가 아닌 요일만 비영업 요일로 추가
-            for code, weekday in day_codes:
-                if code != "Y":
-                    non_business_weekdays.append(weekday)
-
-        # days_meta = []
-        non_business_days: list[str] = []
-
-        for day in range(1, last_day.day + 1):
-            d = date(year, month, day)
-            is_holiday = d in holiday_map
-            open_flag = is_business_open(d)
-
-            # '영업하지 않는 날' = 공휴일 OR 비영업 요일
-            is_non_business_day = is_holiday or (not open_flag)
-
-            if is_non_business_day:
-                non_business_days.append(d.strftime("%Y-%m-%d"))
+        non_business_days = [
+            date(year, month, day).strftime("%Y-%m-%d")
+            for day in sorted(day_numbers)
+        ]
 
             # days_meta.append(
             #     {

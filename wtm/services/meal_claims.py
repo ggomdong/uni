@@ -226,6 +226,33 @@ def parse_participants_json(participants_list, branch, used_date: date):
     return participants, errors
 
 
+def parse_participants_form(post_data, branch, used_date: date):
+    user_ids = post_data.getlist("participant_user")
+    amounts = post_data.getlist("participant_amount")
+    participants = []
+    errors = []
+
+    if len(user_ids) != len(amounts):
+        return participants, ["대상자 정보가 올바르지 않습니다."]
+
+    raw_items = []
+    for raw_user_id, raw_amount in zip(user_ids, amounts):
+        if not raw_user_id and not raw_amount:
+            continue
+        if not raw_user_id or not raw_amount:
+            errors.append("대상자와 금액을 모두 입력해야 합니다.")
+            continue
+        raw_items.append({"user_id": raw_user_id, "amount": raw_amount})
+
+    if errors:
+        return participants, errors
+
+    participants, parse_errors = parse_participants_json(raw_items, branch, used_date)
+    if parse_errors:
+        return participants, parse_errors
+    return participants, []
+
+
 def parse_claim_payload(data, branch, *, exclude_claim_id=None):
     errors = []
     used_date_str = data.get("used_date")
@@ -278,6 +305,101 @@ def parse_claim_payload(data, branch, *, exclude_claim_id=None):
         "merchant_name": merchant_name,
         "participants": participants,
     }, []
+
+
+def parse_claim_payload_form(post_data, branch, *, exclude_claim_id=None):
+    errors = []
+    used_date_str = post_data.get("used_date")
+    amount_raw = post_data.get("amount")
+    merchant_name = (post_data.get("merchant_name") or "").strip()
+
+    if not used_date_str or amount_raw in (None, ""):
+        errors.append("사용일과 총액은 필수입니다.")
+        return None, errors
+    if not merchant_name:
+        errors.append("가맹점명은 필수입니다.")
+        return None, errors
+
+    used_date, error = parse_used_date(used_date_str)
+    if error:
+        errors.append(error)
+        return None, errors
+
+    amount, error = parse_amount(amount_raw, "총액")
+    if error:
+        errors.append(error)
+        return None, errors
+
+    approval_no, error = parse_approval_no(
+        post_data.get("approval_no"),
+        branch=branch,
+        used_date=used_date,
+        exclude_claim_id=exclude_claim_id,
+    )
+    if error:
+        errors.append(error)
+        return None, errors
+
+    participants, participant_errors = parse_participants_form(post_data, branch, used_date)
+    if participant_errors:
+        return None, participant_errors
+
+    if sum(p[1] for p in participants) != amount:
+        errors.append("분배 합계가 총액과 일치해야 합니다.")
+        return None, errors
+
+    return {
+        "used_date": used_date,
+        "amount": amount,
+        "approval_no": approval_no,
+        "merchant_name": merchant_name,
+        "participants": participants,
+    }, []
+
+
+def calculate_meal_totals_for_user_ids(
+    user_ids: list[int],
+    branch,
+    ym: str,
+    *,
+    out_ymd_map: dict[int, str | None] | None = None,
+) -> dict[int, int]:
+    if not user_ids:
+        return {}
+
+    year, month = int(ym[:4]), int(ym[4:6])
+    last_day_num = monthrange(year, month)[1]
+    out_ymd_map = out_ymd_map or {}
+
+    rel_fields = [f"d{i}" for i in range(1, 32)]
+    schedules = (
+        Schedule.objects
+        .select_related(*rel_fields)
+        .filter(user_id__in=user_ids, year=str(year), month=f"{month:02d}", branch=branch)
+    )
+    schedule_map = {s.user_id: s for s in schedules}
+
+    totals: dict[int, int] = {}
+    for uid in user_ids:
+        sch = schedule_map.get(uid)
+        if not sch:
+            totals[uid] = 0
+            continue
+
+        end_day_for_meal = last_day_num
+        out_ymd = out_ymd_map.get(uid)
+        if out_ymd and out_ymd[:6] == ym:
+            end_day_for_meal = min(end_day_for_meal, int(out_ymd[6:8]))
+
+        total = 0
+        for day in range(1, end_day_for_meal + 1):
+            module = getattr(sch, f"d{day}", None)
+            amount = getattr(module, "meal_amount", None) if module else None
+            if amount:
+                total += int(amount)
+        totals[uid] = total
+
+    return totals
 
 
 def create_claim(user, branch, payload):

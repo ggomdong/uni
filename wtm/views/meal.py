@@ -1,5 +1,5 @@
 import json
-from calendar import monthrange
+import logging
 from datetime import date
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, Http404, HttpResponse
@@ -8,15 +8,14 @@ from django.db.models import Count, Sum
 from django.utils import timezone
 
 from common.models import User
-from wtm.models import Schedule, MealClaim, MealClaimParticipant  # Schedule에 d1~d31 FK가 있다고 가정
+from wtm.models import MealClaim, MealClaimParticipant
 from wtm.services.base_users import fetch_base_users_for_month
 from wtm.services import meal_claims as svc
 
+logger = logging.getLogger(__name__)
 
 def build_meal_status_rows(stand_ym: str | None, *, branch):
     stand_ym = stand_ym or timezone.now().strftime("%Y%m")
-    year, month = int(stand_ym[:4]), int(stand_ym[4:6])
-    last_day_num = monthrange(year, month)[1]
 
     # 1) 대상자 : 전 직원
     base_users = fetch_base_users_for_month(stand_ym, branch=branch, is_contract_checked=False)
@@ -25,36 +24,18 @@ def build_meal_status_rows(stand_ym: str | None, *, branch):
 
     uid_list = [u["user_id"] for u in base_users]
 
-    # 2) 스케줄을 한 번에 조회 (d1~d31 모듈까지 select_related)
-    rel_fields = [f"d{i}" for i in range(1, 32)]
-    schedules = (
-        Schedule.objects
-        .select_related(*rel_fields)
-        .filter(user_id__in=uid_list, year=str(year), month=f"{month:02d}", branch=branch)
+    out_ymd_map = {u["user_id"]: u.get("out_ymd") for u in base_users}
+    total_map = svc.calculate_meal_totals_for_user_ids(
+        uid_list,
+        branch,
+        stand_ym,
+        out_ymd_map=out_ymd_map,
     )
-    schedule_map = {s.user_id: s for s in schedules}
 
     # 3) rows 구성
     rows = []
     for u in base_users:
-        sch = schedule_map.get(u["user_id"])
-        total = 0
-
-        # 기본은 말일까지
-        end_day_for_meal = last_day_num
-
-        # out_date가 해당 월에 있으면 그 날짜까지만 합산
-        out_ymd = u.get("out_ymd")  # 'YYYYMMDD' or None
-        if out_ymd and out_ymd[:6] == stand_ym:
-            out_day = int(out_ymd[6:8])
-            end_day_for_meal = min(end_day_for_meal, out_day)
-
-        if sch and end_day_for_meal >= 1:
-            for d in range(1, end_day_for_meal + 1):
-                m = getattr(sch, f"d{d}", None)  # Module or None
-                amt = getattr(m, "meal_amount", None) if m else None
-                if amt:
-                    total += int(amt)
+        total = total_map.get(u["user_id"], 0)
 
         rows.append({
             "user_id": u["user_id"],
@@ -236,81 +217,6 @@ def _render_meal_row_edit(request, claim, branch_users):
     })
 
 
-def _parse_approval_no(
-    value: str | None,
-    *,
-    branch,
-    used_date: date,
-    exclude_claim_id: int | None = None,
-):
-    return svc.parse_approval_no(
-        value,
-        branch=branch,
-        used_date=used_date,
-        exclude_claim_id=exclude_claim_id,
-    )
-
-
-def _parse_amount(value: str, field_name: str):
-    return svc.parse_amount(value, field_name)
-
-
-def _parse_participants(post_data, branch, used_date: date):
-    user_ids = post_data.getlist("participant_user")
-    amounts = post_data.getlist("participant_amount")
-    participants = []
-    errors = []
-    empty_rows = 0
-    if len(user_ids) != len(amounts):
-        errors.append("대상자 정보가 올바르지 않습니다.")
-        return participants, errors
-
-    seen_users = set()
-    for raw_user_id, raw_amount in zip(user_ids, amounts):
-        if not raw_user_id and not raw_amount:
-            empty_rows += 1
-            continue
-        if not raw_user_id or not raw_amount:
-            errors.append("대상자와 금액을 모두 입력해야 합니다.")
-            continue
-        try:
-            user_id = int(raw_user_id)
-        except ValueError:
-            errors.append("대상자 정보가 올바르지 않습니다.")
-            continue
-        amount, error = _parse_amount(raw_amount, "분배금액")
-        if error:
-            errors.append(error)
-            continue
-        if user_id in seen_users:
-            errors.append("대상자는 중복될 수 없습니다.")
-            continue
-        seen_users.add(user_id)
-        participants.append((user_id, amount))
-
-    if not participants:
-        errors.append("대상자를 최소 1명 이상 입력해야 합니다.")
-        return participants, errors
-    if empty_rows:
-        errors.append("비어 있는 대상자 행을 제거하거나 입력하세요.")
-
-    valid_user_ids = set(
-        _get_branch_users(branch, used_date)
-        .filter(id__in=[user_id for user_id, _ in participants])
-        .values_list("id", flat=True)
-    )
-    for user_id, _ in participants:
-        if user_id not in valid_user_ids:
-            errors.append("지점 소속이 아닌 대상자가 포함되어 있습니다.")
-            break
-
-    return participants, errors
-
-
-def parse_participants_json(participants_list, branch, used_date: date):
-    return svc.parse_participants_json(participants_list, branch, used_date)
-
-
 @login_required(login_url="common:login")
 def meals_index(request):
     branch = _get_branch_or_404(request)
@@ -358,54 +264,21 @@ def meals_index(request):
 @login_required(login_url="common:login")
 def meals_new(request):
     branch = _get_branch_or_404(request)
-    used_date_str = request.POST.get("used_date")
-    amount_str = request.POST.get("amount")
-    merchant_name = (request.POST.get("merchant_name") or "").strip()
+    payload, errors = svc.parse_claim_payload_form(request.POST, branch)
+    if errors:
+        return HttpResponse("\n".join(errors), status=400)
 
-    if not used_date_str or not amount_str:
-        return HttpResponse("사용일과 총액은 필수입니다.", status=400)
-    if not merchant_name:
-        return HttpResponse("가맹점명은 필수입니다.", status=400)
-
-    used_date, error = svc.parse_used_date(used_date_str)
-    if error:
-        return HttpResponse(error, status=400)
-
-    amount, error = _parse_amount(amount_str, "총액")
-    if error:
-        return HttpResponse(error, status=400)
-
-    approval_no, err = _parse_approval_no(
-        request.POST.get("approval_no"),
-        branch=branch,
-        used_date=used_date,
-        # 신규는 exclude_claim_id 없음
-    )
-    if err:
-        return HttpResponse(err, status=400)
-
-    participants, participant_errors = _parse_participants(request.POST, branch, used_date)
-    if participant_errors:
-        return HttpResponse("\n".join(participant_errors), status=400)
-
-    # Server-side validation ensures participant sum matches total amount.
-    if sum(p[1] for p in participants) != amount:
-        return HttpResponse("분배 합계가 총액과 일치해야 합니다.", status=400)
-
-    payload = {
-        "used_date": used_date,
-        "amount": amount,
-        "approval_no": approval_no,
-        "merchant_name": merchant_name,
-        "participants": participants,
-    }
     try:
-        svc.create_claim(request.user, branch, payload)
+        claim = svc.create_claim(request.user, branch, payload)
     except ValueError as e:
         return HttpResponse(str(e), status=403)
+    logger.info(
+        "meal claim created via web: actor_id=%s claim_id=%s branch_id=%s",
+        request.user.id, claim.id, branch.id,
+    )
 
     # HTMX swaps the table outerHTML after create/delete.
-    ym = used_date.strftime("%Y%m")
+    ym = payload["used_date"].strftime("%Y%m")
     resp = _render_meal_table(request, branch, ym)
     resp["HX-Trigger"] = json.dumps({"toast": {"message": "등록되었습니다.", "level": "success"}})
     return resp
@@ -423,6 +296,10 @@ def meals_delete(request, claim_id: int):
         ym = svc.soft_delete_claim(branch, claim.id)
     except ValueError as e:
         return HttpResponse(str(e), status=403)
+    logger.info(
+        "meal claim deleted via web: actor_id=%s claim_id=%s branch_id=%s",
+        request.user.id, claim.id, branch.id,
+    )
 
     resp = _render_meal_table(request, branch, ym)
     resp["HX-Trigger"] = json.dumps({"toast": {"message": "삭제되었습니다.", "level": "success"}})
@@ -466,53 +343,24 @@ def meals_edit_row(request, claim_id: int):
 @login_required(login_url="common:login")
 def meals_update(request, claim_id: int):
     branch = _get_branch_or_404(request)
-    used_date_str = request.POST.get("used_date")
-    amount_str = request.POST.get("amount")
-    merchant_name = (request.POST.get("merchant_name") or "").strip()
-
-    if not used_date_str or not amount_str:
-        return HttpResponse("사용일과 총액은 필수입니다.", status=400)
-    if not merchant_name:
-        return HttpResponse("가맹점명은 필수입니다.", status=400)
-
-    used_date, error = svc.parse_used_date(used_date_str)
-    if error:
-        return HttpResponse(error, status=400)
-
-    amount, error = _parse_amount(amount_str, "총액")
-    if error:
-        return HttpResponse(error, status=400)
-
-    approval_no, err = _parse_approval_no(
-        request.POST.get("approval_no"),
-        branch=branch,
-        used_date=used_date,
-        exclude_claim_id=claim_id,  # 수정에서는 자기 자신 제외
+    payload, errors = svc.parse_claim_payload_form(
+        request.POST,
+        branch,
+        exclude_claim_id=claim_id,
     )
-    if err:
-        return HttpResponse(err, status=400)
+    if errors:
+        return HttpResponse("\n".join(errors), status=400)
 
-    participants, participant_errors = _parse_participants(request.POST, branch, used_date)
-    if participant_errors:
-        return HttpResponse("\n".join(participant_errors), status=400)
-
-    # Server-side validation ensures participant sum matches total amount.
-    if sum(p[1] for p in participants) != amount:
-        return HttpResponse("분배 합계가 총액과 일치해야 합니다.", status=400)
-
-    payload = {
-        "used_date": used_date,
-        "amount": amount,
-        "approval_no": approval_no,
-        "merchant_name": merchant_name,
-        "participants": participants,
-    }
     try:
         claim = svc.update_claim(branch, claim_id, payload)
     except ValueError as e:
         return HttpResponse(str(e), status=403)
     except MealClaim.DoesNotExist:
         raise Http404("meal claim not found")
+    logger.info(
+        "meal claim updated via web: actor_id=%s claim_id=%s branch_id=%s",
+        request.user.id, claim.id, branch.id,
+    )
 
     claim = (
         MealClaim.objects
