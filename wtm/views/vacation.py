@@ -5,7 +5,7 @@ from django.http import JsonResponse, Http404
 from django.contrib.auth.decorators import login_required
 
 from wtm.models import Module, Schedule
-from .helpers import fetch_base_users_for_month
+from wtm.services.base_users import fetch_base_users_for_month
 
 
 def build_vacation_rows(year: int, *, branch, is_contract_checked: bool = False) -> list[dict]:

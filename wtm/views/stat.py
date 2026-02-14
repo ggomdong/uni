@@ -12,8 +12,9 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from common import context_processors
+from wtm.services.base_users import fetch_base_users_for_month
 from wtm.services.attendance import build_monthly_attendance_summary_for_users, build_monthly_metric_details_for_users
-from .helpers import sec_to_hhmmss, fetch_base_users_for_month, get_non_business_days
+from .helpers import sec_to_hhmmss, get_non_business_days
 from .helpers_excel import header_fill, header_font, header_align, set_table_border, metric_excel_data, write_metric_sheet, schedule_excel_data, write_schedule_sheet
 
 

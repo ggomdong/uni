@@ -9,9 +9,10 @@ from django.db import connection
 
 from common import context_processors
 from common.models import Holiday
+from wtm.services.base_users import fetch_base_users_for_month
 from ..services.attendance import build_monthly_metric_details_for_users
 from ..models import Module, Schedule
-from .helpers import sec_to_hhmmss, fetch_base_users_for_month, get_non_business_days
+from .helpers import sec_to_hhmmss, get_non_business_days
 
 
 EXCEL_HEADER_BG = "FFA8E5E8"     # #A8E5E8
