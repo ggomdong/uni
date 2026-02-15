@@ -1,78 +1,29 @@
 from __future__ import annotations
 
 from calendar import monthrange
-from datetime import date, datetime
+from datetime import date
 
 from django.db import transaction
-from django.db.models import Q
-from django.utils import timezone
 
 from common.models import User
-from wtm.models import Schedule, MealClaim, MealClaimParticipant, BranchMonthClose
+from wtm.models import Schedule, MealClaim, MealClaimParticipant
 from wtm.services.base_users import fetch_base_users_for_month
 
-
-def _resolve_month_input(value: str | None):
-    if not value:
-        return None
-    v = value.strip()
-    if len(v) == 7 and v[4] == "-":
-        return v.replace("-", "")
-    if len(v) == 6 and v.isdigit():
-        return v
-    return None
-
-
-def resolve_month_input(value: str | None) -> str | None:
-    return _resolve_month_input(value)
-
-
-def _month_range(ym: str):
-    year = int(ym[:4])
-    month = int(ym[4:6])
-    last_day = monthrange(year, month)[1]
-    return date(year, month, 1), date(year, month, last_day)
-
-
-def month_range(ym: str):
-    return _month_range(ym)
-
-
-def _is_month_closed(branch, ym: str):
-    return BranchMonthClose.objects.filter(branch=branch, ym=ym, is_closed=True).exists()
-
-
-def is_month_closed(branch, ym: str) -> bool:
-    return _is_month_closed(branch, ym)
-
-
-def _get_branch_users(branch, used_date: date | None):
-    base_qs = User.objects.filter(branch=branch, is_active=True, is_employee=True)
-    if used_date:
-        base_qs = base_qs.filter(join_date__lte=used_date).filter(
-            Q(out_date__isnull=True) | Q(out_date__gte=used_date)
-        )
-    return base_qs.order_by("emp_name")
-
-
-def get_branch_users(branch, used_date: date | None):
-    return _get_branch_users(branch, used_date)
-
-
-def _parse_amount(value, field_name: str):
-    if value is None or value == "":
-        return None, f"{field_name}는 필수입니다."
-    try:
-        amount = int(value)
-    except (TypeError, ValueError):
-        return None, f"{field_name}는 숫자여야 합니다."
-    if amount <= 0:
-        return None, f"{field_name}는 0보다 커야 합니다."
-    return amount, None
-
-
-def parse_amount(value, field_name: str):
-    return _parse_amount(value, field_name)
+# TODO: remove after migration
+from wtm.services.branch_access import (
+    get_branch_users as get_branch_users,
+    is_month_closed as is_month_closed,
+)
+# TODO: remove after migration
+from wtm.services.date_utils import (
+    month_range as month_range,
+    normalize_ym as normalize_ym,
+    normalize_ym_or_now as normalize_ym_or_now,
+    normalize_ym_strict as normalize_ym_strict,
+    parse_amount as parse_amount,
+    parse_used_date as parse_used_date,
+    resolve_month_input as resolve_month_input,
+)
 
 
 def _parse_approval_no(value, *, branch, used_date: date, exclude_claim_id: int | None = None):
@@ -85,7 +36,7 @@ def _parse_approval_no(value, *, branch, used_date: date, exclude_claim_id: int 
         return None, "승인번호는 8자리여야 합니다."
 
     ym = used_date.strftime("%Y%m")
-    start_date, end_date = _month_range(ym)
+    start_date, end_date = month_range(ym)
 
     qs = MealClaim.objects.filter(
         branch=branch,
@@ -109,38 +60,6 @@ def parse_approval_no(value, branch, used_date, exclude_claim_id=None):
         used_date=used_date,
         exclude_claim_id=exclude_claim_id,
     )
-
-
-def parse_used_date(value: str | None):
-    if not value:
-        return None, "사용일은 필수입니다."
-    try:
-        return datetime.strptime(value, "%Y-%m-%d").date(), None
-    except ValueError:
-        return None, "사용일은 YYYY-MM-DD 형식이어야 합니다."
-
-
-def normalize_ym_strict(value: str | None, *, default_to_now: bool = True):
-    if not value:
-        if default_to_now:
-            return timezone.now().strftime("%Y%m"), None
-        return None, "ym은 YYYY-MM 또는 YYYYMM 형식이어야 합니다."
-
-    ym = _resolve_month_input(value)
-    if ym is None:
-        return None, "ym은 YYYY-MM 또는 YYYYMM 형식이어야 합니다."
-    return ym, None
-
-
-def normalize_ym_or_now(value: str | None) -> str:
-    ym, error = normalize_ym_strict(value, default_to_now=True)
-    if error or ym is None:
-        return timezone.now().strftime("%Y%m")
-    return ym
-
-
-def normalize_ym(value: str | None, *, default_to_now: bool = True):
-    return normalize_ym_strict(value, default_to_now=default_to_now)
 
 
 def calculate_user_meal_total(user: User, branch, ym: str) -> int:
@@ -199,7 +118,7 @@ def parse_participants_json(participants_list, branch, used_date: date):
             errors.append("대상자 정보가 올바르지 않습니다.")
             continue
 
-        amount, error = _parse_amount(raw_amount, "분배금액")
+        amount, error = parse_amount(raw_amount, "분배금액")
         if error:
             errors.append(error)
             continue
@@ -214,7 +133,7 @@ def parse_participants_json(participants_list, branch, used_date: date):
         return participants, errors
 
     valid_user_ids = set(
-        _get_branch_users(branch, used_date)
+        get_branch_users(branch, used_date)
         .filter(id__in=[uid for uid, _ in participants])
         .values_list("id", flat=True)
     )
@@ -404,7 +323,7 @@ def calculate_meal_totals_for_user_ids(
 
 def create_claim(user, branch, payload):
     ym = payload["used_date"].strftime("%Y%m")
-    if _is_month_closed(branch, ym):
+    if is_month_closed(branch, ym):
         raise ValueError("마감된 월은 등록할 수 없습니다.")
 
     with transaction.atomic():
@@ -429,7 +348,7 @@ def update_claim(branch, claim_id, payload):
         current_ym = claim.used_date.strftime("%Y%m")
         next_ym = payload["used_date"].strftime("%Y%m")
 
-        if _is_month_closed(branch, current_ym) or _is_month_closed(branch, next_ym):
+        if is_month_closed(branch, current_ym) or is_month_closed(branch, next_ym):
             raise ValueError("마감된 월은 수정할 수 없습니다.")
 
         claim.used_date = payload["used_date"]
@@ -448,7 +367,7 @@ def update_claim(branch, claim_id, payload):
 def soft_delete_claim(branch, claim_id: int):
     claim = MealClaim.objects.get(id=claim_id, branch=branch, is_deleted=False)
     ym = claim.used_date.strftime("%Y%m")
-    if _is_month_closed(branch, ym):
+    if is_month_closed(branch, ym):
         raise ValueError("마감된 월은 삭제할 수 없습니다.")
     claim.is_deleted = True
     claim.save()
