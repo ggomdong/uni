@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from wtm.models import MealClaim, MealClaimParticipant
+from wtm.services import branch_access as ba
+from wtm.services import date_utils as du
 from wtm.services import meal_claims as svc
 
 from .common import (
@@ -30,11 +32,11 @@ class MealMySummaryAPIView(APIView):
         if error_resp:
             return error_resp
 
-        ym, error = svc.normalize_ym(request.query_params.get("ym"))
+        ym, error = du.normalize_ym(request.query_params.get("ym"))
         if error:
             return _validation_error(error)
 
-        start_date, end_date = svc.month_range(ym)
+        start_date, end_date = du.month_range(ym)
         total_amount = svc.calculate_user_meal_total(request.user, branch, ym)
 
         summary = (
@@ -74,11 +76,11 @@ class MealMyItemsAPIView(APIView):
         if error_resp:
             return error_resp
 
-        ym, error = svc.normalize_ym(request.query_params.get("ym"))
+        ym, error = du.normalize_ym(request.query_params.get("ym"))
         if error:
             return _validation_error(error)
 
-        start_date, end_date = svc.month_range(ym)
+        start_date, end_date = du.month_range(ym)
         claims = (
             MealClaim.objects
             .select_related("user")
@@ -131,17 +133,17 @@ class MealOptionsAPIView(APIView):
 
         used_date_str = request.query_params.get("used_date")
         if used_date_str:
-            used_date, error = svc.parse_used_date(used_date_str)
+            used_date, error = du.parse_used_date(used_date_str)
             if error:
                 return _validation_error(error)
             ym = used_date.strftime("%Y%m")
         else:
-            ym, error = svc.normalize_ym(request.query_params.get("ym"))
+            ym, error = du.normalize_ym(request.query_params.get("ym"))
             if error:
                 return _validation_error(error)
             used_date = date(int(ym[:4]), int(ym[4:6]), 1)
 
-        users_qs = svc.get_branch_users(branch, used_date)
+        users_qs = ba.get_branch_users(branch, used_date)
         users = [
             {
                 "id": u.id,

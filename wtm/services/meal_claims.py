@@ -7,22 +7,12 @@ from django.db import transaction
 
 from common.models import User
 from wtm.models import Schedule, MealClaim, MealClaimParticipant
+from wtm.services.branch_access import get_branch_users, is_month_closed
 from wtm.services.base_users import fetch_base_users_for_month
-
-# TODO: remove after migration
-from wtm.services.branch_access import (
-    get_branch_users as get_branch_users,
-    is_month_closed as is_month_closed,
-)
-# TODO: remove after migration
 from wtm.services.date_utils import (
-    month_range as month_range,
-    normalize_ym as normalize_ym,
-    normalize_ym_or_now as normalize_ym_or_now,
-    normalize_ym_strict as normalize_ym_strict,
-    parse_amount as parse_amount,
-    parse_used_date as parse_used_date,
-    resolve_month_input as resolve_month_input,
+    month_range,
+    parse_amount,
+    parse_used_date,
 )
 
 
