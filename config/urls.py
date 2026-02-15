@@ -25,8 +25,7 @@ admin.site.index_title = '웹사이트 관리'        # 관리화면 메뉴명
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', RedirectView.as_view(url='/wtm/index/', permanent=False)),
-    path('api/v1/', include('api.urls_v1')),
-    path('api/v2/', include('api.urls_v2')),
+    path('api/v1/', include('api.v1.urls')),
     path('api/', include('api.urls')),
     path('pybo/', include('pybo.urls')),
     path('common/', include('common.urls')),

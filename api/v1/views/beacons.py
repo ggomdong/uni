@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
-from api.serializers import BeaconSerializer
+from api.v1.serializers import BeaconSerializer
 from wtm.models import Beacon
 
 

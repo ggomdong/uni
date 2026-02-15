@@ -9,7 +9,7 @@ from rest_framework import status
 from wtm.models import Work, Schedule
 from wtm.services.attendance import build_monthly_attendance_for_user
 from wtm.services.calendar_rules import get_non_business_calendar
-from api.serializers import AttendanceSerializer, MonthlyAttendanceDaySerializer
+from api.v1.serializers import AttendanceSerializer, MonthlyAttendanceDaySerializer
 
 from .common import ensure_active_employee_or_403
 

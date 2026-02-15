@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
-from api.serializers import WorkSerializer
+from api.v1.serializers import WorkSerializer
 from wtm.models import Work
 from .common import ensure_active_employee_or_403
 
