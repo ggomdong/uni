@@ -11,6 +11,7 @@ from wtm.services import branch_access as ba
 from wtm.services import date_utils as du
 from wtm.services import meal_claims as svc
 from wtm.services import meal_queries as q
+from wtm.views.common import get_branch_or_404
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def work_meal_status(request, stand_ym: str | None = None):
 
 @login_required(login_url="common:login")
 def work_meal_status_user_modal(request, user_id: int):
-    branch = _get_branch_or_404(request)
+    branch = get_branch_or_404(request)
     requested_ym = du.resolve_month_input(request.GET.get("month")) or request.GET.get("ym")
     stand_ym = du.normalize_ym_or_now(requested_ym)
     try:
@@ -80,13 +81,6 @@ def work_meal_status_user_modal(request, user_id: int):
 @login_required(login_url="common:login")
 def work_meal_modal_close(request):
     return render(request, "tw/wtm/meal/_modal_slot_empty.html")
-
-
-def _get_branch_or_404(request):
-    branch = getattr(request, "branch", None) or getattr(request.user, "branch", None)
-    if branch is None:
-        raise Http404("branch code is required")
-    return branch
 
 
 def _render_meal_table(request, branch, ym: str):
@@ -114,7 +108,7 @@ def _render_meal_row_edit(request, claim, branch_users):
 
 @login_required(login_url="common:login")
 def meals_index(request):
-    branch = _get_branch_or_404(request)
+    branch = get_branch_or_404(request)
     ym = du.resolve_month_input(request.GET.get("month")) or du.normalize_ym_or_now(request.GET.get("ym"))
 
     if request.headers.get("HX-Request") == "true":
@@ -150,7 +144,7 @@ def meals_index(request):
 
 @login_required(login_url="common:login")
 def meals_new(request):
-    branch = _get_branch_or_404(request)
+    branch = get_branch_or_404(request)
     payload, errors = svc.parse_claim_payload_form(request.POST, branch)
     if errors:
         return HttpResponse("\n".join(errors), status=400)
@@ -173,7 +167,7 @@ def meals_new(request):
 
 @login_required(login_url="common:login")
 def meals_delete(request, claim_id: int):
-    branch = _get_branch_or_404(request)
+    branch = get_branch_or_404(request)
     try:
         claim = MealClaim.objects.get(id=claim_id, branch=branch, is_deleted=False)
     except MealClaim.DoesNotExist:
@@ -195,7 +189,7 @@ def meals_delete(request, claim_id: int):
 
 @login_required(login_url="common:login")
 def meals_row(request, claim_id: int):
-    branch = _get_branch_or_404(request)
+    branch = get_branch_or_404(request)
     try:
         claim = (
             MealClaim.objects
@@ -212,7 +206,7 @@ def meals_row(request, claim_id: int):
 
 @login_required(login_url="common:login")
 def meals_edit_row(request, claim_id: int):
-    branch = _get_branch_or_404(request)
+    branch = get_branch_or_404(request)
     try:
         claim = (
             MealClaim.objects
@@ -229,7 +223,7 @@ def meals_edit_row(request, claim_id: int):
 
 @login_required(login_url="common:login")
 def meals_update(request, claim_id: int):
-    branch = _get_branch_or_404(request)
+    branch = get_branch_or_404(request)
     payload, errors = svc.parse_claim_payload_form(
         request.POST,
         branch,
