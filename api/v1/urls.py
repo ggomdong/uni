@@ -11,6 +11,7 @@ from api.v1.views.beacons import BeaconListAPIView
 from api.v1.views.meals import (
     MealClaimCreateAPIView,
     MealClaimDetailAPIView,
+    MealMyCreatedAPIView,
     MealMyItemsAPIView,
     MealMySummaryAPIView,
     MealOptionsAPIView,
@@ -33,6 +34,7 @@ urlpatterns = [
     path("profile/", ProfileAPIView.as_view()),
     path("meals/my/summary/", MealMySummaryAPIView.as_view()),
     path("meals/my/items/", MealMyItemsAPIView.as_view()),
+    path("meals/my/created/", MealMyCreatedAPIView.as_view()),
     path("meals/options/", MealOptionsAPIView.as_view()),
     path("meals/claims/", MealClaimCreateAPIView.as_view()),
     path("meals/claims/<int:claim_id>/", MealClaimDetailAPIView.as_view()),

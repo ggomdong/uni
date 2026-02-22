@@ -11,6 +11,7 @@ from wtm.services.branch_access import get_branch_users, is_month_closed
 from wtm.services.base_users import fetch_base_users_for_month
 from wtm.services.date_utils import (
     month_range,
+    normalize_ym,
     parse_amount,
     parse_used_date,
 )

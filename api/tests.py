@@ -96,7 +96,7 @@ class MealClaimAPITests(TestCase):
 
         self.client.force_authenticate(self.user)
         response = self.client.post(
-            "/api/v2/meals/claims/",
+            "/api/v1/meals/claims/",
             data=self._payload(),
             format="json",
         )
@@ -107,7 +107,7 @@ class MealClaimAPITests(TestCase):
     def test_participant_sum_mismatch_returns_400(self):
         self.client.force_authenticate(self.user)
         response = self.client.post(
-            "/api/v2/meals/claims/",
+            "/api/v1/meals/claims/",
             data=self._payload(participants=[{"user_id": self.user.id, "amount": 10000}]),
             format="json",
         )
@@ -118,7 +118,7 @@ class MealClaimAPITests(TestCase):
     def test_participant_outside_branch_returns_400(self):
         self.client.force_authenticate(self.user)
         response = self.client.post(
-            "/api/v2/meals/claims/",
+            "/api/v1/meals/claims/",
             data=self._payload(participants=[{"user_id": self.other_user.id, "amount": 50000}]),
             format="json",
         )
@@ -139,14 +139,14 @@ class MealClaimAPITests(TestCase):
 
         self.client.force_authenticate(self.participant)
         response = self.client.patch(
-            f"/api/v2/meals/claims/{claim.id}/",
+            f"/api/v1/meals/claims/{claim.id}/",
             data=self._payload(approval_no="11112222"),
             format="json",
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.data.get("error"), "forbidden")
 
-        response = self.client.delete(f"/api/v2/meals/claims/{claim.id}/")
+        response = self.client.delete(f"/api/v1/meals/claims/{claim.id}/")
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.data.get("error"), "forbidden")
 
@@ -174,9 +174,42 @@ class MealClaimAPITests(TestCase):
 
         self.client.force_authenticate(self.user)
         response = self.client.get(
-            "/api/v2/meals/my/items/",
+            "/api/v1/meals/my/items/",
             data={"ym": "202405"},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data.get("items", [])), 1)
+
+    def test_my_created_includes_proxy_entered_claim_not_in_my_items(self):
+        claim = MealClaim.objects.create(
+            branch=self.branch,
+            user=self.user,
+            used_date=self.used_date,
+            amount=40000,
+            approval_no="44445555",
+            merchant_name="ProxyStore",
+        )
+        MealClaimParticipant.objects.create(claim=claim, user=self.participant, amount=40000)
+
+        self.client.force_authenticate(self.user)
+
+        created_response = self.client.get(
+            "/api/v1/meals/my/created/",
+            data={"ym": "202405"},
+        )
+        items_response = self.client.get(
+            "/api/v1/meals/my/items/",
+            data={"ym": "202405"},
+        )
+
+        self.assertEqual(created_response.status_code, 200)
+        self.assertEqual(items_response.status_code, 200)
+
+        created_items = created_response.data.get("items", [])
+        item_ids = [item["id"] for item in created_items]
+        self.assertIn(claim.id, item_ids)
+        created_item = next(item for item in created_items if item["id"] == claim.id)
+        self.assertEqual(created_item["my_amount"], 0)
+
+        self.assertEqual(items_response.data.get("items", []), [])

@@ -97,7 +97,7 @@ class MealMyItemsAPIView(APIView):
 
         items = []
         for claim in claims:
-            my_amount, participant_sum, participants_count = svc.claim_participants_summary_for_user(
+            my_amount, participants_sum, participants_count = svc.claim_participants_summary_for_user(
                 claim,
                 request.user.id,
             )
@@ -110,7 +110,61 @@ class MealMyItemsAPIView(APIView):
                 "total_amount": claim.amount,
                 "my_amount": my_amount,
                 "participants_count": participants_count,
-                "participant_sum": participant_sum,
+                "participants_sum": participants_sum,
+                "created_by": {"id": claim.user_id, "emp_name": claim.user.emp_name},
+                "can_edit": can_edit,
+                "can_delete": can_edit,
+            })
+
+        return Response({"ym": ym, "items": items})
+
+
+class MealMyCreatedAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        resp = ensure_active_employee_or_403(request.user)
+        if resp is not None:
+            return resp
+
+        branch, error_resp = get_branch_or_error(request)
+        if error_resp:
+            return error_resp
+
+        ym, error = svc.normalize_ym(request.query_params.get("ym"))
+        if error:
+            return validation_error(error)
+
+        start_date, end_date = svc.month_range(ym)
+        claims = (
+            MealClaim.objects
+            .select_related("user")
+            .prefetch_related("participants__user")
+            .filter(
+                branch=branch,
+                user=request.user,
+                is_deleted=False,
+                used_date__range=(start_date, end_date),
+            )
+            .order_by("used_date", "id")
+        )
+
+        items = []
+        for claim in claims:
+            my_amount, participants_sum, participants_count = svc.claim_participants_summary_for_user(
+                claim,
+                request.user.id,
+            )
+            can_edit = claim.user_id == request.user.id
+            items.append({
+                "id": claim.id,
+                "used_date": claim.used_date.strftime("%Y-%m-%d"),
+                "merchant_name": claim.merchant_name,
+                "approval_no": claim.approval_no,
+                "total_amount": claim.amount,
+                "my_amount": my_amount,
+                "participants_count": participants_count,
+                "participants_sum": participants_sum,
                 "created_by": {"id": claim.user_id, "emp_name": claim.user.emp_name},
                 "can_edit": can_edit,
                 "can_delete": can_edit,
@@ -226,7 +280,7 @@ class MealClaimDetailAPIView(APIView):
         except MealClaim.DoesNotExist:
             return not_found_response("meal claim not found")
 
-        if not claim.participants.filter(user=request.user).exists():
+        if claim.user_id != request.user.id and not claim.participants.filter(user=request.user).exists():
             return not_found_response("meal claim not found")
 
         return Response(svc.serialize_claim_detail(claim, request.user))
